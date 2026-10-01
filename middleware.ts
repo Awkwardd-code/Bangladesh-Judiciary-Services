@@ -95,6 +95,8 @@ export async function middleware(req: NextRequest) {
   if (
     isAuthPage &&
     req.nextUrl.searchParams.get("session") !== "invalid" &&
+    pathname !== "/login" &&
+    pathname !== "/forgot-password" &&
     !pathname.startsWith("/reset-password") &&
     pathname !== "/verify" &&
     !pathname.startsWith("/verify/")

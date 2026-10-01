@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/api-response";
+import { clearSessionCookie } from "@/lib/auth";
 import { logAuth } from "@/lib/audit";
 import {
   passwordResetTokensCol,
@@ -93,6 +94,8 @@ export const POST = withGuard({ kind: "public" }, async (req) => {
       token: { $ne: parsed.data.code },
       usedAt: null,
     });
+
+    await clearSessionCookie();
 
     await logAuth("password.reset", {
       userId: user._id,
