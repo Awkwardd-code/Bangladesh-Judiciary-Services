@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import {
   FeaturedCourses,
@@ -10,6 +11,14 @@ import { MentorAndCta } from "@/components/sections/mentor-and-cta";
 import { ModelTestsBand } from "@/components/sections/model-tests-band";
 import { SuccessStoriesPreview } from "@/components/sections/success-stories-preview";
 import { WhyChooseUs } from "@/components/sections/why-choose-us";
+import { HomeHeroSkeleton } from "@/components/skeletons/home-hero-skeleton";
+import {
+  HomeCoursesSkeleton,
+  HomeMentorSkeleton,
+  HomeModelTestsSkeleton,
+  HomeStoriesSkeleton,
+  HomeWhySkeleton,
+} from "@/components/skeletons/home-sections-skeleton";
 import {
   aboutsCol,
   coursesCol,
@@ -35,95 +44,157 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-export default async function Home() {
-  const [courses, mentor, stories, about, students, mockExams, attempts] =
-    await Promise.all([
-      safeFetch<PublicCourse[]>(
-        "featured courses",
-        async () => {
-          const records = await (
-            await coursesCol()
-          )
-            .find({ isPublished: true })
-            .sort({ order: 1, createdAt: -1 })
-            .limit(3)
-            .toArray();
+export default function Home() {
+  const coursesPromise = safeFetch<PublicCourse[]>(
+    "featured courses",
+    async () => {
+      const records = await (
+        await coursesCol()
+      )
+        .find({ isPublished: true })
+        .sort({ order: 1, createdAt: -1 })
+        .limit(3)
+        .toArray();
 
-          return records.map(toPublicCourse);
-        },
-        [],
-      ),
-      safeFetch<PublicMentor | null>(
-        "featured mentor",
-        async () => {
-          const record = await (
-            await mentorsCol()
-          ).findOne({ isPublished: true }, { sort: { order: 1 } });
-          return record ? toPublicMentor(record) : null;
-        },
-        null,
-      ),
-      safeFetch<PublicSuccessStory[]>(
-        "featured success stories",
-        async () => {
-          const records = await (
-            await successStoriesCol()
-          )
-            .find({ status: "approved" })
-            .sort({ isFeatured: -1, order: 1, createdAt: -1 })
-            .limit(3)
-            .toArray();
+      return records.map(toPublicCourse);
+    },
+    []
+  );
+  const mentorPromise = safeFetch<PublicMentor | null>(
+    "featured mentor",
+    async () => {
+      const record = await (
+        await mentorsCol()
+      ).findOne({ isPublished: true }, { sort: { order: 1 } });
 
-          return records.map(toPublicStory);
-        },
-        [],
-      ),
-      safeFetch<About | null>(
-        "about content",
-        async () => (await aboutsCol()).findOne({}),
-        null,
-      ),
-      safeFetch(
-        "student count",
-        async () => (await usersCol()).countDocuments(),
-        0,
-      ),
-      safeFetch(
-        "published mock exam count",
-        async () =>
-          (await preliminaryExamsCol()).countDocuments({ status: "published" }),
-        0,
-      ),
-      safeFetch(
-        "attempt count",
-        async () => (await preliminaryAttemptsCol()).countDocuments(),
-        0,
-      ),
-    ]);
+      return record ? toPublicMentor(record) : null;
+    },
+    null
+  );
+  const storiesPromise = safeFetch<PublicSuccessStory[]>(
+    "featured success stories",
+    async () => {
+      const records = await (
+        await successStoriesCol()
+      )
+        .find({ status: "approved" })
+        .sort({ isFeatured: -1, order: 1, createdAt: -1 })
+        .limit(3)
+        .toArray();
 
-  const stats: HomeStats = {
+      return records.map(toPublicStory);
+    },
+    []
+  );
+  const aboutPromise = safeFetch<About | null>(
+    "about content",
+    async () => (await aboutsCol()).findOne({}),
+    null
+  );
+  const statsPromise = Promise.all([
+    safeFetch(
+      "student count",
+      async () => (await usersCol()).countDocuments(),
+      0
+    ),
+    safeFetch(
+      "published mock exam count",
+      async () =>
+        (await preliminaryExamsCol()).countDocuments({ status: "published" }),
+      0
+    ),
+    safeFetch(
+      "attempt count",
+      async () => (await preliminaryAttemptsCol()).countDocuments(),
+      0
+    ),
+  ]).then(([students, mockExams, attempts]) => ({
     students,
     mockExams,
     attempts,
-  };
+  }));
 
   return (
     <>
-      <Hero stats={stats} about={about} />
-      <WhyChooseUs />
-      <FeaturedCourses courses={courses} />
-      <ModelTestsBand stats={stats} />
+      <Suspense fallback={<HomeHeroSkeleton />}>
+        <HomeHero statsPromise={statsPromise} aboutPromise={aboutPromise} />
+      </Suspense>
+      <Suspense fallback={<HomeWhySkeleton />}>
+        <WhyChooseUs />
+      </Suspense>
+      <Suspense fallback={<HomeCoursesSkeleton />}>
+        <HomeFeaturedCourses coursesPromise={coursesPromise} />
+      </Suspense>
+      <Suspense fallback={<HomeModelTestsSkeleton />}>
+        <HomeModelTests statsPromise={statsPromise} />
+      </Suspense>
       <HowToEnroll />
-      <SuccessStoriesPreview stories={stories} />
-      <MentorAndCta mentor={mentor} />
+      <Suspense fallback={<HomeStoriesSkeleton />}>
+        <HomeSuccessStories storiesPromise={storiesPromise} />
+      </Suspense>
+      <Suspense fallback={<HomeMentorSkeleton />}>
+        <HomeMentor mentorPromise={mentorPromise} />
+      </Suspense>
     </>
   );
+}
+
+async function HomeHero({
+  statsPromise,
+  aboutPromise,
+}: {
+  statsPromise: Promise<HomeStats>;
+  aboutPromise: Promise<About | null>;
+}) {
+  const [stats, about] = await Promise.all([statsPromise, aboutPromise]);
+
+  return <Hero stats={stats} about={about} />;
+}
+
+async function HomeFeaturedCourses({
+  coursesPromise,
+}: {
+  coursesPromise: Promise<PublicCourse[]>;
+}) {
+  const courses = await coursesPromise;
+
+  return <FeaturedCourses courses={courses} />;
+}
+
+async function HomeModelTests({
+  statsPromise,
+}: {
+  statsPromise: Promise<HomeStats>;
+}) {
+  const stats = await statsPromise;
+
+  return <ModelTestsBand stats={stats} />;
+}
+
+async function HomeSuccessStories({
+  storiesPromise,
+}: {
+  storiesPromise: Promise<PublicSuccessStory[]>;
+}) {
+  const stories = await storiesPromise;
+
+  return <SuccessStoriesPreview stories={stories} />;
+}
+
+async function HomeMentor({
+  mentorPromise,
+}: {
+  mentorPromise: Promise<PublicMentor | null>;
+}) {
+  const mentor = await mentorPromise;
+
+  return <MentorAndCta mentor={mentor} />;
 }
 
 async function safeFetch<T>(
   label: string,
   fetchData: () => Promise<T>,
-  fallback: T,
+  fallback: T
 ): Promise<T> {
   try {
     return await fetchData();

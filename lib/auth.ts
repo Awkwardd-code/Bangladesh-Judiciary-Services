@@ -103,7 +103,7 @@ export async function verifySession(
 
     const currentRole = user.isAdmin === 1 ? "admin" : "student";
 
-    if (currentRole !== session.role || user.role !== session.role) {
+    if (currentRole !== session.role) {
       await logAuth("session.role-changed", {
         userId: user._id,
         email: user.email,

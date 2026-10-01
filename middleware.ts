@@ -81,17 +81,6 @@ export async function middleware(req: NextRequest) {
 
   const refreshedToken = await refreshMiddlewareToken(session);
 
-  if (pathname.startsWith("/admin") && session.role !== "admin") {
-    const redirect = redirectWithPathHeader(
-      new URL("/dashboard?forbidden=1", req.url),
-      pathname,
-    );
-    if (refreshedToken) {
-      setSessionCookie(redirect, refreshedToken, session.remember !== false);
-    }
-    return redirect;
-  }
-
   if (
     isAuthPage &&
     req.nextUrl.searchParams.get("session") !== "invalid" &&
