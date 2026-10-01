@@ -1,0 +1,178 @@
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "tailwindcss";
+
+:root {
+  --background: #f7f3ec;
+  --foreground: #14110c;
+  --primary: #12213f;
+  --primary-dark: #0a1428;
+  --accent: #b87333;
+  --muted: #6e6960;
+  --card: #ffffff;
+  --border: #e8e1d5;
+  --cream: #f7f3ec;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-cream: var(--cream);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.sticky-safe {
+  overflow-x: clip;
+}
+
+* {
+  border-color: var(--border);
+}
+
+a,
+button {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+@layer base {
+  button:not(:disabled),
+  a,
+  [role="button"],
+  [role="link"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [role="combobox"],
+  .cursor-clickable,
+  select,
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  label[for],
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  button:not(:disabled):hover {
+    filter: brightness(0.96);
+  }
+
+  :where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [role="link"],
+    [role="tab"],
+    [role="menuitem"],
+    [role="option"],
+    [role="combobox"]
+  ):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--accent);
+  }
+
+  .bg-primary
+    :where(
+      button,
+      a,
+      input,
+      select,
+      textarea,
+      [role="button"],
+      [role="link"],
+      [role="tab"],
+      [role="menuitem"],
+      [role="option"],
+      [role="combobox"]
+    ):focus-visible {
+    box-shadow:
+      0 0 0 2px var(--primary),
+      0 0 0 4px var(--accent);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(110, 105, 96, 0.25);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 105, 96, 0.45);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(200, 200, 200, 0.15);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 200, 200, 0.3);
+}
+
+.dark [data-theme-scope="authenticated"] {
+  --background: #0b1220;
+  --foreground: #f1efe9;
+  --primary: #1e3a6b;
+  --primary-dark: #0a1428;
+  --accent: #d08a47;
+  --muted: #9ca3af;
+  --card: #111a2e;
+  --border: #1f2a44;
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #f1efe9;
+  --primary: #1e3a6b;
+  --primary-dark: #0a1428;
+  --accent: #d08a47;
+  --muted: #9ca3af;
+  --card: #111a2e;
+  --border: #1f2a44;
+}

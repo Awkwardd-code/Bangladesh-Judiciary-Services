@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///E:/Projects/BJS/app/%28auth%29/layout.tsx"],"sourcesContent":["import { headers } from \"next/headers\";\r\n\r\nexport default async function AuthLayout({\r\n  children,\r\n}: Readonly<{\r\n  children: React.ReactNode;\r\n}>) {\r\n  const headersList = await headers();\r\n  const pathname = headersList.get(\"x-pathname\") ?? \"\";\r\n  const isFullBleed = pathname.startsWith(\"/register\");\r\n\r\n  if (isFullBleed) {\r\n    return <>{children}</>;\r\n  }\r\n\r\n  return (\r\n    <main className=\"flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:px-6 lg:px-8\">\r\n      <div className=\"w-full max-w-6xl\">\r\n        {children}\r\n      </div>\r\n    </main>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;AAAA;;;AAEe,eAAe,WAAW,EACvC,QAAQ,EAGR;IACA,MAAM,cAAc,MAAM,IAAA,0IAAO;IACjC,MAAM,WAAW,YAAY,GAAG,CAAC,iBAAiB;IAClD,MAAM,cAAc,SAAS,UAAU,CAAC;IAExC,IAAI,aAAa;QACf,qBAAO;sBAAG;;IACZ;IAEA,qBACE,8OAAC;QAAK,WAAU;kBACd,cAAA,8OAAC;YAAI,WAAU;sBACZ;;;;;;;;;;;AAIT","debugId":null}}]
+}
