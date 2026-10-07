@@ -1,8 +1,8 @@
 import { CheckCircle2, Lock } from "lucide-react";
 
+import type { CourseAccess } from "@/components/courses/course-detail-types";
 import { Badge } from "@/components/ui/badge";
 import type { Course } from "@/lib/types/course";
-import type { AccessInfo } from "@/components/courses/course-hero";
 
 type PublicCourse = Pick<
   Course,
@@ -34,7 +34,7 @@ export function CourseBody({
 }: {
   course: PublicCourse;
   materials: MaterialSummary[];
-  access: AccessInfo | null;
+  access: CourseAccess | null;
 }) {
   const learnPoints = [
     "Understand the syllabus and exam patterns with clarity.",
@@ -108,7 +108,7 @@ export function CourseBody({
                   </div>
                 </div>
 
-                {access?.hasAccess ? (
+                {access?.hasAccess || (access && item.isFreePreview) ? (
                   <a
                     href={`/api/materials/${item.id}/download`}
                     className="text-sm font-medium text-accent hover:underline"

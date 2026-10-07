@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ResultsHeader } from "@/components/dashboard/results-header";
 import { ResultsList } from "@/components/dashboard/results-list";
 import { ResultsStats } from "@/components/dashboard/results-stats";
-import { requireStudent } from "@/lib/auth-guard";
+import { requireSession } from "@/lib/auth-guard";
 import { getStudentAttemptActivity } from "@/lib/stats";
 import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ResultsPage() {
-  const session = await requireStudent();
+  const session = await requireSession();
   if (!session) redirect("/login?next=%2Fdashboard%2Fresults");
 
   const { recentAttempts } = await getStudentAttemptActivity(

@@ -37,8 +37,10 @@ export default async function PreliminaryResultPage({
   if (!session) redirect("/login");
 
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  if (!ObjectId.isValid(id)) redirect("/dashboard/results");
   if (query.attemptId && !ObjectId.isValid(query.attemptId)) {
+    redirect("/dashboard/results");
+  }
+  if (!query.attemptId && !ObjectId.isValid(id)) {
     redirect("/dashboard/results");
   }
   await ensureIndexes();
@@ -46,7 +48,7 @@ export default async function PreliminaryResultPage({
   const attempt = await (await preliminaryAttemptsCol()).findOne(
     {
       ...(query.attemptId ? { _id: new ObjectId(query.attemptId) } : {}),
-      examId: new ObjectId(id),
+      ...(!query.attemptId ? { examId: new ObjectId(id) } : {}),
       userId: new ObjectId(session.userId),
       status: { $in: ["submitted", "auto-submitted", "expired"] },
     },

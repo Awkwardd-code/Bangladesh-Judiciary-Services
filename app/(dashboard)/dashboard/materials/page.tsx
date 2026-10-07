@@ -21,26 +21,52 @@ export default async function MaterialsPage() {
     .find({ userId, status: "approved" })
     .sort({ createdAt: -1 })
     .toArray();
-  const courseIds = enrollments.map((enrollment) => enrollment.courseId);
-  const [courses, materials] =
-    courseIds.length > 0
-      ? await Promise.all([
-          (await coursesCol())
-            .find({
-              _id: { $in: courseIds },
-              status: "published",
-              isPublished: true,
-            })
-            .toArray(),
-          (await materialsCol())
-            .find({ courseId: { $in: courseIds } })
-            .sort({ order: 1, createdAt: 1 })
-            .toArray(),
-        ])
-      : [[], []];
+  const enrolledCourseIds = enrollments.map((enrollment) =>
+    enrollment.courseId.toString()
+  );
+  const materialFilter =
+    enrolledCourseIds.length > 0
+      ? {
+          $or: [
+            { isFreePreview: true },
+            {
+              courseId: {
+                $in: enrollments.map((enrollment) => enrollment.courseId),
+              },
+            },
+          ],
+        }
+      : { isFreePreview: true };
+  const materials = await (await materialsCol())
+    .find(materialFilter)
+    .sort({ order: 1, createdAt: 1 })
+    .toArray();
+  const visibleCourseIds = Array.from(
+    new Map(
+      materials.map((material) => [
+        material.courseId.toString(),
+        material.courseId,
+      ])
+    ).values()
+  );
+  const courses =
+    visibleCourseIds.length > 0
+      ? await (await coursesCol())
+          .find({
+            _id: { $in: visibleCourseIds },
+            status: "published",
+            isPublished: true,
+          })
+          .toArray()
+      : [];
+  const publishedCourseIds = new Set(
+    courses.map((course) => course._id.toString())
+  );
 
   const materialsByCourse = new Map<string, typeof materials>();
-  for (const material of materials) {
+  for (const material of materials.filter((entry) =>
+    publishedCourseIds.has(entry.courseId.toString())
+  )) {
     const key = material.courseId.toString();
     const items = materialsByCourse.get(key) ?? [];
     items.push(material);
@@ -51,7 +77,7 @@ export default async function MaterialsPage() {
     courseId: course._id.toString(),
     courseTitle: course.title,
     courseSlug: course.slug,
-    hasAccess: true,
+    hasAccess: enrolledCourseIds.includes(course._id.toString()),
     materials: (materialsByCourse.get(course._id.toString()) ?? []).map(
       (material) => ({
         id: material._id.toString(),

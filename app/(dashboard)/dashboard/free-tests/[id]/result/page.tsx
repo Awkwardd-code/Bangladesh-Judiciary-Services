@@ -36,17 +36,18 @@ export default async function FreeTestResultPage({
   if (!session) redirect("/login");
 
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  if (!ObjectId.isValid(id)) redirect("/dashboard/results");
   if (query.attemptId && !ObjectId.isValid(query.attemptId)) {
+    redirect("/dashboard/results");
+  }
+  if (!query.attemptId && !ObjectId.isValid(id)) {
     redirect("/dashboard/results");
   }
   await ensureIndexes();
 
-  const testId = new ObjectId(id);
   const attempt = await (await freeTestAttemptsCol()).findOne(
     {
       ...(query.attemptId ? { _id: new ObjectId(query.attemptId) } : {}),
-      freeTestId: testId,
+      ...(!query.attemptId ? { freeTestId: new ObjectId(id) } : {}),
       userId: new ObjectId(session.userId),
       status: { $in: ["submitted", "expired"] },
     },
@@ -54,7 +55,7 @@ export default async function FreeTestResultPage({
   );
   if (!attempt) redirect("/dashboard/results");
 
-  const test = await (await freeTestsCol()).findOne({ _id: testId });
+  const test = await (await freeTestsCol()).findOne({ _id: attempt.freeTestId });
   if (!test) redirect("/dashboard/results");
 
   const legacyRefs = test.questions ?? [];

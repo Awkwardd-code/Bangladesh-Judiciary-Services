@@ -52,13 +52,14 @@ export const POST = withGuard(
         });
       }
 
+      if (attempt.currentPhase !== "preliminary") {
+        return fail("Only a preliminary phase can transition to written.", 400);
+      }
+
       const hasWrittenAnswers = attempt.answers.some(
         (answer) => answer.sourceCollection === "written_questions"
       );
-      const writtenDuration =
-        attempt.writtenDurationMinutes ??
-        attempt.preliminaryDurationMinutes ??
-        0;
+      const writtenDuration = attempt.writtenDurationMinutes ?? 0;
 
       if (!hasWrittenAnswers || writtenDuration <= 0) {
         return fail("This attempt has no written phase.", 400);
@@ -73,7 +74,7 @@ export const POST = withGuard(
           _id: attempt._id,
           activeLock: true,
           status: "in-progress",
-          currentPhase: { $ne: "written" },
+          currentPhase: "preliminary",
         },
         {
           $set: {

@@ -245,6 +245,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   const [submitted, setSubmitted] = useState(false);
   const [starting, setStarting] = useState(false);
   const [phaseTransitioning, setPhaseTransitioning] = useState(false);
+  const [phaseOverlayVisible, setPhaseOverlayVisible] = useState(false);
   const [startDialogOpen, setStartDialogOpen] = useState(!attempt);
   const [readRules, setReadRules] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
@@ -258,6 +259,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   const transitionHandlerRef = useRef<(fromTimer?: boolean) => void>(() => {});
   const lastAutoSubmitRef = useRef(0);
   const transitionAttemptedRef = useRef(false);
+  const phaseOverlayTimerRef = useRef<number | null>(null);
 
   const hasWritten =
     Boolean(examDetails.hasWrittenQuestions) ||
@@ -408,7 +410,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     setPhaseTransitioning(true);
 
     try {
-      const response = await fetch(`/api/free-tests/${exam.id}/transition`, {
+      const response = await fetch(`/api/free-tests/${exam.id}/phase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ attemptId }),
@@ -428,6 +430,14 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
 
       setCurrentPhase("written");
       setExpiresAt(nextExpiresAt);
+      setPhaseOverlayVisible(true);
+      if (phaseOverlayTimerRef.current !== null) {
+        window.clearTimeout(phaseOverlayTimerRef.current);
+      }
+      phaseOverlayTimerRef.current = window.setTimeout(() => {
+        setPhaseOverlayVisible(false);
+        phaseOverlayTimerRef.current = null;
+      }, 2000);
       setTimeLeftSeconds(
         Math.max(
           0,
@@ -446,12 +456,24 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
           : "Unable to start the written phase.",
         "error"
       );
+      if (fromTimer) {
+        submitHandlerRef.current("time-expired");
+      }
     } finally {
       setPhaseTransitioning(false);
     }
   }
 
   transitionHandlerRef.current = transitionToWrittenPhase;
+
+  useEffect(
+    () => () => {
+      if (phaseOverlayTimerRef.current !== null) {
+        window.clearTimeout(phaseOverlayTimerRef.current);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!hasActiveAttempt || !expiresAt) {
@@ -899,7 +921,9 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
             {examDetails.title}
             {hasPhases ? (
               <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium capitalize">
-                {currentPhase} phase
+                {currentPhase === "preliminary"
+                  ? "Phase 1 of 2 · Preliminary"
+                  : "Phase 2 of 2 · Written"}
               </span>
             ) : null}
           </p>
@@ -931,7 +955,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
               >
                 {phaseTransitioning
                   ? "Starting written phase..."
-                  : "Start written phase"}
+                  : "Submit preliminary phase"}
               </button>
             ) : (
               <button
@@ -946,7 +970,11 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
                     Submitting
                   </>
                 ) : (
-                  "Submit"
+                  hasPhases && isWrittenPhase
+                    ? "Submit test"
+                    : exam.kind === "free"
+                      ? "Submit test"
+                      : "Submit exam"
                 )}
               </button>
             )}
@@ -1055,6 +1083,19 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
               </button>
             </div>
           </Card>
+        </div>
+      ) : null}
+
+      {phaseOverlayVisible ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary-dark/90 p-6 text-center text-cream">
+          <div>
+            <p className="font-heading text-2xl font-semibold">
+              Preliminary phase complete.
+            </p>
+            <p className="mt-2 text-base">
+              Starting written phase…
+            </p>
+          </div>
         </div>
       ) : null}
     </div>

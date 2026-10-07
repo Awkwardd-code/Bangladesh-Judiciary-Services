@@ -25,7 +25,7 @@ import type {
 } from "@/lib/free-test-serializer";
 import { plural } from "@/lib/pluralize";
 
-type QuestionKindFilter = "all" | "preliminary" | "written";
+type QuestionKindFilter = "preliminary" | "written";
 
 type FreeTestEditorProps = {
   freeTest?: SerializedFreeTest | null;
@@ -181,14 +181,20 @@ export function FreeTestEditor({
   );
   const phasesReady =
     selected.length > 0 &&
-    (selectedPreliminaryCount === 0 ||
-      (Number(form.preliminaryDurationMinutes) > 0 &&
+    Number(form.preliminaryDurationMinutes) >= 0 &&
+    Number(form.writtenDurationMinutes) >= 0 &&
+    (Number(form.preliminaryDurationMinutes) === 0
+      ? selectedPreliminaryCount === 0
+      : selectedPreliminaryCount > 0 &&
         (Number(form.questionsPerAttempt) === 0 ||
-          Number(form.questionsPerAttempt) <= selectedPreliminaryCount))) &&
-    (selectedWrittenCount === 0 ||
-      (Number(form.writtenDurationMinutes) > 0 &&
+          Number(form.questionsPerAttempt) <= selectedPreliminaryCount)) &&
+    (Number(form.writtenDurationMinutes) === 0
+      ? selectedWrittenCount === 0
+      : selectedWrittenCount > 0 &&
         (Number(form.writtenQuestionsPerAttempt) === 0 ||
-          Number(form.writtenQuestionsPerAttempt) <= selectedWrittenCount)));
+          Number(form.writtenQuestionsPerAttempt) <= selectedWrittenCount)) &&
+    (Number(form.preliminaryDurationMinutes) > 0 ||
+      Number(form.writtenDurationMinutes) > 0);
   const preliminaryServing = getServingStatus(
     Number(form.questionsPerAttempt),
     selectedPreliminaryCount
@@ -201,7 +207,8 @@ export function FreeTestEditor({
   const [bankLoading, setBankLoading] = useState(true);
   const [bankError, setBankError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [kindFilter, setKindFilter] = useState<QuestionKindFilter>("all");
+  const [kindFilter, setKindFilter] =
+    useState<QuestionKindFilter>("preliminary");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -229,8 +236,6 @@ export function FreeTestEditor({
     if (!Number.isInteger(perAttempt) || perAttempt < 0 || perAttempt > 500) {
       nextErrors.questionsPerAttempt =
         "Questions per attempt must be between 0 and 500.";
-    } else if (selected.length > 0 && perAttempt > selected.length) {
-      nextErrors.questionsPerAttempt = `Questions per attempt cannot exceed the ${selected.length}-question pool.`;
     } else if (
       selectedPreliminaryCount > 0 &&
       perAttempt > selectedPreliminaryCount
@@ -261,13 +266,19 @@ export function FreeTestEditor({
     form.title,
     form.writtenQuestionsPerAttempt,
     selectedPreliminaryCount,
-    selected.length,
     selectedWrittenCount,
   ]);
 
   const saveDisabled =
     saving;
   const readinessIssues = [
+    Number(form.preliminaryDurationMinutes) > 0 &&
+    selectedPreliminaryCount === 0
+      ? "Select preliminary questions or remove the preliminary duration."
+      : "",
+    Number(form.writtenDurationMinutes) > 0 && selectedWrittenCount === 0
+      ? "Select written questions or remove the written duration."
+      : "",
     selectedPreliminaryCount > 0 &&
     Number(form.preliminaryDurationMinutes) <= 0
       ? "Set a preliminary duration."
@@ -282,6 +293,10 @@ export function FreeTestEditor({
     selectedWrittenCount > 0 &&
     Number(form.writtenQuestionsPerAttempt) > selectedWrittenCount
       ? "Reduce written questions per attempt or add more questions."
+      : "",
+    Number(form.preliminaryDurationMinutes) === 0 &&
+    Number(form.writtenDurationMinutes) === 0
+      ? "Set at least one phase duration."
       : "",
     selected.length === 0 ? "Add at least one question." : "",
   ].filter(Boolean);
@@ -344,11 +359,18 @@ export function FreeTestEditor({
     return Array.from(
       new Set(
         bank
+          .filter(
+            (question) =>
+              (kindFilter === "preliminary" &&
+                question.sourceCollection === "preliminary_questions") ||
+              (kindFilter === "written" &&
+                question.sourceCollection === "written_questions")
+          )
           .map((question) => question.subject)
           .filter((subject) => Boolean(subject))
       )
     ).sort((left, right) => left.localeCompare(right));
-  }, [bank]);
+  }, [bank, kindFilter]);
 
   const filteredBank = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -359,7 +381,6 @@ export function FreeTestEditor({
         question.questionText.toLowerCase().includes(query) ||
         question.subject.toLowerCase().includes(query);
       const matchesKind =
-        kindFilter === "all" ||
         (kindFilter === "preliminary" &&
           question.sourceCollection === "preliminary_questions") ||
         (kindFilter === "written" &&
@@ -375,6 +396,23 @@ export function FreeTestEditor({
     (sum, question) => sum + Number(question.marks ?? 0),
     0
   );
+  const selectedInTab = selected.filter(
+    (question) =>
+      question.sourceCollection ===
+      (kindFilter === "preliminary"
+        ? "preliminary_questions"
+        : "written_questions")
+  );
+  const selectedTabMarks = selectedInTab.reduce(
+    (sum, question) => sum + Number(question.marks ?? 0),
+    0
+  );
+  const selectedTabTarget =
+    kindFilter === "preliminary"
+      ? Number(form.questionsPerAttempt)
+      : Number(form.writtenQuestionsPerAttempt);
+  const selectedTabRequired =
+    selectedTabTarget > 0 ? selectedTabTarget : selectedInTab.length;
 
   function updateField<Key extends keyof FreeTestForm>(
     field: Key,
@@ -413,17 +451,37 @@ export function FreeTestEditor({
 
   function moveQuestion(index: number, direction: "up" | "down") {
     setSelected((current) => {
-      const next = [...current];
+      const sourceCollection =
+        kindFilter === "preliminary"
+          ? "preliminary_questions"
+          : "written_questions";
+      const phaseQuestions = current.filter(
+        (question) => question.sourceCollection === sourceCollection
+      );
       const targetIndex = direction === "up" ? index - 1 : index + 1;
 
-      if (targetIndex < 0 || targetIndex >= next.length) {
+      if (targetIndex < 0 || targetIndex >= phaseQuestions.length) {
         return current;
       }
 
-      const item = next[index];
-      next[index] = next[targetIndex];
-      next[targetIndex] = item;
-      return next;
+      const item = phaseQuestions[index];
+      phaseQuestions[index] = phaseQuestions[targetIndex];
+      phaseQuestions[targetIndex] = item;
+      const preliminaryQuestions =
+        sourceCollection === "preliminary_questions"
+          ? phaseQuestions
+          : current.filter(
+              (question) =>
+                question.sourceCollection === "preliminary_questions"
+            );
+      const writtenQuestions =
+        sourceCollection === "written_questions"
+          ? phaseQuestions
+          : current.filter(
+              (question) => question.sourceCollection === "written_questions"
+            );
+
+      return [...preliminaryQuestions, ...writtenQuestions];
     });
   }
 
@@ -489,13 +547,6 @@ export function FreeTestEditor({
       (question) => question.sourceCollection === "written_questions"
     ).length;
 
-    if (perAttempt > 0 && selected.length > 0 && perAttempt > selected.length) {
-      setError(
-        `Questions per attempt (${perAttempt}) cannot exceed total questions (${selected.length}).`
-      );
-      return;
-    }
-
     if (
       perAttempt > 0 &&
       selectedPreliminary > 0 &&
@@ -520,12 +571,12 @@ export function FreeTestEditor({
 
     if (
       targetStatus === "published" &&
-      ((selectedPreliminary > 0 &&
-        (preliminaryDuration <= 0 ||
+      ((preliminaryDuration > 0 &&
+        (selectedPreliminary === 0 ||
           (perAttempt > 0 && selectedPreliminary < perAttempt))) ||
-        (selectedWritten > 0 &&
-          (writtenDuration <= 0 ||
-            (writtenPerAttempt > 0 && selectedWritten < writtenPerAttempt))) ||
+        (writtenDuration > 0 && selectedWritten === 0) ||
+        (selectedPreliminary > 0 && preliminaryDuration <= 0) ||
+        (selectedWritten > 0 && writtenDuration <= 0) ||
         selected.length === 0)
     ) {
       setError(
@@ -680,10 +731,11 @@ export function FreeTestEditor({
   return (
     <div className="space-y-6">
       <header className="sticky top-16 z-20 border-b border-border bg-background/95 backdrop-blur">
-        {Number(form.questionsPerAttempt) === 1 && selected.length > 1 ? (
+        {Number(form.questionsPerAttempt) === 1 &&
+        selectedPreliminaryCount > 1 ? (
           <div className="mx-2 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
             Heads up: your test will serve only 1 question per attempt. Set to 0
-            to serve all {selected.length}.
+            to serve all {selectedPreliminaryCount}.
           </div>
         ) : null}
         <div className="flex flex-col gap-4 px-2 py-4 lg:flex-row lg:items-center lg:justify-between">
@@ -695,8 +747,7 @@ export function FreeTestEditor({
               {freeTest?.title || "New free test"}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              {plural(selected.length, "question")} ·{" "}
-              {plural(totalMarks, "mark")} total
+              Prelim: {selectedPreliminaryCount} · Written: {selectedWrittenCount}
             </p>
           </div>
 
@@ -803,44 +854,6 @@ export function FreeTestEditor({
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-foreground">
-                Preliminary duration (minutes)
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={600}
-                value={form.preliminaryDurationMinutes}
-                onChange={(event) =>
-                  updateField(
-                    "preliminaryDurationMinutes",
-                    Number(event.target.value)
-                  )
-                }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-foreground">
-                Written duration (minutes)
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={600}
-                value={form.writtenDurationMinutes}
-                onChange={(event) =>
-                  updateField(
-                    "writtenDurationMinutes",
-                    Number(event.target.value)
-                  )
-                }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-foreground">
                 Pass mark (%)
               </span>
               <input
@@ -853,72 +866,6 @@ export function FreeTestEditor({
                 }
                 className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-foreground">
-                Written questions per attempt
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={500}
-                step={1}
-                value={form.writtenQuestionsPerAttempt}
-                onChange={(event) =>
-                  updateField(
-                    "writtenQuestionsPerAttempt",
-                    Number(event.target.value)
-                  )
-                }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
-              />
-              <span className="mt-2 block text-xs text-muted">
-                0 means serve all available written questions. 1 means serve
-                exactly one. Recommended: leave as 0 unless you want a shorter
-                exam.
-              </span>
-              {fieldErrors.writtenQuestionsPerAttempt ? (
-                <span className="mt-2 block text-xs text-red-600">
-                  {fieldErrors.writtenQuestionsPerAttempt}
-                </span>
-              ) : null}
-              <span
-                className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs ${writtenServing.tone}`}
-              >
-                {writtenServing.message}
-              </span>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-foreground">
-                Questions per attempt
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={500}
-                step={1}
-                value={form.questionsPerAttempt}
-                onChange={(event) =>
-                  updateField("questionsPerAttempt", Number(event.target.value))
-                }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
-              />
-              <span className="mt-2 block text-xs text-muted">
-                0 means serve all available questions. 1 means serve exactly
-                one. Recommended: leave as 0 unless you want a shorter exam.
-              </span>
-              {fieldErrors.questionsPerAttempt ? (
-                <span className="mt-2 block text-xs text-red-600">
-                  {fieldErrors.questionsPerAttempt}
-                </span>
-              ) : null}
-              <span
-                className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs ${preliminaryServing.tone}`}
-              >
-                {preliminaryServing.message}
-              </span>
             </label>
 
             <label className="block">
@@ -979,6 +926,163 @@ export function FreeTestEditor({
             </div>
           </div>
 
+          <div
+            role="tablist"
+            aria-label="Question type"
+            className="mb-5 flex gap-2 border-b border-border"
+          >
+            {(["preliminary", "written"] as const).map((kind) => {
+              const count =
+                kind === "preliminary"
+                  ? selectedPreliminaryCount
+                  : selectedWrittenCount;
+              const active = kindFilter === kind;
+
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setKindFilter(kind);
+                    setSubjectFilter("all");
+                  }}
+                  className={`-mb-px cursor-pointer border-b-2 px-4 py-3 text-sm font-medium ${
+                    active
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted hover:text-foreground"
+                  }`}
+                >
+                  {kind === "preliminary" ? "Preliminary" : "Written"}
+                  <span className="ml-2 rounded-full bg-primary/5 px-2 py-0.5 text-xs">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mb-5">
+            <h3 className="font-heading text-base font-semibold text-primary">
+              {kindFilter === "preliminary"
+                ? "Preliminary questions"
+                : "Written questions"}
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              {kindFilter === "preliminary"
+                ? "MCQ questions served first. Tab-change auto-submit is ON for this phase."
+                : "Essay questions served second. Each requires a PDF upload."}
+            </p>
+          </div>
+
+          <div className="mb-5 grid gap-4 rounded-lg border border-border bg-background p-4 md:grid-cols-2">
+            {kindFilter === "preliminary" ? (
+              <>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-foreground">
+                    Preliminary questions per attempt (0 = serve all)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={1}
+                    value={form.questionsPerAttempt}
+                    onChange={(event) =>
+                      updateField(
+                        "questionsPerAttempt",
+                        Number(event.target.value)
+                      )
+                    }
+                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                  />
+                  {fieldErrors.questionsPerAttempt ? (
+                    <span className="mt-2 block text-xs text-red-600">
+                      {fieldErrors.questionsPerAttempt}
+                    </span>
+                  ) : null}
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-foreground">
+                    Preliminary duration (minutes)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={600}
+                    value={form.preliminaryDurationMinutes}
+                    onChange={(event) =>
+                      updateField(
+                        "preliminaryDurationMinutes",
+                        Number(event.target.value)
+                      )
+                    }
+                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-foreground">
+                    Written questions per attempt (0 = serve all)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={1}
+                    value={form.writtenQuestionsPerAttempt}
+                    onChange={(event) =>
+                      updateField(
+                        "writtenQuestionsPerAttempt",
+                        Number(event.target.value)
+                      )
+                    }
+                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                  />
+                  {fieldErrors.writtenQuestionsPerAttempt ? (
+                    <span className="mt-2 block text-xs text-red-600">
+                      {fieldErrors.writtenQuestionsPerAttempt}
+                    </span>
+                  ) : null}
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-foreground">
+                    Written duration (minutes)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={600}
+                    value={form.writtenDurationMinutes}
+                    onChange={(event) =>
+                      updateField(
+                        "writtenDurationMinutes",
+                        Number(event.target.value)
+                      )
+                    }
+                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              </>
+            )}
+            <div className="flex items-center md:col-span-2">
+              <span
+                className={`inline-flex rounded-full border px-3 py-1.5 text-xs ${
+                  kindFilter === "preliminary"
+                    ? preliminaryServing.tone
+                    : writtenServing.tone
+                }`}
+              >
+                {kindFilter === "preliminary"
+                  ? preliminaryServing.message
+                  : writtenServing.message}
+              </span>
+            </div>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-xl border border-border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -987,7 +1091,7 @@ export function FreeTestEditor({
                     Available
                   </p>
                   <p className="mt-0.5 text-xs text-muted">
-                    {bank.length} in bank
+                    {filteredBank.length} available
                   </p>
                 </div>
                 <button
@@ -1033,18 +1137,6 @@ export function FreeTestEditor({
               </div>
 
               <div className="mb-3 flex gap-2">
-                <select
-                  value={kindFilter}
-                  onChange={(event) =>
-                    setKindFilter(event.target.value as QuestionKindFilter)
-                  }
-                  className="h-10 flex-1 rounded-md border border-border bg-white px-2 text-sm text-foreground outline-none focus:border-primary"
-                >
-                  <option value="all">All</option>
-                  <option value="preliminary">Preliminary</option>
-                  <option value="written">Written</option>
-                </select>
-
                 <select
                   value={subjectFilter}
                   onChange={(event) => setSubjectFilter(event.target.value)}
@@ -1144,31 +1236,41 @@ export function FreeTestEditor({
             <div className="rounded-xl border border-border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-primary">Selected</p>
+                  <p className="text-sm font-semibold text-primary">
+                    Selected {kindFilter}
+                  </p>
                   <p className="mt-0.5 text-xs text-muted">
-                    {selected.length} / {requiredQuestions}
+                    {selectedInTab.length} selected · {selectedTabMarks} marks
                   </p>
                 </div>
                 <div className="min-w-24 text-right">
-                  <p className="text-xs text-muted">{totalMarks} marks</p>
+                  <p className="text-xs text-muted">
+                    {kindFilter === "preliminary"
+                      ? preliminaryServing.message
+                      : writtenServing.message}
+                  </p>
                   <div
                     role="progressbar"
-                    aria-label="Selected question target"
+                    aria-label={`${kindFilter} question target`}
                     aria-valuemin={0}
-                    aria-valuemax={requiredQuestions}
-                    aria-valuenow={Math.min(selected.length, requiredQuestions)}
+                    aria-valuemax={selectedTabRequired}
+                    aria-valuenow={Math.min(
+                      selectedInTab.length,
+                      selectedTabRequired
+                    )}
                     className="mt-2 h-1.5 overflow-hidden rounded-full bg-primary/10"
                   >
                     <div
                       className="h-full rounded-full bg-accent"
                       style={{
                         width: `${
-                          requiredQuestions > 0
+                          selectedTabRequired > 0
                             ? Math.min(
                                 100,
-                                (selected.length / requiredQuestions) * 100
+                                (selectedInTab.length / selectedTabRequired) *
+                                  100
                               )
-                            : 100
+                            : 0
                         }%`,
                       }}
                     />
@@ -1176,7 +1278,7 @@ export function FreeTestEditor({
                 </div>
               </div>
 
-              {selected.length === 0 ? (
+              {selectedInTab.length === 0 ? (
                 <div className="flex min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-white p-6 text-center">
                   <HelpCircle className="mb-3 text-muted" size={20} />
                   <p className="text-sm font-medium text-primary">
@@ -1188,7 +1290,7 @@ export function FreeTestEditor({
                 </div>
               ) : (
                 <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
-                  {selected.map((question, index) => (
+                  {selectedInTab.map((question, index) => (
                     <div
                       key={`${question.sourceCollection}-${question.id}`}
                       className="flex items-start gap-3 rounded-lg border border-border bg-white p-3"
@@ -1225,7 +1327,7 @@ export function FreeTestEditor({
                         </button>
                         <button
                           type="button"
-                          disabled={index === selected.length - 1}
+                          disabled={index === selectedInTab.length - 1}
                           onClick={() => moveQuestion(index, "down")}
                           className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-border bg-card text-primary disabled:cursor-not-allowed disabled:opacity-40"
                         >
@@ -1251,27 +1353,65 @@ export function FreeTestEditor({
             </div>
           </div>
 
-          <div className="sticky bottom-3 z-20 mt-6 flex items-center justify-between gap-3 rounded-lg border border-border bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-            <div className="flex items-center gap-2 text-sm text-primary">
-              <FileText size={16} />
-              <span>
-                {plural(selected.length, "question")} selected ·{" "}
-                {plural(totalMarks, "mark")} total
-              </span>
+          <div className="sticky bottom-3 z-20 mt-6 flex flex-col gap-4 rounded-lg border border-border bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-2 text-sm font-medium text-primary">
+                <FileText size={16} />
+                Prelim: {selectedPreliminaryCount} · Written:{" "}
+                {selectedWrittenCount} · {plural(totalMarks, "mark")} total
+              </p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <PhaseProgress
+                  label="Preliminary"
+                  count={selectedPreliminaryCount}
+                  target={Number(form.questionsPerAttempt)}
+                />
+                <PhaseProgress
+                  label="Written"
+                  count={selectedWrittenCount}
+                  target={Number(form.writtenQuestionsPerAttempt)}
+                />
+              </div>
             </div>
 
-            {!phasesReady ? (
-              <span className="text-xs font-medium text-amber-700">
-                Set a duration and select enough questions for each selected
-                phase.
-              </span>
-            ) : (
-              <span className="text-xs font-medium text-emerald-700">
-                Ready to publish.
-              </span>
-            )}
+            <span
+              className={`text-xs font-medium ${
+                phasesReady ? "text-emerald-700" : "text-amber-700"
+              }`}
+            >
+              {phasesReady ? "Ready to publish." : readinessIssues.join(" ")}
+            </span>
           </div>
         </section>
+      </div>
+    </div>
+  );
+}
+
+function PhaseProgress({
+  label,
+  count,
+  target,
+}: {
+  label: string;
+  count: number;
+  target: number;
+}) {
+  const effectiveTarget = target > 0 ? target : count;
+  const progress =
+    effectiveTarget > 0 ? Math.min(100, (count / effectiveTarget) * 100) : 0;
+
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-[11px] text-muted">
+        <span>{label}</span>
+        <span>{count}/{effectiveTarget}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-primary/10">
+        <div
+          className="h-full rounded-full bg-accent"
+          style={{ width: `${progress}%` }}
+        />
       </div>
     </div>
   );

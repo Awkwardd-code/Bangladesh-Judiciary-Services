@@ -158,6 +158,10 @@ export async function PATCH(
     const requestedQuestionsPerAttempt = parsed.data.questionsPerAttempt;
     const requestedWrittenQuestionsPerAttempt =
       parsed.data.writtenQuestionsPerAttempt;
+    const currentPreliminaryQuestions = (freeTest.questions ?? []).filter(
+      (reference) =>
+        reference.sourceCollection === "preliminary_questions"
+    ).length;
     const currentWrittenQuestions = (freeTest.questions ?? []).filter(
       (reference) => reference.sourceCollection === "written_questions"
     ).length;
@@ -165,11 +169,10 @@ export async function PATCH(
     if (
       requestedQuestionsPerAttempt !== undefined &&
       requestedQuestionsPerAttempt > 0 &&
-      freeTest.totalQuestions > 0 &&
-      requestedQuestionsPerAttempt > freeTest.totalQuestions
+      requestedQuestionsPerAttempt > currentPreliminaryQuestions
     ) {
       return fail(
-        `Questions per attempt (${requestedQuestionsPerAttempt}) cannot exceed total questions (${freeTest.totalQuestions}).`,
+        `Questions per attempt (${requestedQuestionsPerAttempt}) cannot exceed the preliminary pool (${currentPreliminaryQuestions}).`,
         400
       );
     }
@@ -230,9 +233,29 @@ export async function PATCH(
           0;
         const usesPreliminary = preliminaryCount > 0;
         const usesWritten = writtenCount > 0;
+        const preliminaryDurationConfigured =
+          parsed.data.preliminaryDurationMinutes ??
+          freeTest.preliminaryDurationMinutes;
+        const writtenDurationConfigured =
+          parsed.data.writtenDurationMinutes ??
+          freeTest.writtenDurationMinutes;
 
         if (!usesPreliminary && !usesWritten) {
           return fail("Select at least one question before publishing.", 400);
+        }
+
+        if (preliminaryDurationConfigured && !usesPreliminary) {
+          return fail(
+            "Select at least one preliminary question for its configured duration.",
+            400
+          );
+        }
+
+        if (writtenDurationConfigured && !usesWritten) {
+          return fail(
+            "Select at least one written question for its configured duration.",
+            400
+          );
         }
 
         if (usesPreliminary && preliminaryDuration <= 0) {

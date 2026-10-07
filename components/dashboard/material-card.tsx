@@ -102,7 +102,7 @@ export function MaterialCard({
             className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md border border-border px-3 text-sm text-muted opacity-70"
           >
             <Lock size={16} />
-            Locked
+            Locked · Enroll to access
           </button>
         ) : material.kind === "link" ? (
           <button

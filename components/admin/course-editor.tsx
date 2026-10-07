@@ -100,7 +100,11 @@ export function CourseEditor({
     const next = payload?.data?.course;
 
     if (next?.id) {
-      router.push(`/admin/courses/${next.id}`);
+      if (next.status === "published" && next.isPublished && next.slug) {
+        router.push(`/courses/${next.slug}`);
+      } else {
+        router.push(`/admin/courses/${next.id}`);
+      }
     }
   };
 

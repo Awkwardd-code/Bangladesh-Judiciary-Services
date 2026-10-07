@@ -70,6 +70,87 @@ async function resolveQuestion(
   };
 }
 
+async function resolveQuestionBatch(
+  references: FreeTestQuestionRef[]
+): Promise<ResolvedAttemptQuestion[]> {
+  const preliminaryRefs = references.filter(
+    (reference) => reference.sourceCollection === "preliminary_questions"
+  );
+  const writtenRefs = references.filter(
+    (reference) => reference.sourceCollection === "written_questions"
+  );
+  const [preliminaryQuestions, writtenQuestions] = await Promise.all([
+    preliminaryRefs.length > 0
+      ? (await preliminaryQuestionsCol())
+          .find({
+            _id: {
+              $in: preliminaryRefs.map((reference) => reference.questionId),
+            },
+          })
+          .toArray()
+      : [],
+    writtenRefs.length > 0
+      ? (await writtenQuestionsCol())
+          .find({
+            _id: {
+              $in: writtenRefs.map((reference) => reference.questionId),
+            },
+          })
+          .toArray()
+      : [],
+  ]);
+  const preliminaryById = new Map(
+    preliminaryQuestions.map((question) => [question._id.toString(), question])
+  );
+  const writtenById = new Map(
+    writtenQuestions.map((question) => [question._id.toString(), question])
+  );
+  const resolved: ResolvedAttemptQuestion[] = [];
+
+  for (const reference of references) {
+    const isPreliminary =
+      reference.sourceCollection === "preliminary_questions";
+    const question = isPreliminary
+      ? preliminaryById.get(reference.questionId.toString())
+      : writtenById.get(reference.questionId.toString());
+
+    if (!question) {
+      continue;
+    }
+
+    if (isPreliminary) {
+      if (!("correctOptionIndex" in question)) {
+        continue;
+      }
+
+      resolved.push({
+        _id: question._id,
+        questionText: question.questionText,
+        options: question.options,
+        marks: reference.marks,
+        subject: question.subject ?? "General",
+        sourceCollection: "preliminary_questions",
+      });
+      continue;
+    }
+
+    if (!("maxMarks" in question)) {
+      continue;
+    }
+
+    resolved.push({
+      _id: question._id,
+      questionText: question.questionText,
+      marks: reference.marks,
+      maxMarks: question.maxMarks,
+      subject: question.subject ?? "General",
+      sourceCollection: "written_questions",
+    });
+  }
+
+  return resolved;
+}
+
 async function loadAttemptQuestions(attempt: FreeTestAttempt) {
   const questions = await Promise.all(
     attempt.answers.map(async (answer) => {
@@ -217,13 +298,66 @@ export const POST = withGuard(
       const active = await getActiveExam(userId);
 
       if (active?.kind === "free" && active.examId.equals(freeTestId)) {
-        const existingAttempt = await attempts.findOne({
+        let existingAttempt = await attempts.findOne({
           _id: active.attemptId,
           userId,
           freeTestId,
           activeLock: true,
           status: "in-progress",
         });
+
+        if (
+          existingAttempt &&
+          !existingAttempt.currentPhase &&
+          existingAttempt.answers.length > 0
+        ) {
+          const hasPreliminaryAnswers = existingAttempt.answers.some(
+            (answer) =>
+              answer.sourceCollection === "preliminary_questions"
+          );
+          const inferredPhase =
+            hasPreliminaryAnswers ? "preliminary" : "written";
+          const phaseStartedAt = existingAttempt.startedAt;
+          const migrationAt = new Date();
+
+          const migrated = await attempts.updateOne(
+            {
+              _id: existingAttempt._id,
+              userId,
+              activeLock: true,
+              status: "in-progress",
+              currentPhase: { $exists: false },
+            },
+            {
+              $set: {
+                currentPhase: inferredPhase,
+                phaseStartedAt,
+                ...(inferredPhase === "preliminary"
+                  ? { preliminaryEndsAt: existingAttempt.expiresAt }
+                  : { writtenEndsAt: existingAttempt.expiresAt }),
+                updatedAt: migrationAt,
+              },
+            }
+          );
+
+          if (migrated.modifiedCount === 1) {
+            existingAttempt.currentPhase = inferredPhase;
+            existingAttempt.phaseStartedAt = phaseStartedAt;
+            if (inferredPhase === "preliminary") {
+              existingAttempt.preliminaryEndsAt = existingAttempt.expiresAt;
+            } else {
+              existingAttempt.writtenEndsAt = existingAttempt.expiresAt;
+            }
+          } else {
+            existingAttempt = await attempts.findOne({
+              _id: existingAttempt._id,
+              userId,
+              freeTestId,
+              activeLock: true,
+              status: "in-progress",
+            });
+          }
+        }
 
         const pendingWrittenPhase =
           existingAttempt?.currentPhase === "preliminary" &&
@@ -279,11 +413,7 @@ export const POST = withGuard(
       }
 
       const refs = freeTest.questions ?? [];
-      const resolvedQuestions = (
-        await Promise.all(refs.map(resolveQuestion))
-      ).filter(
-        (question): question is ResolvedAttemptQuestion => question !== null
-      );
+      const resolvedQuestions = await resolveQuestionBatch(refs);
 
       const preliminaryPool = resolvedQuestions.filter(
         (question) => question.sourceCollection === "preliminary_questions"
@@ -296,7 +426,6 @@ export const POST = withGuard(
         return fail("This free test has no available questions.", 400);
       }
 
-      const bothPhases = preliminaryPool.length > 0 && writtenPool.length > 0;
       const legacyDuration = freeTest.durationMinutes ?? 0;
       const hasExplicitPhaseDurations =
         typeof freeTest.preliminaryDurationMinutes === "number" ||
@@ -328,23 +457,17 @@ export const POST = withGuard(
                 : writtenPool.length
             )
           : [];
-      const currentPhase: "preliminary" | "written" | undefined =
-        hasExplicitPhaseDurations && bothPhases
-          ? "preliminary"
-          : selectedPreliminary.length > 0 && selectedWritten.length === 0
-            ? "preliminary"
-            : selectedPreliminary.length === 0
-              ? "written"
-              : undefined;
-      const phaseDuration = currentPhase
-        ? currentPhase === "preliminary"
+      const currentPhase: "preliminary" | "written" =
+        selectedPreliminary.length > 0 ? "preliminary" : "written";
+      const phaseDuration =
+        currentPhase === "preliminary"
           ? preliminaryDuration
-          : writtenDuration
-        : legacyDuration;
+          : writtenDuration;
 
       if (
         phaseDuration <= 0 ||
-        (hasExplicitPhaseDurations && bothPhases && writtenDuration <= 0)
+        (selectedPreliminary.length > 0 && preliminaryDuration <= 0) ||
+        (selectedWritten.length > 0 && writtenDuration <= 0)
       ) {
         return fail("This free test has an invalid phase duration.", 400);
       }
@@ -354,6 +477,8 @@ export const POST = withGuard(
       const expiresAt = new Date(startedAt.getTime() + phaseDuration * 60_000);
       const preliminaryEndsAt =
         currentPhase === "preliminary" ? expiresAt : undefined;
+      const writtenEndsAt =
+        currentPhase === "written" ? expiresAt : undefined;
       const attempt: FreeTestAttempt = {
         _id: new ObjectId(),
         freeTestId,
@@ -365,6 +490,7 @@ export const POST = withGuard(
         writtenDurationMinutes: writtenDuration,
         passMarkPercent: freeTest.passMarkPercent,
         preliminaryEndsAt,
+        writtenEndsAt,
         expiresAt,
         shuffledOrder: shuffleArray(
           Array.from({ length: selected.length }, (_, index) => index)

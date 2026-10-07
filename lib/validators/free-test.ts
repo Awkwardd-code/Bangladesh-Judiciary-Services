@@ -56,4 +56,17 @@ export const freeTestQuestionsSchema = z.object({
     .max(200),
 });
 
-export const freeTestUpdateSchema = z.object(freeTestFields).partial();
+export const freeTestUpdateSchema = z
+  .object({
+    ...freeTestFields,
+    preliminaryDurationMinutes:
+      freeTestFields.preliminaryDurationMinutes.removeDefault(),
+    writtenDurationMinutes:
+      freeTestFields.writtenDurationMinutes.removeDefault(),
+    writtenQuestionsPerAttempt:
+      freeTestFields.writtenQuestionsPerAttempt.removeDefault(),
+    passMarkPercent: freeTestFields.passMarkPercent.removeDefault(),
+    questionsPerAttempt: freeTestFields.questionsPerAttempt.removeDefault(),
+    order: freeTestFields.order.removeDefault(),
+  })
+  .partial();

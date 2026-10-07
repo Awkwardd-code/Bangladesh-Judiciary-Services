@@ -22,7 +22,6 @@ type FreeTestListItem = {
   writtenQuestionsPerAttempt: number;
   preliminaryQuestionCount: number;
   writtenQuestionCount: number;
-  usesPhases: boolean;
   passMarkPercent: number;
   questionsPerAttempt: number;
   totalQuestions: number;
@@ -239,6 +238,21 @@ export function FreeTestsStudentClient({
                       <FileText className="h-3.5 w-3.5" />
                       {plural(freeTest.totalQuestions, "question")} in pool
                     </span>
+                    {freeTest.preliminaryQuestionCount > 0 ||
+                    freeTest.writtenQuestionCount > 0 ? (
+                      <span className="inline-flex items-center rounded-full border border-border bg-muted/5 px-2 py-1">
+                        {freeTest.preliminaryQuestionCount > 0
+                          ? `${freeTest.preliminaryQuestionCount} preliminary`
+                          : null}
+                        {freeTest.preliminaryQuestionCount > 0 &&
+                        freeTest.writtenQuestionCount > 0
+                          ? " · "
+                          : null}
+                        {freeTest.writtenQuestionCount > 0
+                          ? `${freeTest.writtenQuestionCount} written`
+                          : null}
+                      </span>
+                    ) : null}
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/5 px-2 py-1">
                       <Clock3 className="h-3.5 w-3.5" />
                       {plural(effectiveServed, "question")} per attempt
@@ -248,10 +262,17 @@ export function FreeTestsStudentClient({
                     </span>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/5 px-2 py-1">
                       <Clock3 className="h-3.5 w-3.5" />
-                      {freeTest.usesPhases
-                        ? `Preliminary ${freeTest.preliminaryDurationMinutes} min · Written ${freeTest.writtenDurationMinutes} min`
-                        : `${freeTest.durationMinutes} min`}
+                      {freeTest.preliminaryQuestionCount > 0
+                        ? `MCQ phase: ${freeTest.preliminaryDurationMinutes} min`
+                        : `Written phase: ${freeTest.writtenDurationMinutes} min`}
                     </span>
+                    {freeTest.preliminaryQuestionCount > 0 &&
+                    freeTest.writtenQuestionCount > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/5 px-2 py-1">
+                        <Clock3 className="h-3.5 w-3.5" />
+                        Written phase: {freeTest.writtenDurationMinutes} min
+                      </span>
+                    ) : null}
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/5 px-2 py-1">
                       <Trophy className="h-3.5 w-3.5" />
                       {freeTest.passMarkPercent}% to pass

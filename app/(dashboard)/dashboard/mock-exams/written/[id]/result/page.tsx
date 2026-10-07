@@ -37,8 +37,10 @@ export default async function WrittenResultPage({
   if (!session) redirect("/login");
 
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  if (!ObjectId.isValid(id)) redirect("/dashboard/results");
   if (query.attemptId && !ObjectId.isValid(query.attemptId)) {
+    redirect("/dashboard/results");
+  }
+  if (!query.attemptId && !ObjectId.isValid(id)) {
     redirect("/dashboard/results");
   }
   await ensureIndexes();
@@ -46,7 +48,7 @@ export default async function WrittenResultPage({
   const submission = await (await writtenSubmissionsCol()).findOne(
     {
       ...(query.attemptId ? { _id: new ObjectId(query.attemptId) } : {}),
-      examId: new ObjectId(id),
+      ...(!query.attemptId ? { examId: new ObjectId(id) } : {}),
       userId: new ObjectId(session.userId),
       status: { $in: ["submitted", "under-review", "graded"] },
     },

@@ -47,16 +47,12 @@ export const GET = withGuard(
         return fail("Unable to fetch the file.", 502);
       }
 
-      const downloadUrl = material.url.replace(
-        "/upload/",
-        "/upload/fl_attachment/",
-      );
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20_000);
       let upstream: Response;
 
       try {
-        upstream = await fetch(downloadUrl, {
+        upstream = await fetch(material.url, {
           cache: "no-store",
           signal: controller.signal,
         });
@@ -68,6 +64,16 @@ export const GET = withGuard(
 
       if (!upstream.ok || !upstream.body) {
         clearTimeout(timeout);
+        console.error("Cloudinary material download failed", {
+          materialId: material._id.toString(),
+          status: upstream.status,
+        });
+        if (upstream.status === 401 || upstream.status === 403) {
+          return fail(
+            "This file is not publicly accessible in Cloudinary.",
+            502,
+          );
+        }
         return fail("Unable to fetch the file.", 502);
       }
 
