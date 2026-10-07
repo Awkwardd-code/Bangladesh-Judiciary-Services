@@ -10,20 +10,49 @@ export type CourseCategory =
 
 export type CourseStatus = "draft" | "published" | "archived";
 
+export type CourseModule = {
+  title: string;
+  description: string;
+  order: number;
+  estimatedHours: number;
+};
+
+export type CourseFeature = {
+  label: string;
+  value: string;
+  iconName: string;
+};
+
 export type Course = BaseDoc & {
   title: string;
   slug: string;
   description: string;
-  longDescription?: string;
+  longDescription: string;
   coverUrl?: string;
   coverPublicId?: string;
+
   category: CourseCategory;
+  tags: string[];
+  level: "beginner" | "intermediate" | "advanced";
+
   price: number;
   currency: "BDT";
+  discountPercent?: number;
+
+  durationWeeks: number;
   durationLabel: string;
+  totalClasses: number;
+  totalMockTests: number;
+  totalMaterials: number;
+
+  features: CourseFeature[];
+  modules: CourseModule[];
+  mentorIds: ObjectId[];
+
   isPublished: boolean;
   status: CourseStatus;
   order: number;
+
   createdBy: ObjectId;
 };
 

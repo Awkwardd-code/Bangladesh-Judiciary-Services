@@ -34,7 +34,7 @@ async function totals(examId: ObjectId) {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAdmin();
   if (!session) return fail("Forbidden", 403);
@@ -59,7 +59,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAdmin();
   if (!session) return fail("Forbidden", 403);
@@ -74,17 +74,37 @@ export async function PATCH(
     const existing = await collection.findOne({ _id: examId });
     if (!existing) return fail("Exam not found", 404);
     const examTotals = await totals(examId);
-    if (parsed.data.status === "published" && examTotals.totalQuestions === 0) {
-      return fail("Cannot publish an exam with no questions", 400);
+    const nextQuestionsPerAttempt =
+      parsed.data.questionsPerAttempt ?? existing.questionsPerAttempt ?? 0;
+    const minimumRequired = Math.max(1, nextQuestionsPerAttempt);
+
+    if (
+      parsed.data.status === "published" &&
+      examTotals.totalQuestions < minimumRequired
+    ) {
+      return fail(
+        `Add at least ${minimumRequired} questions before publishing.`,
+        400
+      );
+    }
+    if (
+      parsed.data.questionsPerAttempt !== undefined &&
+      parsed.data.questionsPerAttempt > examTotals.totalQuestions
+    ) {
+      return fail(
+        "Questions per attempt cannot exceed the total number of questions in this exam.",
+        400
+      );
     }
     const updateSet = {
       ...parsed.data,
+      questionsPerAttempt: nextQuestionsPerAttempt,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)
-        : undefined,
+        : existing.scheduledAt,
       closesAt: parsed.data.closesAt
         ? new Date(parsed.data.closesAt)
-        : undefined,
+        : existing.closesAt,
       ...examTotals,
       updatedAt: new Date(),
     };
@@ -94,7 +114,7 @@ export async function PATCH(
       "preliminary-exam.update",
       { examId: examId.toString(), previousStatus: existing.status },
       getClientIp(req),
-      req.headers.get("user-agent") ?? "unknown",
+      req.headers.get("user-agent") ?? "unknown"
     );
     return ok({ exam: await collection.findOne({ _id: examId }) });
   } catch (error) {
@@ -105,7 +125,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAdmin();
   if (!session) return fail("Forbidden", 403);
@@ -126,7 +146,7 @@ export async function DELETE(
       "preliminary-exam.delete",
       { examId: examId.toString() },
       getClientIp(req),
-      req.headers.get("user-agent") ?? "unknown",
+      req.headers.get("user-agent") ?? "unknown"
     );
     return ok({ message: "Exam deleted." });
   } catch (error) {

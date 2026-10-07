@@ -19,7 +19,12 @@ export function ActiveExamBanner({
   const targetPath =
     active.kind === "preliminary"
       ? `/dashboard/mock-exams/${active.examId}`
-      : `/dashboard/mock-exams/written/${active.examId}`;
+      : active.kind === "written"
+        ? `/dashboard/mock-exams/written/${active.examId}`
+        : `/dashboard/free-tests/${active.examId}`;
+
+  const label =
+    active.kind === "free" ? "Resume free test" : "Resume exam";
 
   return (
     <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
@@ -30,7 +35,9 @@ export function ActiveExamBanner({
           </div>
           <div>
             <p className="font-heading text-lg font-semibold text-primary">
-              You have an exam in progress.
+              {active.kind === "free"
+                ? "You have a free test in progress."
+                : "You have an exam in progress."}
             </p>
             <p className="text-sm text-muted">{examTitle}</p>
           </div>
@@ -38,9 +45,9 @@ export function ActiveExamBanner({
 
         <Link
           href={targetPath}
-          className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark"
+          className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark"
         >
-          Resume exam
+          {label}
         </Link>
       </div>
     </div>

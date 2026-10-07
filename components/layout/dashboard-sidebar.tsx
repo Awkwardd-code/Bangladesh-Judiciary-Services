@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, FileText, LayoutDashboard, Shield } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  LayoutDashboard,
+  Shield,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
@@ -11,8 +18,11 @@ import { cn } from "@/lib/utils";
 
 const links = [
   ["Overview", "/dashboard", LayoutDashboard],
-  ["Mock Exams", "/dashboard/mock-exams", FileText],
+  ["Model Tests", "/dashboard/mock-exams", FileText],
+  ["Free Model Tests", "/dashboard/free-tests", Sparkles],
+  ["Results", "/dashboard/results", Trophy],
   ["Materials", "/dashboard/materials", BookOpen],
+  ["Profile", "/dashboard/profile", Shield],
 ] as const;
 
 export function DashboardSidebar() {

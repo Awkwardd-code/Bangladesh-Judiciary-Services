@@ -2,16 +2,19 @@
 
 import { Save, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ButtonWithIcon } from "@/components/ui/button-with-icon";
+import { toast } from "@/components/ui/toaster";
 
 export type WrittenExamRecord = {
   _id: string;
   title: string;
   description?: string;
   durationMinutes: number;
+  questionsPerAttempt?: number;
   totalQuestions: number;
   totalMarks: number;
   status: "draft" | "published" | "archived";
@@ -30,6 +33,7 @@ type ExamForm = {
   title: string;
   description: string;
   durationMinutes: string;
+  questionsPerAttempt: string;
   scheduledAt: string;
   closesAt: string;
 };
@@ -38,6 +42,7 @@ const emptyForm: ExamForm = {
   title: "",
   description: "",
   durationMinutes: "180",
+  questionsPerAttempt: "",
   scheduledAt: "",
   closesAt: "",
 };
@@ -58,6 +63,7 @@ export function WrittenExamEditor({
   onOpenChange,
   onSaved,
 }: WrittenExamEditorProps) {
+  const router = useRouter();
   const [form, setForm] = useState<ExamForm>(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -81,6 +87,7 @@ export function WrittenExamEditor({
             title: exam.title,
             description: exam.description ?? "",
             durationMinutes: String(exam.durationMinutes),
+            questionsPerAttempt: String(exam.questionsPerAttempt ?? ""),
             scheduledAt: toDateTimeLocal(exam.scheduledAt),
             closesAt: toDateTimeLocal(exam.closesAt),
           }
@@ -108,6 +115,10 @@ export function WrittenExamEditor({
       title: form.title.trim(),
       description: form.description.trim(),
       durationMinutes: Number(form.durationMinutes),
+      questionsPerAttempt:
+        form.questionsPerAttempt.trim() === ""
+          ? undefined
+          : Number(form.questionsPerAttempt),
       scheduledAt: form.scheduledAt
         ? new Date(form.scheduledAt).toISOString()
         : undefined,
@@ -135,6 +146,9 @@ export function WrittenExamEditor({
 
       onOpenChange(false);
       onSaved();
+      toast("Exam saved.");
+      router.push("/admin/mock-exams?tab=written");
+      router.refresh();
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -244,6 +258,26 @@ export function WrittenExamEditor({
                 Duration must be between 1 and 600 minutes.
               </p>
             ) : null}
+          </label>
+
+          <label className="block space-y-2 text-sm font-medium text-primary">
+            Questions per attempt
+            <Input
+              type="number"
+              min={1}
+              max={500}
+              placeholder="Use all questions"
+              value={form.questionsPerAttempt}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  questionsPerAttempt: event.target.value,
+                }))
+              }
+            />
+            <p className="text-xs text-muted">
+              Leave blank to serve every question in the exam.
+            </p>
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">

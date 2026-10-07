@@ -1,14 +1,23 @@
 "use client";
 
-import Link from "next/link";
-import { Clock, FileText, MoreHorizontal, Plus, Trophy } from "lucide-react";
+import {
+  ArchiveRestore,
+  EyeOff,
+  FileText,
+  Globe,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import {
   WrittenExamEditor,
   type WrittenExamRecord,
 } from "@/components/admin/written-exam-editor";
-import { Badge } from "@/components/ui/badge";
+import { ExamCard } from "@/components/shared/exam-card";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,11 +46,17 @@ export function WrittenExamsList() {
   const [pagination, setPagination] = useState(emptyPagination);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<WrittenExamRecord>();
   const [reloadKey, setReloadKey] = useState(0);
+  const filteredExams = exams.filter((exam) =>
+    `${exam.title} ${exam.description ?? ""}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
+  );
 
   const loadExams = useCallback(
     async (signal?: AbortSignal) => {
@@ -79,13 +94,13 @@ export function WrittenExamsList() {
         setError(
           caughtError instanceof Error
             ? caughtError.message
-            : "Unable to load written exams.",
+            : "Unable to load written exams."
         );
       } finally {
         setLoading(false);
       }
     },
-    [page, status],
+    [page, status]
   );
 
   useEffect(() => {
@@ -104,7 +119,9 @@ export function WrittenExamsList() {
     const response = await fetch(`/api/admin/written-exams/${exam._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "published" }),
+      body: JSON.stringify({
+        status: exam.status === "published" ? "draft" : "published",
+      }),
     });
     const result = (await response.json()) as { error?: string };
 
@@ -137,6 +154,12 @@ export function WrittenExamsList() {
   return (
     <div className="mt-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search written exams"
+          className="sm:max-w-80"
+        />
         <Select
           value={status}
           onChange={(event) => {
@@ -172,14 +195,18 @@ export function WrittenExamsList() {
 
       {loading ? (
         <p className="mt-6 text-sm text-muted">Loading written exams...</p>
-      ) : exams.length === 0 ? (
+      ) : filteredExams.length === 0 ? (
         <div className="mt-5 rounded-lg border border-dashed border-border p-10 text-center">
           <FileText
             aria-hidden="true"
             size={32}
             className="mx-auto text-muted"
           />
-          <p className="mt-3 text-sm text-muted">No written exams yet.</p>
+          <p className="mt-3 text-sm text-muted">
+            {exams.length === 0
+              ? "No written exams yet."
+              : "No written exams match these filters."}
+          </p>
           <button
             type="button"
             onClick={() => openEditor()}
@@ -189,79 +216,81 @@ export function WrittenExamsList() {
           </button>
         </div>
       ) : (
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {exams.map((exam) => (
-            <article
+        <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredExams.map((exam) => (
+            <ExamCard
               key={exam._id}
-              className="rounded-lg border border-border bg-card p-5 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <Badge
-                  className={
-                    exam.status === "published"
-                      ? "border-emerald-600/30 text-emerald-700"
-                      : "text-muted"
-                  }
-                >
-                  {exam.status}
-                </Badge>
-                <DropdownMenu closeOnOutsideClick>
-                  <DropdownMenuTrigger>
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${exam.title}`}
-                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-primary/5"
-                    >
-                      <MoreHorizontal size={18} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => openEditor(exam)}>
-                      Edit
-                    </DropdownMenuItem>
-                    {exam.status !== "published" ? (
+              exam={{
+                id: exam._id,
+                kind: "written",
+                title: exam.title,
+                description: exam.description ?? "",
+                durationMinutes: exam.durationMinutes,
+                totalQuestions: exam.totalQuestions,
+                questionsPerAttempt:
+                  exam.questionsPerAttempt ?? exam.totalQuestions,
+                totalMarks: exam.totalMarks,
+                isFree: false,
+                price: 0,
+                courseId: null,
+                courseTitle: null,
+                courseSlug: null,
+                status: exam.status,
+              }}
+              variant="admin"
+              href={`/admin/mock-exams/written/${exam._id}`}
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEditor(exam)}
+                    className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm text-foreground hover:bg-primary/5"
+                  >
+                    <Pencil size={14} />
+                    Edit
+                  </button>
+                  <DropdownMenu closeOnOutsideClick>
+                    <DropdownMenuTrigger>
+                      <button
+                        type="button"
+                        aria-label={`Actions for ${exam.title}`}
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border text-muted hover:bg-primary/5"
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => void setPublished(exam)}>
-                        Publish
+                        <span className="inline-flex items-center gap-2">
+                          {exam.status === "published" ? (
+                            <EyeOff size={14} />
+                          ) : exam.status === "archived" ? (
+                            <ArchiveRestore size={14} />
+                          ) : (
+                            <Globe size={14} />
+                          )}
+                          {exam.status === "published"
+                            ? "Unpublish"
+                            : exam.status === "archived"
+                              ? "Restore"
+                              : "Publish"}
+                        </span>
                       </DropdownMenuItem>
-                    ) : null}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => void deleteExam(exam)}
-                      destructive
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <h2 className="mt-3 font-heading text-lg font-semibold text-primary">
-                {exam.title}
-              </h2>
-              <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">
-                {exam.description || "No description."}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted">
-                <span className="inline-flex items-center gap-1">
-                  <FileText size={14} />
-                  {exam.totalQuestions} questions
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock size={14} />
-                  {exam.durationMinutes} min
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Trophy size={14} />
-                  {exam.totalMarks} marks
-                </span>
-              </div>
-              <Link
-                href={`/admin/mock-exams/written/${exam._id}`}
-                className="mt-5 inline-flex min-h-9 cursor-pointer items-center text-sm font-medium text-accent hover:underline"
-              >
-                Manage questions →
-              </Link>
-            </article>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => void deleteExam(exam)}
+                        destructive
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Trash2 size={14} />
+                          Delete
+                        </span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              }
+            />
           ))}
         </div>
       )}

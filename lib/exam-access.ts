@@ -8,20 +8,30 @@ import {
   preliminaryExamsCol,
   writtenExamsCol,
 } from "@/lib/collections";
+import { checkExamWindow } from "@/lib/exam-window";
 import { getActiveExam } from "@/lib/exam-lock";
+import { getEnrollmentAccess } from "@/lib/enrollment";
 import type { PreliminaryExam, WrittenExam } from "@/lib/types/exam";
+
+export type ExamKind = "preliminary" | "written" | "free";
 
 export type ExamAccess = {
   allowed: boolean;
   reason:
     | "ok"
-    | "not-authenticated"
-    | "not-enrolled"
-    | "another-exam-active"
     | "not-published"
-    | "outside-window";
+    | "not-yet-open"
+    | "closed"
+    | "not-enrolled"
+    | "enrollment-pending"
+    | "enrollment-rejected"
+    | "another-exam-active"
+    | "quota-exhausted";
+  opensAt?: Date;
+  closesAt?: Date;
   activeExamId?: string;
-  activeExamKind?: "preliminary" | "written";
+  activeExamKind?: ExamKind;
+  courseSlug?: string;
 };
 
 type ExamWithCourse = (PreliminaryExam | WrittenExam) & {
@@ -31,30 +41,39 @@ type ExamWithCourse = (PreliminaryExam | WrittenExam) & {
 export async function checkExamAccess(
   userId: ObjectId,
   examId: ObjectId,
-  kind: "preliminary" | "written",
+  kind: ExamKind,
 ): Promise<ExamAccess> {
   const exams =
     kind === "preliminary"
       ? await preliminaryExamsCol()
-      : await writtenExamsCol();
-  const exam = (await exams.findOne({
-    _id: examId,
-    status: "published",
-  })) as ExamWithCourse | null;
+      : kind === "written"
+        ? await writtenExamsCol()
+        : null;
+
+  const exam = exams
+    ? ((await exams.findOne({
+        _id: examId,
+        status: "published",
+      })) as ExamWithCourse | null)
+    : null;
 
   if (!exam) {
     return { allowed: false, reason: "not-published" };
   }
 
-  const now = new Date();
-  if (
-    (exam.scheduledAt && now < exam.scheduledAt) ||
-    (exam.closesAt && now > exam.closesAt)
-  ) {
-    return { allowed: false, reason: "outside-window" };
+  const window = checkExamWindow(exam);
+
+  if (!window.open) {
+    return {
+      allowed: false,
+      reason: window.reason,
+      opensAt: window.opensAt,
+      closesAt: window.closesAt,
+    };
   }
 
   const active = await getActiveExam(userId);
+
   if (
     active &&
     (active.examId.toString() !== examId.toString() || active.kind !== kind)
@@ -79,22 +98,24 @@ export async function checkExamAccess(
       return { allowed: false, reason: "not-enrolled" };
     }
 
-    const course = await (await coursesCol()).findOne({ _id: courseId });
+    const access = await getEnrollmentAccess(userId, courseId);
 
-    if (!course) {
-      return { allowed: false, reason: "not-enrolled" };
-    }
-
-    if (course.price > 0) {
-      const enrollment = await (await enrollmentsCol()).findOne({
-        userId,
-        courseId,
-        status: "approved",
-      });
-
-      if (!enrollment) {
-        return { allowed: false, reason: "not-enrolled" };
+    if (!access.hasAccess) {
+      if (access.reason === "pending") {
+        return {
+          allowed: false,
+          reason: "enrollment-pending",
+        };
       }
+
+      if (access.reason === "rejected") {
+        return {
+          allowed: false,
+          reason: "enrollment-rejected",
+        };
+      }
+
+      return { allowed: false, reason: "not-enrolled" };
     }
   }
 
@@ -102,29 +123,46 @@ export async function checkExamAccess(
 }
 
 export function examAccessError(access: ExamAccess) {
-  if (access.reason === "not-authenticated") {
-    return { message: "Not authenticated", status: 401 };
+  if (access.reason === "not-published") {
+    return { message: "This exam is not available.", status: 403 };
+  }
+
+  if (access.reason === "not-yet-open") {
+    return {
+      message: `This exam opens on ${access.opensAt?.toLocaleString() ?? "a future date"}.`,
+      status: 403,
+    };
+  }
+
+  if (access.reason === "closed") {
+    return {
+      message: `This exam closed on ${access.closesAt?.toLocaleString() ?? "a past date"}.`,
+      status: 403,
+    };
+  }
+
+  if (access.reason === "enrollment-pending") {
+    return { message: "Your enrollment is awaiting approval.", status: 403 };
+  }
+
+  if (access.reason === "enrollment-rejected") {
+    return { message: "Your enrollment request was rejected.", status: 403 };
   }
 
   if (access.reason === "not-enrolled") {
-    return { message: "You are not enrolled in this exam.", status: 403 };
+    return { message: "You are not enrolled in this course.", status: 403 };
   }
 
   if (access.reason === "another-exam-active") {
     return {
-      message: "You already have an active exam.",
+      message: "You already have an exam in progress.",
       status: 409,
       extra: {
-        active: {
-          examId: access.activeExamId,
-          kind: access.activeExamKind,
-        },
+        activeExamId: access.activeExamId,
+        activeExamKind: access.activeExamKind,
+        message: "You already have an exam in progress.",
       },
     };
-  }
-
-  if (access.reason === "outside-window") {
-    return { message: "This exam is not currently open.", status: 403 };
   }
 
   return { message: "Exam not found", status: 404 };

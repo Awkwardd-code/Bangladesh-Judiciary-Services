@@ -5,24 +5,31 @@ import { WrittenExamsList } from "@/components/admin/written-exams-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const metadata: Metadata = {
-  title: "Mock Exams — Admin — BJS Prep",
-  description: "Create and manage preliminary mock tests.",
+  title: "Model Tests — Admin — BJS Prep",
+  description: "Create and manage preliminary model tests.",
 };
 
-export default function MockExamsPage() {
+export default async function MockExamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const params = await searchParams;
+  const activeTab = params.tab === "written" ? "written" : "preliminary";
+
   return (
     <div className="mx-auto max-w-6xl">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
-            Mock Exams
+            Model Tests
           </h1>
           <p className="mt-2 text-base text-muted">
-            Create and manage preliminary mock tests.
+            Create and manage preliminary model tests.
           </p>
         </div>
       </header>
-      <Tabs defaultValue="preliminary">
+      <Tabs defaultValue={activeTab}>
         <TabsList>
           <TabsTrigger value="preliminary">Preliminary</TabsTrigger>
           <TabsTrigger value="written">Written</TabsTrigger>

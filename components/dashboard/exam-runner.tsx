@@ -1,0 +1,1062 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Clock, Info, Loader2, X } from "lucide-react";
+
+import { QuestionCard } from "@/components/dashboard/question-card";
+import type {
+  RunnerQuestion,
+  UploadedPdf,
+} from "@/components/dashboard/question-card";
+import { Card } from "@/components/ui/card";
+import { toast } from "@/components/ui/toaster";
+
+type ExamKind = "preliminary" | "written" | "free";
+
+type RunnerQuestionData = RunnerQuestion & {
+  position: number;
+  source?: "preliminary_questions" | "written_questions";
+  maxMarks?: number;
+};
+
+type RunnerAnswer = {
+  questionId: string;
+  selectedOptionIndex: number | null;
+  answeredAt: string | null;
+  pdfUrl?: string | null;
+  pdfPublicId?: string | null;
+  uploadedAt?: string | null;
+};
+
+type RunnerAttempt = {
+  id: string;
+  startedAt: string;
+  expiresAt: string;
+  shuffledOrder: number[];
+  currentPhase?: "preliminary" | "written";
+  phaseStartedAt?: string;
+  preliminaryDurationMinutes?: number | null;
+  writtenDurationMinutes?: number | null;
+  preliminaryEndsAt?: string | null;
+  writtenEndsAt?: string | null;
+  answers: RunnerAnswer[];
+  perQuestionAnswers?: Array<{
+    questionId: string;
+    pdfUrl: string | null;
+    pdfPublicId: string | null;
+    uploadedAt: string | null;
+  }>;
+};
+
+type ExamRunnerProps = {
+  exam: {
+    id: string;
+    kind: ExamKind;
+    title: string;
+    durationMinutes: number;
+    totalQuestions: number;
+    totalMarks: number;
+    questionsPerAttempt: number;
+    passMarkPercent?: number;
+    negativeMarking?: number;
+    hasWrittenQuestions?: boolean;
+    preliminaryQuestionCount?: number;
+    writtenQuestionCount?: number;
+    preliminaryDurationMinutes?: number;
+    writtenDurationMinutes?: number;
+    writtenQuestionsPerAttempt?: number;
+  };
+  attempt: RunnerAttempt | null;
+  questions: RunnerQuestionData[] | null;
+};
+
+type AttemptRecord = {
+  id?: string;
+  _id?: string;
+  startedAt: string | Date;
+  expiresAt: string | Date;
+  shuffledOrder?: number[];
+  answers?: RunnerAnswer[];
+  perQuestionAnswers?: RunnerAttempt["perQuestionAnswers"];
+  selectedQuestionIds?: string[];
+  currentPhase?: "preliminary" | "written";
+  phaseStartedAt?: string | Date;
+  preliminaryDurationMinutes?: number | null;
+  writtenDurationMinutes?: number | null;
+  preliminaryEndsAt?: string | Date | null;
+  writtenEndsAt?: string | Date | null;
+};
+
+const uploadLimit = 10 * 1024 * 1024;
+
+function getEffectiveTarget(poolSize: number, configuredTarget: number) {
+  if (poolSize === 0) {
+    return 0;
+  }
+
+  return configuredTarget > 0 ? Math.min(configuredTarget, poolSize) : poolSize;
+}
+
+function orderQuestions(
+  source: RunnerQuestionData[],
+  questionIds: string[]
+): RunnerQuestionData[] {
+  if (questionIds.length === 0) {
+    return source;
+  }
+
+  const questionMap = new Map(
+    source.map((question) => [question.id, question])
+  );
+  const ordered = questionIds
+    .map((id) => questionMap.get(id))
+    .filter(
+      (question): question is RunnerQuestionData => question !== undefined
+    );
+
+  return ordered.length > 0 ? ordered : source;
+}
+
+function getQuestionIds(attempt: AttemptRecord): string[] {
+  const answerIds = (attempt.answers ?? [])
+    .map((answer) => answer.questionId)
+    .filter(Boolean);
+
+  if (answerIds.length > 0) {
+    return answerIds;
+  }
+
+  const uploadedAnswerIds = (attempt.perQuestionAnswers ?? [])
+    .map((answer) => answer.questionId)
+    .filter(Boolean);
+
+  if (uploadedAnswerIds.length > 0) {
+    return uploadedAnswerIds;
+  }
+
+  return (attempt.selectedQuestionIds ?? []).map(String);
+}
+
+function normalizeDate(value: string | Date | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function isWrittenQuestion(question: RunnerQuestionData): boolean {
+  return (
+    question.source === "written_questions" ||
+    ((!question.options || question.options.length === 0) &&
+      question.maxMarks !== undefined)
+  );
+}
+
+function toUploadedPdf(answer: {
+  questionId: string;
+  pdfUrl?: string | null;
+  pdfPublicId?: string | null;
+  uploadedAt?: string | null;
+}): UploadedPdf | null {
+  if (!answer.pdfUrl) {
+    return null;
+  }
+
+  const publicIdName = answer.pdfPublicId?.split("/").pop();
+
+  return {
+    url: answer.pdfUrl,
+    name: publicIdName ? `${publicIdName}.pdf` : "Uploaded answer.pdf",
+    uploadedAt: answer.uploadedAt ?? new Date().toISOString(),
+  };
+}
+
+export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
+  const router = useRouter();
+  const [examDetails, setExamDetails] = useState(exam);
+  const initialQuestionList = questions ?? [];
+  const initialQuestionIds = attempt ? getQuestionIds(attempt) : [];
+  const initialAnswers: Record<string, number | null> = {};
+  const initialLocked = new Set<string>();
+
+  for (const answer of attempt?.answers ?? []) {
+    initialAnswers[answer.questionId] = answer.selectedOptionIndex;
+
+    if (answer.selectedOptionIndex !== null) {
+      initialLocked.add(answer.questionId);
+    }
+  }
+
+  const initialUploadedPdfs: Record<string, UploadedPdf> = {};
+  const initialPdfAnswers =
+    attempt?.perQuestionAnswers ??
+    (attempt?.answers ?? []).map((answer) => ({
+      questionId: answer.questionId,
+      pdfUrl: answer.pdfUrl ?? null,
+      pdfPublicId: answer.pdfPublicId ?? null,
+      uploadedAt: answer.uploadedAt ?? null,
+    }));
+
+  for (const answer of initialPdfAnswers) {
+    const uploadedPdf = toUploadedPdf(answer);
+
+    if (uploadedPdf) {
+      initialUploadedPdfs[answer.questionId] = uploadedPdf;
+      initialLocked.add(answer.questionId);
+    }
+  }
+
+  const [attemptId, setAttemptId] = useState<string | null>(
+    attempt?.id ?? null
+  );
+  const [expiresAt, setExpiresAt] = useState<string | null>(
+    attempt?.expiresAt ?? null
+  );
+  const [currentPhase, setCurrentPhase] = useState<
+    "preliminary" | "written" | null
+  >(attempt?.currentPhase ?? null);
+  const [questionList, setQuestionList] = useState<RunnerQuestionData[]>(() =>
+    orderQuestions(initialQuestionList, initialQuestionIds)
+  );
+  const [shuffledOrder, setShuffledOrder] = useState<number[]>(
+    attempt?.shuffledOrder ?? []
+  );
+  const [answers, setAnswers] =
+    useState<Record<string, number | null>>(initialAnswers);
+  const [locked, setLocked] = useState<Set<string>>(initialLocked);
+  const [uploadedPdfs, setUploadedPdfs] =
+    useState<Record<string, UploadedPdf>>(initialUploadedPdfs);
+  const [uploadingPdf, setUploadingPdf] = useState<Set<string>>(new Set());
+  const [timeLeftSeconds, setTimeLeftSeconds] = useState(() => {
+    if (!attempt?.expiresAt) {
+      return examDetails.durationMinutes * 60;
+    }
+
+    return Math.max(
+      0,
+      Math.ceil((new Date(attempt.expiresAt).getTime() - Date.now()) / 1000)
+    );
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [phaseTransitioning, setPhaseTransitioning] = useState(false);
+  const [startDialogOpen, setStartDialogOpen] = useState(!attempt);
+  const [readRules, setReadRules] = useState(false);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [confirmationCount, setConfirmationCount] = useState(0);
+  const submitLockRef = useRef(false);
+  const submitHandlerRef = useRef<
+    (
+      reason: "manual" | "tab-change" | "visibility-hidden" | "time-expired"
+    ) => void
+  >(() => {});
+  const transitionHandlerRef = useRef<(fromTimer?: boolean) => void>(() => {});
+  const lastAutoSubmitRef = useRef(0);
+  const transitionAttemptedRef = useRef(false);
+
+  const hasWritten =
+    Boolean(examDetails.hasWrittenQuestions) ||
+    questionList.some(isWrittenQuestion);
+  const hasPhases =
+    exam.kind === "free" &&
+    currentPhase !== null &&
+    questionList.some(
+      (question) => question.source === "preliminary_questions"
+    ) &&
+    questionList.some((question) => question.source === "written_questions");
+  const isWrittenPhase =
+    exam.kind === "written" ||
+    (exam.kind === "free" && currentPhase === "written");
+  const canSwitchTabs =
+    exam.kind === "written" || (hasWritten && (!hasPhases || isWrittenPhase));
+  const canTransitionToWritten =
+    hasPhases && currentPhase === "preliminary" && Boolean(attemptId);
+  const hasActiveAttempt = Boolean(attemptId && expiresAt);
+  const effectiveQuestionCount =
+    exam.kind === "free" &&
+    (examDetails.preliminaryQuestionCount !== undefined ||
+      examDetails.writtenQuestionCount !== undefined)
+      ? getEffectiveTarget(
+          examDetails.preliminaryQuestionCount ?? 0,
+          examDetails.questionsPerAttempt
+        ) +
+        getEffectiveTarget(
+          examDetails.writtenQuestionCount ?? 0,
+          examDetails.writtenQuestionsPerAttempt ?? 0
+        )
+      : examDetails.questionsPerAttempt > 0
+        ? Math.min(examDetails.questionsPerAttempt, examDetails.totalQuestions)
+        : examDetails.totalQuestions;
+  const displayedQuestions = useMemo(() => {
+    const ordered =
+      shuffledOrder.length === 0
+        ? questionList
+        : shuffledOrder
+            .map((index) => questionList[index])
+            .filter(
+              (question): question is RunnerQuestionData =>
+                question !== undefined
+            );
+
+    if (!hasPhases || !currentPhase) {
+      return ordered;
+    }
+
+    return ordered.filter((question) =>
+      currentPhase === "preliminary"
+        ? question.source === "preliminary_questions"
+        : question.source === "written_questions"
+    );
+  }, [currentPhase, hasPhases, questionList, shuffledOrder]);
+  const answeredCount = useMemo(
+    () =>
+      displayedQuestions.filter((question) =>
+        isWrittenQuestion(question)
+          ? Boolean(uploadedPdfs[question.id])
+          : answers[question.id] !== null && answers[question.id] !== undefined
+      ).length,
+    [answers, displayedQuestions, uploadedPdfs]
+  );
+  const missingWrittenCount = displayedQuestions.filter(
+    (question) => isWrittenQuestion(question) && !uploadedPdfs[question.id]
+  ).length;
+  const missingMcqCount = displayedQuestions.filter(
+    (question) =>
+      !isWrittenQuestion(question) &&
+      (answers[question.id] === null || answers[question.id] === undefined)
+  ).length;
+  const unansweredCount = Math.max(
+    0,
+    displayedQuestions.length - answeredCount
+  );
+
+  async function submitExam(
+    reason: "manual" | "tab-change" | "visibility-hidden" | "time-expired"
+  ) {
+    if (!attemptId || submitLockRef.current) {
+      return;
+    }
+
+    submitLockRef.current = true;
+    setSubmitting(true);
+
+    try {
+      const endpoint =
+        exam.kind === "free"
+          ? `/api/free-tests/${exam.id}/submit`
+          : `/api/exams/${exam.kind}/${exam.id}/submit`;
+      const body =
+        exam.kind === "written"
+          ? { submissionId: attemptId, reason }
+          : { attemptId, reason };
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload?.error ?? "Unable to submit this exam.");
+      }
+
+      setSubmitted(true);
+      setConfirmationOpen(false);
+      const resultPath =
+        exam.kind === "written"
+          ? `/dashboard/mock-exams/written/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`
+          : exam.kind === "preliminary"
+            ? `/dashboard/mock-exams/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`
+            : `/dashboard/free-tests/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`;
+
+      router.replace(resultPath);
+    } catch (error) {
+      console.error("Exam submission error", error);
+      submitLockRef.current = false;
+      setSubmitting(false);
+      toast(
+        error instanceof Error ? error.message : "Unable to submit this exam.",
+        "error"
+      );
+    }
+  }
+
+  submitHandlerRef.current = submitExam;
+
+  async function transitionToWrittenPhase(fromTimer = false) {
+    if (
+      !attemptId ||
+      !canTransitionToWritten ||
+      phaseTransitioning ||
+      (fromTimer && transitionAttemptedRef.current)
+    ) {
+      return;
+    }
+
+    if (!fromTimer) {
+      transitionAttemptedRef.current = false;
+    }
+
+    transitionAttemptedRef.current = true;
+    setPhaseTransitioning(true);
+
+    try {
+      const response = await fetch(`/api/free-tests/${exam.id}/transition`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Unable to start the written phase.");
+      }
+
+      const nextPhaseStartedAt = normalizeDate(payload?.data?.phaseStartedAt);
+      const nextExpiresAt = normalizeDate(payload?.data?.expiresAt);
+
+      if (!nextPhaseStartedAt || !nextExpiresAt) {
+        throw new Error("The written phase timing data is incomplete.");
+      }
+
+      setCurrentPhase("written");
+      setExpiresAt(nextExpiresAt);
+      setTimeLeftSeconds(
+        Math.max(
+          0,
+          Math.ceil((new Date(nextExpiresAt).getTime() - Date.now()) / 1000)
+        )
+      );
+      toast(
+        "Preliminary phase complete. The written phase has started.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Free test phase transition error", error);
+      toast(
+        error instanceof Error
+          ? error.message
+          : "Unable to start the written phase.",
+        "error"
+      );
+    } finally {
+      setPhaseTransitioning(false);
+    }
+  }
+
+  transitionHandlerRef.current = transitionToWrittenPhase;
+
+  useEffect(() => {
+    if (!hasActiveAttempt || !expiresAt) {
+      return undefined;
+    }
+
+    const tick = window.setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)
+      );
+
+      setTimeLeftSeconds(remaining);
+
+      if (remaining <= 0) {
+        if (canTransitionToWritten) {
+          void transitionHandlerRef.current(true);
+        } else {
+          submitHandlerRef.current("time-expired");
+        }
+      }
+    }, 1000);
+
+    return () => window.clearInterval(tick);
+  }, [canTransitionToWritten, expiresAt, hasActiveAttempt]);
+
+  useEffect(() => {
+    if (!hasActiveAttempt || submitted || canSwitchTabs) {
+      return undefined;
+    }
+
+    let debounceTimer: number | undefined;
+
+    function scheduleAutoSubmit(reason: "tab-change" | "visibility-hidden") {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => {
+        const shouldSubmit =
+          reason === "visibility-hidden"
+            ? document.visibilityState === "hidden"
+            : !document.hasFocus();
+        const now = Date.now();
+
+        if (shouldSubmit && now - lastAutoSubmitRef.current >= 800) {
+          lastAutoSubmitRef.current = now;
+          submitHandlerRef.current(reason);
+        }
+      }, 800);
+    }
+
+    function handleBlur() {
+      scheduleAutoSubmit("tab-change");
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        scheduleAutoSubmit("visibility-hidden");
+      } else {
+        window.clearTimeout(debounceTimer);
+      }
+    }
+
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearTimeout(debounceTimer);
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [canSwitchTabs, hasActiveAttempt, submitted]);
+
+  async function handleStart() {
+    if (starting) {
+      return;
+    }
+
+    setStarting(true);
+
+    try {
+      const endpoint =
+        exam.kind === "free"
+          ? `/api/free-tests/${exam.id}/start`
+          : `/api/exams/${exam.kind}/${exam.id}/start`;
+      const response = await fetch(endpoint, { method: "POST" });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Unable to start this exam.");
+      }
+
+      const data = payload.data ?? {};
+      const freshExam = data.freeTest ?? data.exam;
+
+      if (freshExam && typeof freshExam.title === "string") {
+        setExamDetails((current) => ({
+          ...current,
+          ...freshExam,
+          id: exam.id,
+          kind: exam.kind,
+        }));
+      }
+
+      const nextAttempt: AttemptRecord | undefined =
+        exam.kind === "written" ? data.submission : data.attempt;
+
+      if (!nextAttempt) {
+        throw new Error("No exam attempt was returned.");
+      }
+
+      const nextAttemptId = String(nextAttempt.id ?? nextAttempt._id ?? "");
+      const nextExpiresAt = normalizeDate(nextAttempt.expiresAt);
+
+      if (!nextAttemptId || !nextExpiresAt) {
+        throw new Error("The exam attempt data is incomplete.");
+      }
+
+      const serverQuestions = Array.isArray(data.questions)
+        ? (data.questions as RunnerQuestionData[])
+        : questionList;
+      const nextQuestionIds = getQuestionIds(nextAttempt);
+      const nextQuestions = orderQuestions(serverQuestions, nextQuestionIds);
+      const nextAnswers: Record<string, number | null> = {};
+      const nextLocked = new Set<string>();
+      const nextUploadedPdfs: Record<string, UploadedPdf> = {};
+      const nextAnswerEntries = nextAttempt.answers ?? [];
+
+      for (const answer of nextAnswerEntries) {
+        nextAnswers[answer.questionId] = answer.selectedOptionIndex;
+
+        if (answer.selectedOptionIndex !== null) {
+          nextLocked.add(answer.questionId);
+        }
+      }
+
+      const nextPdfAnswers =
+        nextAttempt.perQuestionAnswers ??
+        nextAnswerEntries.map((answer) => ({
+          questionId: answer.questionId,
+          pdfUrl: answer.pdfUrl ?? null,
+          pdfPublicId: answer.pdfPublicId ?? null,
+          uploadedAt: answer.uploadedAt ?? null,
+        }));
+
+      for (const answer of nextPdfAnswers) {
+        const uploadedPdf = toUploadedPdf(answer);
+
+        if (uploadedPdf) {
+          nextUploadedPdfs[answer.questionId] = uploadedPdf;
+          nextLocked.add(answer.questionId);
+        }
+      }
+
+      setAttemptId(nextAttemptId);
+      setExpiresAt(nextExpiresAt);
+      setCurrentPhase(nextAttempt.currentPhase ?? null);
+      transitionAttemptedRef.current = false;
+      setQuestionList(nextQuestions);
+      setShuffledOrder(
+        Array.isArray(nextAttempt.shuffledOrder)
+          ? nextAttempt.shuffledOrder
+          : nextQuestions.map((_, index) => index)
+      );
+      setAnswers(nextAnswers);
+      setLocked(nextLocked);
+      setUploadedPdfs(nextUploadedPdfs);
+      setTimeLeftSeconds(
+        Math.max(
+          0,
+          Math.ceil((new Date(nextExpiresAt).getTime() - Date.now()) / 1000)
+        )
+      );
+      setStartDialogOpen(false);
+      setReadRules(false);
+    } catch (error) {
+      console.error("Exam start error", error);
+      toast(
+        error instanceof Error ? error.message : "Unable to start this exam.",
+        "error"
+      );
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  async function handleOptionClick(questionId: string, optionIndex: number) {
+    if (!attemptId || locked.has(questionId)) {
+      return;
+    }
+
+    const previousValue = answers[questionId] ?? null;
+    const nextAnswers = { ...answers, [questionId]: optionIndex };
+    const nextLocked = new Set(locked);
+
+    nextLocked.add(questionId);
+    setAnswers(nextAnswers);
+    setLocked(nextLocked);
+
+    try {
+      const endpoint =
+        exam.kind === "free"
+          ? `/api/free-tests/${exam.id}/answer`
+          : `/api/exams/preliminary/${exam.id}/answer`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          attemptId,
+          questionId,
+          selectedOptionIndex: optionIndex,
+        }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Answer could not be saved.");
+      }
+    } catch (error) {
+      console.error("Exam answer error", error);
+      setAnswers((current) => ({
+        ...current,
+        [questionId]: previousValue,
+      }));
+      setLocked((current) => {
+        const next = new Set(current);
+        next.delete(questionId);
+        return next;
+      });
+      toast(
+        error instanceof Error ? error.message : "Answer could not be saved.",
+        "error"
+      );
+    }
+  }
+
+  async function handlePdfUpload(questionId: string, file: File) {
+    if (
+      !attemptId ||
+      uploadedPdfs[questionId] ||
+      uploadingPdf.has(questionId)
+    ) {
+      return;
+    }
+
+    if (file.type !== "application/pdf") {
+      toast("Only PDF files are allowed.", "error");
+      return;
+    }
+
+    if (file.size > uploadLimit) {
+      toast("PDF files must be 10 MB or smaller.", "error");
+      return;
+    }
+
+    setUploadingPdf((current) => new Set(current).add(questionId));
+
+    try {
+      const formData = new FormData();
+
+      formData.append(
+        exam.kind === "written" ? "submissionId" : "attemptId",
+        attemptId
+      );
+      formData.append("questionId", questionId);
+      formData.append("file", file);
+
+      const endpoint =
+        exam.kind === "written"
+          ? `/api/exams/written/${exam.id}/answer`
+          : `/api/free-tests/${exam.id}/answer`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Unable to upload this answer.");
+      }
+
+      const pdfUrl = payload.data?.pdfUrl;
+
+      if (typeof pdfUrl !== "string" || pdfUrl.length === 0) {
+        throw new Error("The upload completed without returning a PDF link.");
+      }
+
+      const uploadedAt = new Date().toISOString();
+
+      setUploadedPdfs((current) => ({
+        ...current,
+        [questionId]: {
+          url: pdfUrl,
+          name: file.name,
+          uploadedAt,
+        },
+      }));
+      setLocked((current) => new Set(current).add(questionId));
+      toast("Answer PDF uploaded and locked.", "success");
+    } catch (error) {
+      console.error("Written answer upload error", error);
+      toast(
+        error instanceof Error
+          ? error.message
+          : "Unable to upload this answer.",
+        "error"
+      );
+    } finally {
+      setUploadingPdf((current) => {
+        const next = new Set(current);
+        next.delete(questionId);
+        return next;
+      });
+    }
+  }
+
+  function requestManualSubmit() {
+    if (submitting || submitted) {
+      return;
+    }
+
+    if (unansweredCount > 0) {
+      setConfirmationCount(unansweredCount);
+      setConfirmationOpen(true);
+      return;
+    }
+
+    void submitExam("manual");
+  }
+
+  function formatTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainder = seconds % 60;
+    const format = (value: number) => value.toString().padStart(2, "0");
+
+    return hours > 0
+      ? `${format(hours)}:${format(minutes)}:${format(remainder)}`
+      : `${format(minutes)}:${format(remainder)}`;
+  }
+
+  if (startDialogOpen) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-12">
+        <Card className="w-full max-w-2xl border-border bg-card p-6 shadow-sm">
+          <h1 className="font-heading text-3xl font-semibold text-primary">
+            {examDetails.title}
+          </h1>
+
+          <div className="mt-6 rounded-md border border-border bg-muted/5 p-4 text-sm text-foreground">
+            <ul className="list-disc space-y-2 pl-5">
+              <li>Duration: {examDetails.durationMinutes} minutes.</li>
+              <li>Questions: {effectiveQuestionCount}.</li>
+              <li>All questions are shown on one page.</li>
+              {hasWritten ? (
+                <li>
+                  Each written answer must be uploaded as a PDF (max 10 MB).
+                </li>
+              ) : (
+                <li>Each question locks once you select an answer.</li>
+              )}
+              {hasPhases ? (
+                <>
+                  <li>
+                    Preliminary phase: {examDetails.preliminaryDurationMinutes}{" "}
+                    minutes.
+                  </li>
+                  <li>
+                    Written phase: {examDetails.writtenDurationMinutes} minutes.
+                  </li>
+                  <li>
+                    Starting the written phase ends the preliminary phase.
+                  </li>
+                </>
+              ) : null}
+              {!canSwitchTabs ? (
+                <li>
+                  Switching browser tabs will submit your exam immediately.
+                </li>
+              ) : (
+                <li>
+                  You may switch tabs to reference materials. The timer
+                  continues.
+                </li>
+              )}
+              <li>
+                When the timer expires, your exam is submitted automatically.
+              </li>
+              {examDetails.passMarkPercent ? (
+                <li>Pass mark: {examDetails.passMarkPercent}%.</li>
+              ) : null}
+            </ul>
+          </div>
+
+          <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={readRules}
+              onChange={(event) => setReadRules(event.target.checked)}
+              className="mt-1 h-4 w-4 cursor-pointer accent-primary"
+            />
+            <span>I have read and understood the rules.</span>
+          </label>
+
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              onClick={() => void handleStart()}
+              disabled={!readRules || starting}
+              className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-5 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {starting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                "Begin"
+              )}
+            </button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <Card className="flex items-center gap-3 border-border bg-card p-6">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <p className="text-sm text-foreground">
+            Your exam has been submitted.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-card">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-body text-[15px] font-semibold text-primary">
+            {examDetails.title}
+            {hasPhases ? (
+              <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium capitalize">
+                {currentPhase} phase
+              </span>
+            ) : null}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <div
+              className={`font-mono text-2xl font-semibold ${
+                timeLeftSeconds < 300
+                  ? "animate-pulse text-red-600"
+                  : "text-primary"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                {formatTime(timeLeftSeconds)}
+              </span>
+            </div>
+
+            <p className="text-sm text-muted">
+              Answered {answeredCount} / {displayedQuestions.length}
+            </p>
+
+            {canTransitionToWritten ? (
+              <button
+                type="button"
+                onClick={() => void transitionToWrittenPhase()}
+                disabled={phaseTransitioning}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {phaseTransitioning
+                  ? "Starting written phase..."
+                  : "Start written phase"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={requestManualSubmit}
+                disabled={submitting}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        <div
+          className={`flex items-start gap-3 rounded-md p-4 text-sm ${
+            hasWritten
+              ? "border border-blue-200 bg-blue-50 text-blue-900"
+              : "border border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          {hasWritten ? (
+            <Info className="mt-0.5 h-5 w-5 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          )}
+          <p>
+            {canSwitchTabs
+              ? "You may switch tabs to reference materials. The timer continues in the background."
+              : "Do not switch tabs or minimise the window. Doing so submits your exam immediately."}
+          </p>
+        </div>
+
+        <div className="space-y-6 py-8">
+          {displayedQuestions.map((question, index) => {
+            const isMCQ =
+              Array.isArray(question.options) && question.options.length > 0;
+            const selectedOptionIndex = answers[question.id] ?? null;
+
+            return (
+              <QuestionCard
+                key={question.id}
+                index={index}
+                question={question}
+                isMCQ={isMCQ}
+                isLocked={locked.has(question.id)}
+                selectedOptionIndex={selectedOptionIndex}
+                uploadedPdf={uploadedPdfs[question.id] ?? null}
+                isUploading={uploadingPdf.has(question.id)}
+                onOptionClick={handleOptionClick}
+                onPdfUpload={handlePdfUpload}
+              />
+            );
+          })}
+        </div>
+      </main>
+
+      {confirmationOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/75 p-4">
+          <Card
+            aria-labelledby="submit-confirmation-title"
+            className="w-full max-w-md border-border bg-card p-6 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h2
+                id="submit-confirmation-title"
+                className="font-heading text-xl font-semibold text-primary"
+              >
+                Submit your exam?
+              </h2>
+              <button
+                type="button"
+                aria-label="Close confirmation"
+                onClick={() => setConfirmationOpen(false)}
+                className="cursor-pointer rounded p-1 text-muted hover:bg-muted/10"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="mt-3 text-sm text-muted">
+              {hasWritten && missingMcqCount > 0
+                ? `You have not uploaded answers for ${missingWrittenCount} written question${
+                    missingWrittenCount === 1 ? "" : "s"
+                  } and have ${missingMcqCount} unanswered multiple-choice question${
+                    missingMcqCount === 1 ? "" : "s"
+                  }. Submit anyway?`
+                : hasWritten
+                  ? `You have not uploaded answers for ${confirmationCount} question${
+                      confirmationCount === 1 ? "" : "s"
+                    }. Submit anyway?`
+                  : `You have ${confirmationCount} unanswered question${
+                      confirmationCount === 1 ? "" : "s"
+                    }. Submit anyway?`}
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmationOpen(false)}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-border px-4 text-sm text-foreground hover:bg-muted/5"
+              >
+                Upload more
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitExam("manual")}
+                disabled={submitting}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Submit anyway
+              </button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
+    </div>
+  );
+}

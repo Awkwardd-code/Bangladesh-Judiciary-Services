@@ -1,12 +1,18 @@
 import { ObjectId } from "mongodb";
+
 import { fail, ok } from "@/lib/api-response";
+import {
+  AUTH_COOKIE_NAME,
+  AUTH_COOKIE_OPTIONS,
+  setSessionCookie,
+  signSession,
+} from "@/lib/auth";
 import { logAuth } from "@/lib/audit";
-import { setSessionCookie, signSession } from "@/lib/auth";
 import { pendingRegistrationsCol, usersCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
-import { verifyRegistrationSchema } from "@/lib/validators/auth";
 import { withGuard } from "@/lib/route-guard";
+import { verifyRegistrationSchema } from "@/lib/validators/auth";
 
 export const POST = withGuard({ kind: "public" }, async (req) => {
   const limit = rateLimit({
@@ -97,6 +103,14 @@ export const POST = withGuard({ kind: "public" }, async (req) => {
       v: 1,
       ip: getClientIp(req),
     });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[verify-registration] setting cookie", {
+        name: AUTH_COOKIE_NAME,
+        secure: AUTH_COOKIE_OPTIONS.secure,
+        sameSite: AUTH_COOKIE_OPTIONS.sameSite,
+      });
+    }
 
     await setSessionCookie(token);
     await pendingCollection.deleteOne({ _id: pendingId });

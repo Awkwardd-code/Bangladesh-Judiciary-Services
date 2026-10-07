@@ -113,6 +113,7 @@ export function AppHeader({
       <div className="flex min-w-0 items-center gap-3">
         <Button
           type="button"
+          variant="ghost"
           aria-label={`Toggle ${variant} sidebar`}
           onClick={onToggleSidebar}
           className="
@@ -159,6 +160,7 @@ export function AppHeader({
         {mounted ? (
           <Button
             type="button"
+            variant="ghost"
             aria-label="Toggle theme"
             onClick={() =>
               setTheme(currentTheme === "dark" ? "light" : "dark")
@@ -183,6 +185,7 @@ export function AppHeader({
           <DropdownMenuTrigger>
             <Button
               type="button"
+              variant="ghost"
               aria-label="Open user menu"
               className="
                 h-9 w-9 cursor-pointer rounded-full p-0 text-primary

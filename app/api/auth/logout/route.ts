@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (session) {
       await (await usersCol()).updateOne(
         { _id: new ObjectId(session.userId) },
-        { $set: { sessionVersion: session.v + 1, updatedAt: new Date() } },
+        { $set: { sessionVersion: (session.v ?? 1) + 1, updatedAt: new Date() } },
       );
     }
   } finally {

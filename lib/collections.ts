@@ -20,6 +20,8 @@ import type { Payment } from "./types/payment";
 import type { Course, Enrollment } from "./types/course";
 import type { ContactMessage } from "./types/contact-message";
 import type { AuthAudit } from "./types/auth-audit";
+import type { FreeTest, FreeTestAttempt } from "./types/free-test";
+import type { Material } from "./types/material";
 
 export async function usersCol(): Promise<Collection<User>> {
   return (await getDb()).collection<User>("users");
@@ -99,6 +101,18 @@ export async function paymentsCol(): Promise<Collection<Payment>> {
 
 export async function coursesCol(): Promise<Collection<Course>> {
   return (await getDb()).collection<Course>("courses");
+}
+
+export async function freeTestsCol(): Promise<Collection<FreeTest>> {
+  return (await getDb()).collection<FreeTest>("free_tests");
+}
+
+export async function freeTestAttemptsCol(): Promise<Collection<FreeTestAttempt>> {
+  return (await getDb()).collection<FreeTestAttempt>("free_test_attempts");
+}
+
+export async function materialsCol(): Promise<Collection<Material>> {
+  return (await getDb()).collection<Material>("materials");
 }
 
 export async function enrollmentsCol(): Promise<Collection<Enrollment>> {

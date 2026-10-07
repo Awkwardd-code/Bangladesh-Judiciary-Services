@@ -145,7 +145,7 @@ export function SiteFooter() {
               Stay updated.
             </h2>
             <p className="mt-1 text-[13px] text-cream/60">
-              Exam dates, new mock tests, and course announcements.
+              Exam dates, new model tests, and course announcements.
             </p>
           </div>
 

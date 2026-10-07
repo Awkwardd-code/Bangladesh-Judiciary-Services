@@ -24,6 +24,9 @@ export async function ensureIndexes(): Promise<void> {
   const notices = db.collection("notices");
   const payments = db.collection("payments");
   const courses = db.collection("courses");
+  const freeTests = db.collection("free_tests");
+  const freeTestAttempts = db.collection("free_test_attempts");
+  const materials = db.collection("materials");
   const enrollments = db.collection("enrollments");
   const contactMessages = db.collection("contact_messages");
   const authAudit = db.collection("auth_audit");
@@ -119,9 +122,28 @@ export async function ensureIndexes(): Promise<void> {
   await notices.createIndex({ status: 1, pinned: -1, publishedAt: -1 });
   await payments.createIndex({ status: 1, paidAt: -1 });
   await payments.createIndex({ userId: 1 });
+  await payments.createIndex({ transactionId: 1 }, { unique: true, sparse: true });
+  // NOTE: unique sparse prevents two payments from sharing the same
+  // transaction ID while still allowing records without one.
 
   await courses.createIndex({ status: 1, order: 1 });
   await courses.createIndex({ slug: 1 }, { unique: true });
+
+  await freeTests.createIndex({ status: 1, order: 1 });
+  await freeTests.createIndex({ scheduledAt: -1 });
+
+  await freeTestAttempts.createIndex({ userId: 1, createdAt: -1 });
+  await freeTestAttempts.createIndex({ freeTestId: 1, userId: 1 });
+  await freeTestAttempts.createIndex(
+    { userId: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { activeLock: true },
+    },
+  );
+
+  await materials.createIndex({ courseId: 1, order: 1 });
+  await materials.createIndex({ courseId: 1, isFreePreview: 1 });
 
   await enrollments.createIndex({ userId: 1, courseId: 1 }, { unique: true });
   await enrollments.createIndex({ status: 1, createdAt: -1 });

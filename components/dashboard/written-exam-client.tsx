@@ -188,7 +188,7 @@ export function WrittenExamClient({ exam, questions, submission }: WrittenExamPr
       }
 
       window.setTimeout(() => {
-        window.location.href = `/dashboard/results/${submissionId}`;
+        window.location.href = `/dashboard/mock-exams/written/${exam.id}/result?attemptId=${encodeURIComponent(submissionId)}`;
       }, reason === "manual" ? 250 : 2000);
     } catch (error) {
       console.error(error);

@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, FileText, Plus, Trophy } from "lucide-react";
+import {
+  ArchiveRestore,
+  EyeOff,
+  Globe,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ExamEditor } from "@/components/admin/exam-editor";
+import { ExamCard } from "@/components/shared/exam-card";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { FilterSelect } from "@/components/ui/filter-select";
+import { SearchInput } from "@/components/ui/search-input";
 
 export type AdminExam = {
   _id: string;
@@ -16,18 +25,24 @@ export type AdminExam = {
   totalQuestions: number;
   totalMarks: number;
   negativeMarking: number;
-  status: string;
+  questionsPerAttempt?: number;
+  status: "draft" | "published" | "archived";
   scheduledAt?: string;
 };
 
 export function ExamsList() {
   const [exams, setExams] = useState<AdminExam[]>([]);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    durationMinutes: "180",
-    negativeMarking: "0",
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+
+  const filteredExams = exams.filter((exam) => {
+    const matchesSearch = `${exam.title} ${exam.description ?? ""}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+    const matchesStatus = status === "all" || exam.status === status;
+
+    return matchesSearch && matchesStatus;
   });
 
   async function load() {
@@ -45,144 +60,168 @@ export function ExamsList() {
     return () => window.removeEventListener("open-exam-editor", open);
   }, []);
 
-  async function createExam() {
-    const response = await fetch("/api/admin/preliminary-exams", {
-      method: "POST",
+  async function changeStatus(exam: AdminExam) {
+    const response = await fetch(`/api/admin/preliminary-exams/${exam._id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...form,
-        durationMinutes: Number(form.durationMinutes),
-        negativeMarking: Number(form.negativeMarking),
+        status: exam.status === "published" ? "draft" : "published",
       }),
     });
-    const result = (await response.json()) as { data?: { exam?: AdminExam } };
-    setModal(false);
+    const result = (await response.json()) as { error?: string };
+
+    if (!response.ok) {
+      window.alert(result.error ?? "Unable to update exam status.");
+      return;
+    }
+
     await load();
-    if (result.data?.exam)
-      window.location.href = `/admin/mock-exams/${result.data.exam._id}`;
+  }
+
+  async function deleteExam(exam: AdminExam) {
+    if (!window.confirm(`Delete ${exam.title}?`)) {
+      return;
+    }
+
+    const response = await fetch(`/api/admin/preliminary-exams/${exam._id}`, {
+      method: "DELETE",
+    });
+    const result = (await response.json()) as { error?: string };
+
+    if (!response.ok) {
+      window.alert(result.error ?? "Unable to delete exam.");
+      return;
+    }
+
+    await load();
   }
 
   return (
     <>
-      <div className="mt-5 flex justify-end">
+      <header className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-heading text-3xl font-bold text-primary">
+            Model Tests
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            Create and manage model tests for students.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setModal(true)}
-          className="cursor-pointer rounded-md bg-primary px-4 py-2 text-sm text-cream"
+          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 text-sm text-cream"
         >
+          <Plus size={16} />
           New exam
         </button>
-      </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {exams.map((exam) => (
-          <article
+      </header>
+      <FilterBar
+        className="mt-5"
+        showClear={Boolean(search || status !== "all")}
+        onClear={() => {
+          setSearch("");
+          setStatus("all");
+        }}
+      >
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search model tests"
+          className="sm:max-w-80"
+        />
+        <FilterSelect
+          value={status}
+          onValueChange={setStatus}
+          placeholder="All statuses"
+          options={[
+            { value: "all", label: "All statuses" },
+            { value: "draft", label: "Draft" },
+            { value: "published", label: "Published" },
+            { value: "archived", label: "Archived" },
+          ]}
+        />
+      </FilterBar>
+      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {filteredExams.map((exam) => (
+          <ExamCard
             key={exam._id}
-            className="rounded-lg border border-border bg-card p-5 shadow-sm"
-          >
-            <Badge
-              className={
-                exam.status === "published"
-                  ? "border-emerald-600/30 text-emerald-700"
-                  : "text-muted"
-              }
-            >
-              {exam.status}
-            </Badge>
-            <h2 className="mt-4 font-heading text-lg font-semibold text-primary">
-              {exam.title}
-            </h2>
-            <p className="mt-2 line-clamp-2 text-sm text-muted">
-              {exam.description || "No description."}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted">
-              <span className="flex items-center gap-1">
-                <FileText size={14} />
-                {exam.totalQuestions} questions
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock size={14} />
-                {exam.durationMinutes} min
-              </span>
-              <span className="flex items-center gap-1">
-                <Trophy size={14} />
-                {exam.totalMarks} marks
-              </span>
-            </div>
-            <Link
-              href={`/admin/mock-exams/${exam._id}`}
-              className="mt-5 inline-flex cursor-pointer text-sm font-medium text-accent"
-            >
-              Manage questions →
-            </Link>
-          </article>
+            exam={{
+              id: exam._id,
+              kind: "preliminary",
+              title: exam.title,
+              description: exam.description ?? "",
+              durationMinutes: exam.durationMinutes,
+              totalQuestions: exam.totalQuestions,
+              questionsPerAttempt:
+                exam.questionsPerAttempt ?? exam.totalQuestions,
+              totalMarks: exam.totalMarks,
+              isFree: false,
+              price: 0,
+              courseId: null,
+              courseTitle: null,
+              courseSlug: null,
+              status: exam.status,
+            }}
+            variant="admin"
+            href={`/admin/mock-exams/${exam._id}`}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/admin/mock-exams/${exam._id}`}
+                  className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm text-foreground hover:bg-primary/5"
+                >
+                  <Pencil size={14} />
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void changeStatus(exam)}
+                  className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm text-foreground hover:bg-primary/5"
+                >
+                  {exam.status === "published" ? (
+                    <EyeOff size={14} />
+                  ) : exam.status === "archived" ? (
+                    <ArchiveRestore size={14} />
+                  ) : (
+                    <Globe size={14} />
+                  )}
+                  {exam.status === "published"
+                    ? "Unpublish"
+                    : exam.status === "archived"
+                      ? "Restore"
+                      : "Publish"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteExam(exam)}
+                  aria-label={`Delete ${exam.title}`}
+                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            }
+          />
         ))}
-        {exams.length === 0 ? (
+        {filteredExams.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted md:col-span-2 xl:col-span-3">
-            No mock exams yet.
+            {exams.length === 0
+              ? "No model tests yet. Create your first exam."
+              : "No model tests match these filters."}
           </div>
         ) : null}
       </div>
       {modal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/70 p-4">
-          <div className="w-full max-w-lg rounded-lg border border-border bg-card p-6">
-            <h2 className="font-heading text-xl font-bold text-primary">
-              New exam
-            </h2>
-            <div className="mt-5 space-y-3">
-              <Input
-                placeholder="Title"
-                value={form.title}
-                onChange={(event) =>
-                  setForm({ ...form, title: event.target.value })
-                }
-              />
-              <Textarea
-                rows={4}
-                placeholder="Description"
-                value={form.description}
-                onChange={(event) =>
-                  setForm({ ...form, description: event.target.value })
-                }
-              />
-              <Input
-                type="number"
-                min="1"
-                max="600"
-                placeholder="Duration in minutes"
-                value={form.durationMinutes}
-                onChange={(event) =>
-                  setForm({ ...form, durationMinutes: event.target.value })
-                }
-              />
-              <Input
-                type="number"
-                min="0"
-                max="2"
-                step="0.25"
-                placeholder="Negative marking"
-                value={form.negativeMarking}
-                onChange={(event) =>
-                  setForm({ ...form, negativeMarking: event.target.value })
-                }
-              />
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setModal(false)}
-                className="cursor-pointer px-4 text-sm text-muted"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={createExam}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-cream"
-              >
-                <Plus size={16} />
-                Create
-              </button>
-            </div>
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+            <ExamEditor
+              onCancel={() => setModal(false)}
+              onSaved={() => {
+                setModal(false);
+                void load();
+              }}
+            />
           </div>
         </div>
       ) : null}

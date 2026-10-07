@@ -75,27 +75,23 @@ export async function POST(
       return fail("Imported question orders must be unique.", 400);
     }
 
-    if (!parsed.data.replaceExisting) {
-      const orderConflict = await questions.findOne({
-        examId,
-        order: { $in: incomingOrders },
-      });
-
-      if (orderConflict) {
-        return fail(
-          "One or more question orders already exist. Enable replace or adjust the order values.",
-          409,
-        );
-      }
-    } else {
+    if (parsed.data.replaceExisting) {
       await questions.deleteMany({ examId });
     }
 
+    const highestOrder = await questions
+      .find({ examId })
+      .sort({ order: -1 })
+      .limit(1)
+      .next();
+    const nextOrderStart = highestOrder ? highestOrder.order : 0;
     const now = new Date();
-    const documents = parsed.data.rows.map((row) => ({
+    const documents = parsed.data.rows.map((row, index) => ({
       _id: new ObjectId(),
       examId,
-      order: row.order,
+      order: parsed.data.replaceExisting
+        ? row.order
+        : nextOrderStart + index + 1,
       questionText: row.questionText,
       options: row.options,
       correctOptionIndex: row.correctOptionIndex,

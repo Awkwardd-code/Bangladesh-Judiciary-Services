@@ -1,0 +1,129 @@
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
+
+import { fail, ok } from "@/lib/api-response";
+import { coursesCol, materialsCol } from "@/lib/collections";
+import { ensureIndexes } from "@/lib/indexes";
+import { getEnrollmentAccess } from "@/lib/enrollment";
+import { withGuard } from "@/lib/route-guard";
+
+export const GET = withGuard(
+  { kind: "session" },
+  async (_request, { params, session }) => {
+    try {
+      await ensureIndexes();
+
+      const { id } = params;
+      if (!ObjectId.isValid(id)) return fail("Invalid material id", 400);
+
+      const material = await (await materialsCol()).findOne({
+        _id: new ObjectId(id),
+      });
+      if (!material) return fail("Material not found", 404);
+
+      const course = await (await coursesCol()).findOne({
+        _id: material.courseId,
+      });
+      if (!course) return fail("Course not found", 404);
+
+      const access = await getEnrollmentAccess(
+        new ObjectId(session!.userId),
+        material.courseId,
+      );
+      if (!access.hasAccess && !material.isFreePreview) {
+        return fail("You do not have access to this material.", 403);
+      }
+
+      if (material.kind === "link") {
+        return ok({ redirect: material.url });
+      }
+      if (!material.url) return fail("Material is unavailable", 404);
+
+      const sourceUrl = new URL(material.url);
+      if (
+        sourceUrl.protocol !== "https:" ||
+        sourceUrl.hostname !== "res.cloudinary.com"
+      ) {
+        return fail("Unable to fetch the file.", 502);
+      }
+
+      const downloadUrl = material.url.replace(
+        "/upload/",
+        "/upload/fl_attachment/",
+      );
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20_000);
+      let upstream: Response;
+
+      try {
+        upstream = await fetch(downloadUrl, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+      } catch (error) {
+        clearTimeout(timeout);
+        console.error("Fetch material from Cloudinary failed", error);
+        return fail("Unable to fetch the file.", 502);
+      }
+
+      if (!upstream.ok || !upstream.body) {
+        clearTimeout(timeout);
+        return fail("Unable to fetch the file.", 502);
+      }
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[material/download]", {
+          materialId: material._id.toString(),
+          userId: session!.userId,
+          courseId: material.courseId.toString(),
+        });
+      }
+
+      const safeName =
+        material.title
+          .replace(/[^a-zA-Z0-9-_ ]+/g, " ")
+          .trim()
+          .replace(/\s+/g, "-")
+          .toLowerCase() || "material";
+      const urlExtension = sourceUrl.pathname.match(/\.(pdf|docx?)$/i)?.[1];
+      const extension =
+        urlExtension?.toLowerCase() ??
+        (material.kind === "doc" ? "doc" : "pdf");
+      const reader = upstream.body.getReader();
+      const stream = new ReadableStream<Uint8Array>({
+        async pull(streamController) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              clearTimeout(timeout);
+              streamController.close();
+              return;
+            }
+            streamController.enqueue(value);
+          } catch (error) {
+            clearTimeout(timeout);
+            streamController.error(error);
+          }
+        },
+        async cancel() {
+          clearTimeout(timeout);
+          await reader.cancel();
+        },
+      });
+
+      return new NextResponse(stream, {
+        headers: {
+          "Content-Type":
+            upstream.headers.get("content-type") ??
+            "application/octet-stream",
+          "Content-Disposition":
+            `attachment; filename="${safeName}.${extension}"`,
+          "Cache-Control": "private, no-store",
+        },
+      });
+    } catch (error) {
+      console.error("Material download error", error);
+      return fail("Unable to fetch the file.", 502);
+    }
+  },
+);

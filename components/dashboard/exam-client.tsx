@@ -192,7 +192,7 @@ export function ExamClient({ exam, questions, attempt }: ExamProps) {
       }
 
       window.setTimeout(() => {
-        window.location.href = `/dashboard/results/${attemptId}`;
+        window.location.href = `/dashboard/mock-exams/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`;
       }, reason === "manual" ? 250 : 2000);
     } catch (error) {
       console.error(error);

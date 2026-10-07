@@ -1,124 +1,161 @@
 import type { Metadata } from "next";
 import { ObjectId } from "mongodb";
-import { redirect } from "next/navigation";
 
 import { ActiveExamBanner } from "@/components/dashboard/active-exam-banner";
+import { MockExamsHeader } from "@/components/dashboard/mock-exams-header";
 import { MockExamsFilter } from "@/components/dashboard/mock-exams-filter";
 import { MockExamsGrid } from "@/components/dashboard/mock-exams-grid";
-import { MockExamsHeader } from "@/components/dashboard/mock-exams-header";
 import { requireSession } from "@/lib/auth-guard";
-import { preliminaryExamsCol, writtenExamsCol } from "@/lib/collections";
+import {
+  enrollmentsCol,
+  freeTestAttemptsCol,
+  preliminaryAttemptsCol,
+  writtenSubmissionsCol,
+} from "@/lib/collections";
 import { getActiveExam } from "@/lib/exam-lock";
-import { checkExamAccess } from "@/lib/exam-access";
-import { QueryPagination } from "@/components/public/query-pagination";
+import { listUnifiedExams } from "@/lib/exams-query";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Mock Exams — BJS Prep",
-  description: "Browse and take mock exams for the BJS preliminary and written rounds.",
+  title: "Model Tests — BJS Prep",
+  description: "Browse your paid and free model tests.",
 };
 
-export default async function MockExamsPage({
+export default async function DashboardMockExamsPage({
   searchParams,
 }: {
   searchParams: Promise<{
     search?: string;
-    category?: string;
-    page?: string;
-    sort?: string;
+    kind?: "all" | "preliminary" | "written" | "free";
   }>;
 }) {
   const session = await requireSession();
 
   if (!session) {
-    redirect("/login?next=%2Fdashboard%2Fmock-exams");
+    return null;
   }
 
+  const userId = new ObjectId(session.userId);
   const params = await searchParams;
-  const search = params.search?.trim() ?? "";
-  const category = params.category ?? "all";
-  const page = Math.max(1, Number(params.page ?? 1) || 1);
-  const limit = 9;
-  const regex = search
-    ? new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
-    : null;
-  const preliminaryFilter: Record<string, unknown> = { status: "published" };
-  const writtenFilter: Record<string, unknown> = { status: "published" };
-  if (category === "written") preliminaryFilter._id = { $exists: false };
-  if (category === "preliminary") writtenFilter._id = { $exists: false };
-  if (regex) {
-    preliminaryFilter.title = regex;
-    writtenFilter.title = regex;
+  const [
+    result,
+    activeExam,
+    enrollments,
+    preliminaryAttempts,
+    writtenAttempts,
+    freeAttempts,
+  ] = await Promise.all([
+    listUnifiedExams({
+      scope: "all",
+      search: params.search,
+      kind: params.kind,
+      page: 1,
+      limit: 100,
+    }),
+    getActiveExam(userId),
+    (await enrollmentsCol()).find({ userId }).toArray(),
+    (await preliminaryAttemptsCol()).find({ userId }).toArray(),
+    (await writtenSubmissionsCol()).find({ userId }).toArray(),
+    (await freeTestAttemptsCol()).find({ userId }).toArray(),
+  ]);
+
+  const enrollmentMap: Record<
+    string,
+    "approved" | "pending" | "rejected" | "none"
+  > = {};
+
+  for (const enrollment of enrollments) {
+    const key = enrollment.courseId.toString();
+    enrollmentMap[key] =
+      enrollment.status === "approved"
+        ? "approved"
+        : enrollment.status === "pending"
+          ? "pending"
+          : enrollment.status === "rejected"
+            ? "rejected"
+            : "none";
   }
 
-  const [preliminary, written] = await Promise.all([
-    (await preliminaryExamsCol())
-      .find(preliminaryFilter)
-      .sort({ createdAt: -1 })
-      .toArray(),
-    (await writtenExamsCol())
-      .find(writtenFilter)
-      .sort({ createdAt: -1 })
-      .toArray(),
-  ]);
-  const candidates = [
-    ...preliminary.map((exam) => ({ ...exam, examType: "preliminary" as const })),
-    ...written.map((exam) => ({ ...exam, examType: "written" as const })),
-  ].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
-  const accessible = await Promise.all(
-    candidates.map(async (exam) => {
-      const access = await checkExamAccess(
-        new ObjectId(session.userId),
-        exam._id,
-        exam.examType,
-      );
-      return access.allowed || access.reason === "another-exam-active"
-        ? exam
-        : null;
-    }),
-  );
-  const exams = accessible
-    .filter((exam): exam is NonNullable<typeof exam> => exam !== null)
-    .slice((page - 1) * limit, page * limit)
-    .map((exam) => ({
-      id: exam._id.toString(),
-      title: exam.title,
-      description: exam.description ?? "",
-      questions: exam.totalQuestions,
-      durationMinutes: exam.durationMinutes,
-      examType: exam.examType,
-      createdAt: exam.createdAt.toISOString(),
-    }));
-  const total = accessible.filter(Boolean).length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const active = await getActiveExam(new ObjectId(session.userId));
+  const attemptMap: Record<
+    string,
+    { attempts: number; bestScore: number | null }
+  > = {};
 
-  let examTitle = "Your exam";
+  function recordAttempt(examId: string, percent: number | null) {
+    const current = attemptMap[examId] ?? { attempts: 0, bestScore: null };
+    current.attempts += 1;
 
-  if (active) {
-    if (active.kind === "preliminary") {
-      const exam = await (await preliminaryExamsCol()).findOne({
-        _id: active.examId,
-      });
-      examTitle = exam?.title ?? "Preliminary mock exam";
-    } else {
-      const exam = await (await writtenExamsCol()).findOne({
-        _id: active.examId,
-      });
-      examTitle = exam?.title ?? "Written mock exam";
+    if (percent !== null && Number.isFinite(percent)) {
+      current.bestScore =
+        current.bestScore === null
+          ? Math.round(percent)
+          : Math.max(current.bestScore, Math.round(percent));
     }
+
+    attemptMap[examId] = current;
+  }
+
+  for (const attempt of preliminaryAttempts) {
+    if (attempt.status === "in-progress") {
+      continue;
+    }
+
+    const examId = attempt.examId.toString();
+    const exam = result.exams.find((item) => item.id === examId);
+    const percentage =
+      exam && exam.totalMarks > 0
+        ? (attempt.score / exam.totalMarks) * 100
+        : null;
+    recordAttempt(examId, percentage);
+  }
+
+  for (const submission of writtenAttempts) {
+    if (submission.status === "in-progress") {
+      continue;
+    }
+
+    const percentage =
+      submission.maxScore > 0
+        ? (submission.totalScore / submission.maxScore) * 100
+        : null;
+    recordAttempt(submission.examId.toString(), percentage);
+  }
+
+  for (const attempt of freeAttempts) {
+    if (attempt.status === "in-progress") {
+      continue;
+    }
+
+    const examId = attempt.freeTestId.toString();
+    const exam = result.exams.find((item) => item.id === examId);
+    const percentage =
+      exam && exam.totalMarks > 0
+        ? (attempt.score / exam.totalMarks) * 100
+        : null;
+    recordAttempt(examId, percentage);
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      {activeExam ? (
+        <ActiveExamBanner
+          active={activeExam}
+          examTitle={
+            activeExam.kind === "free"
+              ? "Free model test"
+              : activeExam.kind === "written"
+                ? "Written model test"
+                : "Preliminary model test"
+          }
+        />
+      ) : null}
       <MockExamsHeader />
-      {active ? <ActiveExamBanner active={active} examTitle={examTitle} /> : null}
       <MockExamsFilter />
-      <MockExamsGrid exams={exams} activeExam={active} />
-      <QueryPagination
-        page={page}
-        totalPages={totalPages}
-        total={total}
-        limit={limit}
+      <MockExamsGrid
+        exams={result.exams}
+        attemptMap={attemptMap}
+        enrollmentMap={enrollmentMap}
       />
     </div>
   );

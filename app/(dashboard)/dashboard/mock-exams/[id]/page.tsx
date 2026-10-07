@@ -4,9 +4,13 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
-import { ExamClient } from "@/components/dashboard/exam-client";
+import { ExamRunner } from "@/components/dashboard/exam-runner";
 import { requireSession } from "@/lib/auth-guard";
-import { preliminaryAttemptsCol, preliminaryExamsCol, preliminaryQuestionsCol } from "@/lib/collections";
+import {
+  preliminaryAttemptsCol,
+  preliminaryExamsCol,
+  preliminaryQuestionsCol,
+} from "@/lib/collections";
 import { getActiveExam } from "@/lib/exam-lock";
 import { checkExamAccess } from "@/lib/exam-access";
 
@@ -22,7 +26,9 @@ export default async function PreliminaryExamPage({
   const session = await requireSession();
 
   if (!session) {
-    redirect(`/login?next=${encodeURIComponent(`/dashboard/mock-exams/${(await params).id}`)}`);
+    redirect(
+      `/login?next=${encodeURIComponent(`/dashboard/mock-exams/${(await params).id}`)}`
+    );
   }
 
   const { id } = await params;
@@ -69,20 +75,29 @@ export default async function PreliminaryExamPage({
     );
   }
 
-  if (!access.allowed && access.reason === "outside-window") {
+  if (
+    !access.allowed &&
+    (access.reason === "not-yet-open" || access.reason === "closed")
+  ) {
     return (
       <BlockedExamState
-        title="This exam is not currently open."
+        title={
+          access.reason === "not-yet-open"
+            ? "This exam is not open yet."
+            : "This exam is no longer open."
+        }
         description={
-          exam.scheduledAt
-            ? `Scheduled to open ${exam.scheduledAt.toLocaleString()}.`
-            : "The exam is outside its availability window."
+          access.reason === "not-yet-open"
+            ? `Scheduled to open ${access.opensAt?.toLocaleString() ?? exam.scheduledAt?.toLocaleString() ?? "on a future date"}.`
+            : `Closed on ${access.closesAt?.toLocaleString() ?? exam.closesAt?.toLocaleString() ?? "a past date"}.`
         }
       />
     );
   }
 
-  const questions = await (await preliminaryQuestionsCol())
+  const questions = await (
+    await preliminaryQuestionsCol()
+  )
     .find({ examId })
     .sort({ order: 1 })
     .toArray();
@@ -119,7 +134,9 @@ export default async function PreliminaryExamPage({
 
   const attempt =
     active && active.kind === "preliminary"
-      ? await (await preliminaryAttemptsCol()).findOne({
+      ? await (
+          await preliminaryAttemptsCol()
+        ).findOne({
           _id: active.attemptId,
           userId,
           examId,
@@ -128,18 +145,23 @@ export default async function PreliminaryExamPage({
       : null;
 
   return (
-    <ExamClient
+    <ExamRunner
+      key={exam._id.toString()}
       exam={{
         id: exam._id.toString(),
+        kind: "preliminary",
         title: exam.title,
-        description: exam.description ?? "",
         durationMinutes: exam.durationMinutes,
         totalQuestions: exam.totalQuestions,
         totalMarks: exam.totalMarks,
+        questionsPerAttempt: exam.questionsPerAttempt ?? questions.length,
         negativeMarking: exam.negativeMarking,
+        hasWrittenQuestions: false,
       }}
       questions={questions.map((question) => ({
         id: question._id.toString(),
+        position: question.order,
+        source: "preliminary_questions" as const,
         questionText: question.questionText,
         options: question.options,
         marks: question.marks,

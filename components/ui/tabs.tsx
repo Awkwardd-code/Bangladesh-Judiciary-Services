@@ -12,11 +12,13 @@ export function Tabs({
   value: controlledValue,
   onValueChange,
   children,
+  className,
 }: {
   defaultValue: string;
   value?: string;
   onValueChange?: (value: string) => void;
   children: ReactNode;
+  className?: string;
 }) {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const value = controlledValue ?? internalValue;
@@ -27,14 +29,14 @@ export function Tabs({
 
   return (
     <TabsContext.Provider value={{ value, setValue }}>
-      {children}
+      <div className={className}>{children}</div>
     </TabsContext.Provider>
   );
 }
 
-export function TabsList({ children }: { children: ReactNode }) {
+export function TabsList({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="grid grid-cols-2 rounded-md border border-border p-1">
+    <div className={className ?? "grid grid-cols-2 rounded-md border border-border p-1"}>
       {children}
     </div>
   );

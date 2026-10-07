@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   CreditCard,
   ArrowLeft,
+  BookOpen,
   FileText,
   LayoutDashboard,
   Megaphone,
@@ -21,6 +22,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Students", href: "/admin/students", icon: Users },
+  { label: "Courses", href: "/admin/courses", icon: BookOpen },
+  { label: "Enrollments", href: "/admin/enrollments", icon: ClipboardCheck },
   { label: "Mentors", href: "/admin/mentors", icon: Users },
   {
     label: "Success Stories",
@@ -29,8 +32,18 @@ const navItems = [
   },
   { label: "Notices", href: "/admin/notices", icon: Megaphone },
   {
-    label: "Mock Exams",
+    label: "Model Tests",
     href: "/admin/mock-exams",
+    icon: FileText,
+  },
+  {
+    label: "Question Bank",
+    href: "/admin/question-bank",
+    icon: BookOpen,
+  },
+  {
+    label: "Free Model Tests",
+    href: "/admin/free-tests",
     icon: FileText,
   },
   {
@@ -43,6 +56,7 @@ const navItems = [
     href: "/admin/payments",
     icon: CreditCard,
   },
+  { label: "About", href: "/admin/about", icon: BookOpen },
 ];
 
 export function AdminSidebar() {

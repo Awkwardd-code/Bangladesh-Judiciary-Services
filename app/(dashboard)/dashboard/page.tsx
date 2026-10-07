@@ -18,7 +18,7 @@ import { SubjectAccuracyChart } from "@/components/dashboard/charts/subject-accu
 import { TierDistributionChart } from "@/components/dashboard/charts/tier-distribution-chart";
 import { requireSession } from "@/lib/auth-guard";
 import { usersCol } from "@/lib/collections";
-import { getDashboardStats, getRecentAttempts } from "@/lib/stats";
+import { getDashboardStats, getStudentAttemptActivity } from "@/lib/stats";
 
 export const metadata: Metadata = {
   title: "Dashboard — BJS Prep",
@@ -40,10 +40,10 @@ export default async function DashboardPage({
   }
 
   const userId = new ObjectId(session.userId);
-  const [stats, user, recentAttempts] = await Promise.all([
+  const [stats, user, activity] = await Promise.all([
     getDashboardStats(),
     (await usersCol()).findOne({ _id: userId }),
-    getRecentAttempts(userId, 5),
+    getStudentAttemptActivity(userId, 5),
   ]);
 
   if (!user) {
@@ -109,7 +109,7 @@ export default async function DashboardPage({
         />
       </section>
 
-      <AttemptActivityChart data={stats.recentAttempts} />
+      <AttemptActivityChart data={activity.chart} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <TierDistributionChart data={stats.tierDistribution} />
@@ -123,7 +123,7 @@ export default async function DashboardPage({
           <QuickAction
             href="/dashboard/mock-exams"
             icon={<FileText size={19} />}
-            label="Take a Mock Test"
+            label="Take a Model Test"
           />
           <QuickAction
             href="/dashboard/results"
@@ -159,14 +159,14 @@ export default async function DashboardPage({
             View all
           </Link>
         </div>
-        {recentAttempts.length > 0 ? (
+        {activity.recentAttempts.length > 0 ? (
           <div className="mt-4 divide-y divide-border">
-            {recentAttempts.map((attempt) => (
+            {activity.recentAttempts.map((attempt) => (
               <div
                 key={attempt.id}
                 className="flex flex-wrap items-center justify-between gap-3 py-4"
               >
-                <div className="min-w-0">
+                <Link href={attempt.href} className="min-w-0 hover:underline">
                   <p className="truncate text-sm font-medium text-foreground">
                     {attempt.subject}
                   </p>
@@ -177,9 +177,11 @@ export default async function DashboardPage({
                       year: "numeric",
                     })}
                   </p>
-                </div>
+                </Link>
                 <span className="rounded-full bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                  {attempt.scorePercent}%
+                  {attempt.category === "Written" && attempt.score === 0
+                    ? attempt.status
+                    : `${attempt.scorePercent}%`}
                 </span>
               </div>
             ))}

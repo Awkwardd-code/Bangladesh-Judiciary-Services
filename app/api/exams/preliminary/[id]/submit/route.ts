@@ -7,7 +7,7 @@ import { preliminaryAttemptsCol, preliminaryExamsCol, preliminaryQuestionsCol } 
 import { ensureIndexes } from "@/lib/indexes";
 
 const submitSchema = z.object({
-  attemptId: z.string().min(1),
+  attemptId: z.string().regex(/^[a-f\d]{24}$/i),
   reason: z.enum(["manual", "tab-change", "visibility-hidden", "time-expired"]),
 });
 
@@ -30,6 +30,9 @@ export async function POST(
     }
 
     const { attemptId, reason } = parsed.data;
+    if (!ObjectId.isValid(id)) {
+      return fail("Exam not found", 404);
+    }
     const examId = new ObjectId(id);
     const userId = new ObjectId(session.userId);
 
@@ -47,22 +50,28 @@ export async function POST(
     }
 
     const exam = await (await preliminaryExamsCol()).findOne({ _id: examId });
-    const questions = await (await preliminaryQuestionsCol())
-      .find({ examId })
-      .sort({ order: 1 })
-      .toArray();
+    const questionMap = new Map(
+      (
+        await (await preliminaryQuestionsCol())
+          .find({ examId })
+          .sort({ order: 1 })
+          .toArray()
+      ).map((question) => [question._id.toString(), question]),
+    );
 
     let score = 0;
     let correctCount = 0;
     let wrongCount = 0;
     let skippedCount = 0;
 
-    for (const question of questions) {
-      const answer = attempt.answers.find(
-        (item) => item.questionId.toString() === question._id.toString(),
-      );
+    for (const answer of attempt.answers) {
+      const question = questionMap.get(answer.questionId.toString());
 
-      if (!answer || answer.selectedOptionIndex === null) {
+      if (!question) {
+        continue;
+      }
+
+      if (answer.selectedOptionIndex === null) {
         skippedCount += 1;
         continue;
       }
@@ -79,8 +88,14 @@ export async function POST(
     const submittedAt = new Date();
     const status = reason === "time-expired" ? "auto-submitted" : "submitted";
 
-    await (await preliminaryAttemptsCol()).updateOne(
-      { _id: attempt._id },
+    const updateResult = await (await preliminaryAttemptsCol()).updateOne(
+      {
+        _id: attempt._id,
+        userId,
+        examId,
+        activeLock: true,
+        status: "in-progress",
+      },
       {
         $set: {
           score,
@@ -95,10 +110,13 @@ export async function POST(
         },
       },
     );
+    if (updateResult.modifiedCount !== 1) {
+      return fail("This attempt has already been submitted.", 409);
+    }
 
     return ok({
       attempt: {
-        ...attempt,
+        id: attempt._id.toString(),
         score,
         correctCount,
         wrongCount,
@@ -106,8 +124,6 @@ export async function POST(
         submittedAt,
         autoSubmitReason: reason,
         status,
-        activeLock: false,
-        updatedAt: submittedAt,
       },
     });
   } catch (error) {

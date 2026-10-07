@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { ArchiveRestore, Eye, EyeOff, Globe, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ExamLifecycleBar } from "@/components/admin/exam-lifecycle-bar";
+import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
 import { ImportExcelDialog } from "@/components/admin/import-excel-dialog";
 import { WrittenExamRecord } from "@/components/admin/written-exam-editor";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +65,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
     title: "",
     description: "",
     durationMinutes: "180",
+    questionsPerAttempt: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,12 +105,16 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
         title: loadedExam.title,
         description: loadedExam.description ?? "",
         durationMinutes: String(loadedExam.durationMinutes),
+        questionsPerAttempt:
+          loadedExam.questionsPerAttempt !== undefined
+            ? String(loadedExam.questionsPerAttempt)
+            : "",
       });
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to load written exam.",
+          : "Unable to load written exam."
       );
     } finally {
       setLoading(false);
@@ -145,7 +153,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
             maxMarks: String(question.maxMarks),
             subject: question.subject ?? "",
           }
-        : emptyQuestion,
+        : emptyQuestion
     );
     setQuestionOpen(true);
   }
@@ -184,7 +192,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to save question.",
+          : "Unable to save question."
       );
     } finally {
       setSaving(false);
@@ -202,6 +210,10 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
         body: JSON.stringify({
           ...settings,
           durationMinutes: Number(settings.durationMinutes),
+          questionsPerAttempt:
+            settings.questionsPerAttempt.trim() === ""
+              ? undefined
+              : Number(settings.questionsPerAttempt),
         }),
       });
       const result = (await response.json()) as { error?: string };
@@ -215,7 +227,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to save exam settings.",
+          : "Unable to save exam settings."
       );
     } finally {
       setSaving(false);
@@ -226,7 +238,9 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
     const response = await fetch(`/api/admin/written-exams/${examId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "published" }),
+      body: JSON.stringify({
+        status: exam?.status === "published" ? "draft" : "published",
+      }),
     });
     const result = (await response.json()) as { error?: string };
 
@@ -245,7 +259,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
 
     const response = await fetch(
       `/api/admin/written-exams/${examId}/questions/${question._id}`,
-      { method: "DELETE" },
+      { method: "DELETE" }
     );
     const result = (await response.json()) as { error?: string };
 
@@ -279,7 +293,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order: update.order }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -296,7 +310,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
     formData.set("file", file);
     const uploadResponse = await fetch(
       `/api/admin/written-exams/${examId}/questions/${question._id}/model-answer`,
-      { method: "POST", body: formData },
+      { method: "POST", body: formData }
     );
     const uploadResult = (await uploadResponse.json()) as {
       error?: string;
@@ -321,7 +335,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
           modelAnswerUrl: uploadResult.data.url,
           modelAnswerPublicId: uploadResult.data.publicId,
         }),
-      },
+      }
     );
 
     if (!saveResponse.ok) {
@@ -354,7 +368,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
         ← Mock exams
       </Link>
 
-      <header className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="sticky top-0 z-30 mt-4 flex flex-col gap-4 border-b border-border bg-background/95 py-4 backdrop-blur sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-heading text-3xl font-bold text-primary">
@@ -363,16 +377,26 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
             <Badge className="text-muted">{exam.status}</Badge>
           </div>
           <p className="mt-2 text-sm text-muted">
-            {exam.totalQuestions} questions · {exam.totalMarks} marks ·{" "}
-            {exam.durationMinutes} min
+            {exam.totalQuestions}{" "}
+            {exam.totalQuestions === 1 ? "question" : "questions"} ·{" "}
+            {exam.totalMarks} marks · {exam.durationMinutes} min
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/dashboard/mock-exams/written/${examId}`}
+            target="_blank"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-4 text-sm text-foreground"
+          >
+            <Eye className="h-4 w-4" />
+            Preview
+          </Link>
           <button
             type="button"
             onClick={() => openQuestionEditor()}
-            className="h-10 cursor-pointer rounded-md bg-primary px-4 text-sm font-medium text-cream"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-cream"
           >
+            <Plus className="h-4 w-4" />
             Add question
           </button>
           <ImportExcelDialog
@@ -380,17 +404,50 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
             kind="written"
             onImported={() => setReloadKey((current) => current + 1)}
           />
-          {exam.status !== "published" ? (
-            <button
-              type="button"
-              onClick={() => void publishExam()}
-              className="h-10 cursor-pointer rounded-md border border-accent px-4 text-sm font-medium text-accent"
-            >
-              Publish
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => void publishExam()}
+            disabled={
+              exam.status !== "published" &&
+              questions.length < Math.max(1, exam.questionsPerAttempt ?? 1)
+            }
+            title={
+              exam.status !== "published" &&
+              questions.length < Math.max(1, exam.questionsPerAttempt ?? 1)
+                ? `Add at least ${Math.max(1, exam.questionsPerAttempt ?? 1)} questions before publishing.`
+                : undefined
+            }
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-accent px-4 text-sm font-medium text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {exam.status === "published" ? (
+              <EyeOff className="h-4 w-4" />
+            ) : exam.status === "archived" ? (
+              <ArchiveRestore className="h-4 w-4" />
+            ) : (
+              <Globe className="h-4 w-4" />
+            )}
+            {exam.status === "published"
+              ? "Unpublish"
+              : exam.status === "archived"
+                ? "Restore"
+                : "Publish"}
+          </button>
         </div>
       </header>
+
+      <div className="mt-5 space-y-4">
+        <ExamLifecycleBar
+          status={exam.status}
+          totalQuestions={questions.length}
+          requiredQuestions={Math.max(1, exam.questionsPerAttempt ?? 1)}
+          hasCourse={false}
+        />
+        <ExamReadinessCard
+          totalQuestions={questions.length}
+          requiredQuestions={Math.max(1, exam.questionsPerAttempt ?? 1)}
+          hasCourse={false}
+        />
+      </div>
 
       {error ? (
         <p
@@ -416,7 +473,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
             >
               {tab}
             </button>
-          ),
+          )
         )}
       </div>
 
@@ -544,6 +601,10 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
               }
             />
           </label>
+          <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            Model answer PDFs are attached to individual written questions in
+            the Questions tab.
+          </p>
           <label className="block space-y-2 text-sm font-medium text-primary">
             Description
             <Textarea
@@ -571,6 +632,24 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
                 }))
               }
             />
+          </label>
+          <label className="block space-y-2 text-sm font-medium text-primary">
+            Questions per attempt
+            <Input
+              type="number"
+              min={1}
+              max={500}
+              value={settings.questionsPerAttempt}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  questionsPerAttempt: event.target.value,
+                }))
+              }
+            />
+            <span className="text-xs text-muted">
+              Leave blank to use the full question bank for each attempt.
+            </span>
           </label>
           <button
             type="submit"

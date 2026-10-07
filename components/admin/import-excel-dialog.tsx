@@ -106,7 +106,7 @@ export function ImportExcelDialog({
     try {
       const response = await fetch(
         `/api/admin/${endpoint}/${examId}/import/parse`,
-        { method: "POST", body: formData },
+        { method: "POST", body: formData }
       );
       const result = (await response.json()) as {
         error?: string;
@@ -124,7 +124,7 @@ export function ImportExcelDialog({
       setUploadError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to parse spreadsheet.",
+          : "Unable to parse spreadsheet."
       );
     } finally {
       setLoading(false);
@@ -172,7 +172,7 @@ export function ImportExcelDialog({
             rows: normalizedRows,
             replaceExisting,
           }),
-        },
+        }
       );
       const result = (await response.json()) as { error?: string };
 
@@ -187,7 +187,7 @@ export function ImportExcelDialog({
       setImportError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to import questions.",
+          : "Unable to import questions."
       );
       setStep("preview");
     }
@@ -231,8 +231,48 @@ export function ImportExcelDialog({
             role="dialog"
             aria-modal="true"
             aria-labelledby="import-excel-title"
-            className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg border border-border bg-card shadow-xl"
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
           >
+            {(() => {
+              const activeStep =
+                step === "upload" ? 0 : step === "preview" ? 1 : 2;
+              const labels = ["Upload", "Review", "Import"];
+
+              return (
+                <ol className="grid grid-cols-3 border-b border-border px-5 py-4 sm:px-6">
+                  {labels.map((label, index) => {
+                    const complete = index < activeStep;
+                    const active = index === activeStep;
+
+                    return (
+                      <li
+                        key={label}
+                        className={`flex items-center gap-2 text-xs sm:text-sm ${
+                          active
+                            ? "font-semibold text-primary"
+                            : complete
+                              ? "text-emerald-700"
+                              : "text-muted"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                            complete
+                              ? "bg-emerald-100 text-emerald-700"
+                              : active
+                                ? "bg-primary text-cream"
+                                : "bg-primary/10 text-muted"
+                          }`}
+                        >
+                          {complete ? <Check size={14} /> : index + 1}
+                        </span>
+                        {label}
+                      </li>
+                    );
+                  })}
+                </ol>
+              );
+            })()}
             <header className="flex items-start justify-between gap-4 border-b border-border p-5 sm:p-6">
               <div>
                 <h2
@@ -375,7 +415,7 @@ export function ImportExcelDialog({
                             <>
                               <td className="px-3 py-2 text-muted">
                                 {String.fromCharCode(
-                                  65 + (row.correctOptionIndex ?? 0),
+                                  65 + (row.correctOptionIndex ?? 0)
                                 )}
                               </td>
                               <td className="px-3 py-2 text-muted">
@@ -406,17 +446,23 @@ export function ImportExcelDialog({
                   </table>
                 </div>
 
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-primary">
-                  <input
-                    type="checkbox"
-                    checked={replaceExisting}
-                    onChange={(event) =>
-                      setReplaceExisting(event.target.checked)
-                    }
-                    className="h-4 w-4 cursor-pointer accent-primary"
-                  />
-                  Replace existing questions for this exam
-                </label>
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-primary">
+                    <input
+                      type="checkbox"
+                      checked={replaceExisting}
+                      onChange={(event) =>
+                        setReplaceExisting(event.target.checked)
+                      }
+                      className="h-4 w-4 cursor-pointer accent-primary"
+                    />
+                    Replace existing questions for this exam
+                  </label>
+                  <p className="text-xs text-muted">
+                    Leave this unchecked to append the imported questions and
+                    continue numbering from the current highest order.
+                  </p>
+                </div>
 
                 {importError ? <ErrorAlert message={importError} /> : null}
 

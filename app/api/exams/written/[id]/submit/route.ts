@@ -1,101 +1,85 @@
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 
-import { requireSession } from "@/lib/auth-guard";
-import { ok, fail } from "@/lib/api-response";
-import { writtenQuestionsCol, writtenSubmissionsCol } from "@/lib/collections";
+import { fail, ok } from "@/lib/api-response";
+import { writtenSubmissionsCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { withGuard } from "@/lib/route-guard";
 
 const submitSchema = z.object({
-  submissionId: z.string().min(1),
+  submissionId: z.string().regex(/^[a-f\d]{24}$/i),
   reason: z.enum(["manual", "tab-change", "visibility-hidden", "time-expired"]),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const session = await requireSession();
+export const POST = withGuard(
+  { kind: "session" },
+  async (request, { params, session }) => {
+    try {
+      if (!session) {
+        return fail("Not authenticated", 401);
+      }
 
-    if (!session) {
-      return fail("Not authenticated", 401);
-    }
+      const { id } = params;
 
-    const { id } = await params;
-    const parsed = submitSchema.safeParse(await request.json());
+      if (!ObjectId.isValid(id)) {
+        return fail("Exam not found", 404);
+      }
 
-    if (!parsed.success) {
-      return fail(parsed.error.issues[0]?.message ?? "Invalid request", 400);
-    }
+      const parsed = submitSchema.safeParse(await request.json());
 
-    const { submissionId, reason } = parsed.data;
-    const examId = new ObjectId(id);
-    const userId = new ObjectId(session.userId);
+      if (!parsed.success) {
+        return fail(parsed.error.issues[0]?.message ?? "Invalid request", 400);
+      }
 
-    await ensureIndexes();
+      const { submissionId, reason } = parsed.data;
+      const examId = new ObjectId(id);
+      const userId = new ObjectId(session.userId);
 
-    const submission = await (await writtenSubmissionsCol()).findOne({
-      _id: new ObjectId(submissionId),
-      userId,
-      examId,
-      activeLock: true,
-    });
+      await ensureIndexes();
 
-    if (!submission) {
-      return fail("Submission not found", 404);
-    }
+      const submissions = await writtenSubmissionsCol();
+      const submission = await submissions.findOne({
+        _id: new ObjectId(submissionId),
+        userId,
+        examId,
+        activeLock: true,
+        status: "in-progress",
+      });
 
-    const questions = await (await writtenQuestionsCol())
-      .find({ examId })
-      .sort({ order: 1 })
-      .toArray();
+      if (!submission) {
+        return fail("Submission not found", 404);
+      }
 
-    if (reason === "manual") {
-      const missing = questions.filter(
-        (question) =>
-          !submission.perQuestionAnswers.some(
-            (answer) => answer.questionId.toString() === question._id.toString(),
-          ),
+      const submittedAt = new Date();
+
+      const updateResult = await submissions.updateOne(
+        { _id: submission._id, activeLock: true, status: "in-progress" },
+        {
+          $set: {
+            status: "submitted",
+            submittedAt,
+            activeLock: false,
+            autoSubmitReason: reason,
+            updatedAt: submittedAt,
+          },
+        }
       );
 
-      if (missing.length > 0) {
-        return fail(
-          "Please upload answers for every question before submitting.",
-          400,
-        );
+      if (updateResult.modifiedCount !== 1) {
+        return fail("This submission has already been submitted.", 409);
       }
-    }
 
-    const submittedAt = new Date();
-
-    await (await writtenSubmissionsCol()).updateOne(
-      { _id: submission._id },
-      {
-        $set: {
+      return ok({
+        submission: {
+          id: submission._id.toString(),
           status: "submitted",
-          activeLock: false,
           submittedAt,
           autoSubmitReason: reason,
-          answersPdfUrl: "",
-          updatedAt: submittedAt,
         },
-      },
-    );
-
-    return ok({
-      submission: {
-        ...submission,
-        status: "submitted",
-        activeLock: false,
-        submittedAt,
-        autoSubmitReason: reason,
-        answersPdfUrl: "",
-        updatedAt: submittedAt,
-      },
-    });
-  } catch (error) {
-    console.error("Error submitting written exam:", error);
-    return fail("Server error", 500);
+      });
+    } catch (error) {
+      console.error("Error submitting written exam:", error);
+      return fail("Server error", 500);
+    }
   }
-}
+);

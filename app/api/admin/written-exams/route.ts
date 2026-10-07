@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     const exam = {
       _id: new ObjectId(),
       ...parsed.data,
+      questionsPerAttempt: parsed.data.questionsPerAttempt ?? 0,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)
         : undefined,

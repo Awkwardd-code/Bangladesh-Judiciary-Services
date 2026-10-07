@@ -14,6 +14,7 @@ export const preliminaryExamCreateSchema = z.object({
   title: z.string().min(3).max(200).trim(),
   description: z.string().max(2000).trim().optional(),
   durationMinutes: z.number().int().min(1).max(600),
+  questionsPerAttempt: z.number().int().min(1).max(500).optional(),
   negativeMarking: z.number().min(0).max(2).default(0),
   scheduledAt: z.string().datetime().optional(),
   closesAt: z.string().datetime().optional(),
@@ -31,6 +32,7 @@ export const writtenExamCreateSchema = z.object({
   title: z.string().min(3).max(200).trim(),
   description: z.string().max(2000).trim().optional(),
   durationMinutes: z.number().int().min(1).max(600),
+  questionsPerAttempt: z.number().int().min(1).max(500).optional(),
   scheduledAt: z.string().datetime().optional(),
   closesAt: z.string().datetime().optional(),
 });

@@ -1,5 +1,10 @@
 import { fail, ok } from "@/lib/api-response";
-import { setSessionCookie, signSession } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  AUTH_COOKIE_OPTIONS,
+  setSessionCookie,
+  signSession,
+} from "@/lib/auth";
 import { logAuth } from "@/lib/audit";
 import { usersCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
@@ -128,7 +133,15 @@ export const POST = withGuard({ kind: "public" }, async (req) => {
       ip: getClientIp(req),
     });
 
-    await setSessionCookie(token, parsed.data.remember ?? true);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[login] setting cookie", {
+        name: AUTH_COOKIE_NAME,
+        secure: AUTH_COOKIE_OPTIONS.secure,
+        sameSite: AUTH_COOKIE_OPTIONS.sameSite,
+      });
+    }
+
+    await setSessionCookie(token);
     await logAuth("login.success", {
       userId: user._id,
       email: user.email,

@@ -2,6 +2,7 @@ export * from "./auth";
 export * from "./admin";
 export * from "./content";
 export * from "./notice";
+export * from "./payment";
 export * from "./questions-import";
 export { successStoryReorderSchema } from "./success-story";
 

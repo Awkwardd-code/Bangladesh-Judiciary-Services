@@ -1,97 +1,136 @@
 import { ObjectId } from "mongodb";
 
-import { requireSession } from "@/lib/auth-guard";
-import { ok, fail } from "@/lib/api-response";
+import { fail, ok } from "@/lib/api-response";
 import { writtenSubmissionsCol } from "@/lib/collections";
-import { uploadPdf } from "@/lib/cloudinary";
-import { releaseExamLock } from "@/lib/exam-lock";
+import { deleteFile, uploadPdf } from "@/lib/cloudinary";
 import { ensureIndexes } from "@/lib/indexes";
+import { withGuard } from "@/lib/route-guard";
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const session = await requireSession();
+const objectIdPattern = /^[a-f\d]{24}$/i;
 
-    if (!session) {
-      return fail("Not authenticated", 401);
-    }
+export const POST = withGuard(
+  { kind: "session" },
+  async (request, { params, session }) => {
+    try {
+      if (!session) {
+        return fail("Not authenticated", 401);
+      }
 
-    const { id } = await params;
-    const formData = await request.formData();
-    const submissionId = String(formData.get("submissionId") ?? "");
-    const questionId = String(formData.get("questionId") ?? "");
-    const file = formData.get("file");
+      const { id } = params;
 
-    if (!submissionId || !questionId || !(file instanceof File)) {
-      return fail("Invalid file upload", 400);
-    }
+      if (!ObjectId.isValid(id)) {
+        return fail("Exam not found", 404);
+      }
 
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      return fail("Only PDF files are allowed", 400);
-    }
+      const formData = await request.formData();
+      const submissionId = String(formData.get("submissionId") ?? "");
+      const questionId = String(formData.get("questionId") ?? "");
+      const file = formData.get("file");
 
-    if (file.size > 10 * 1024 * 1024) {
-      return fail("PDF must be 10 MB or smaller", 400);
-    }
+      if (
+        !objectIdPattern.test(submissionId) ||
+        !objectIdPattern.test(questionId) ||
+        !(file instanceof File)
+      ) {
+        return fail("Invalid file upload", 400);
+      }
 
-    await ensureIndexes();
+      if (file.type !== "application/pdf") {
+        return fail("Only PDF files are allowed", 400);
+      }
 
-    const submission = await (await writtenSubmissionsCol()).findOne({
-      _id: new ObjectId(submissionId),
-      userId: new ObjectId(session.userId),
-      examId: new ObjectId(id),
-      activeLock: true,
-    });
+      if (file.size > 10 * 1024 * 1024) {
+        return fail("PDF must be 10 MB or smaller", 400);
+      }
 
-    if (!submission) {
-      return fail("Submission not found", 404);
-    }
+      await ensureIndexes();
 
-    if (submission.status !== "in-progress") {
-      return fail("Submission is no longer active", 409);
-    }
+      const submissions = await writtenSubmissionsCol();
+      const submissionObjectId = new ObjectId(submissionId);
+      const examObjectId = new ObjectId(id);
+      const userObjectId = new ObjectId(session.userId);
+      const submission = await submissions.findOne({
+        _id: submissionObjectId,
+        userId: userObjectId,
+        examId: examObjectId,
+        activeLock: true,
+        status: "in-progress",
+      });
 
-    if (Date.now() > new Date(submission.expiresAt).getTime()) {
-      await releaseExamLock("written", submission._id);
-      return fail("Exam expired", 410);
-    }
+      if (!submission) {
+        return fail("Submission not found", 404);
+      }
 
-    if (
-      submission.perQuestionAnswers.some(
-        (answer) => answer.questionId.toString() === questionId,
-      )
-    ) {
-      return fail("Answer already locked.", 403);
-    }
+      const now = new Date();
 
-    const fileBytes = Buffer.from(await file.arrayBuffer());
-    const upload = await uploadPdf(
-      fileBytes,
-      `bjs-prep/exams/written/submissions/${session.userId}/${submissionId}`,
-    );
+      if (submission.expiresAt < now) {
+        await submissions.updateOne(
+          { _id: submission._id, activeLock: true },
+          {
+            $set: {
+              status: "submitted",
+              submittedAt: now,
+              activeLock: false,
+              autoSubmitReason: "time-expired",
+              updatedAt: now,
+            },
+          }
+        );
 
-    await (await writtenSubmissionsCol()).updateOne(
-      { _id: submission._id },
-      {
-        $push: {
+        return fail("Exam expired", 410);
+      }
+
+      const answer = submission.perQuestionAnswers.find(
+        (entry) => entry.questionId.toString() === questionId
+      );
+
+      if (!answer) {
+        return fail("Question not found in this submission", 404);
+      }
+
+      if (answer.pdfUrl) {
+        return fail("This answer is already locked.", 403);
+      }
+
+      const upload = await uploadPdf(
+        Buffer.from(await file.arrayBuffer()),
+        `bjs-prep/exams/written/submissions/${session.userId}`
+      );
+      const uploadedAt = new Date();
+      const result = await submissions.updateOne(
+        {
+          _id: submission._id,
+          activeLock: true,
+          status: "in-progress",
           perQuestionAnswers: {
-            questionId: new ObjectId(questionId),
-            pdfUrl: upload.secureUrl,
-            pdfPublicId: upload.publicId,
-            uploadedAt: new Date(),
+            $elemMatch: {
+              questionId: new ObjectId(questionId),
+              $or: [{ pdfUrl: null }, { pdfUrl: { $exists: false } }],
+            },
           },
         },
-        $set: {
-          updatedAt: new Date(),
-        },
-      },
-    );
+        {
+          $set: {
+            "perQuestionAnswers.$.pdfUrl": upload.secureUrl,
+            "perQuestionAnswers.$.pdfPublicId": upload.publicId,
+            "perQuestionAnswers.$.uploadedAt": uploadedAt,
+            updatedAt: uploadedAt,
+          },
+        }
+      );
 
-    return ok({ locked: true });
-  } catch (error) {
-    console.error("Error uploading written answer:", error);
-    return fail("Server error", 500);
+      if (result.modifiedCount !== 1) {
+        await deleteFile(upload.publicId);
+        return fail("This answer is already locked.", 403);
+      }
+
+      return ok({
+        locked: true,
+        pdfUrl: upload.secureUrl,
+      });
+    } catch (error) {
+      console.error("Error uploading written answer:", error);
+      return fail("Server error", 500);
+    }
   }
-}
+);

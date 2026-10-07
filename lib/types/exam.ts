@@ -11,6 +11,7 @@ export type PreliminaryExam = BaseDoc & {
   totalQuestions: number;
   totalMarks: number;
   negativeMarking: number;
+  questionsPerAttempt?: number;
   status: ExamStatus;
   scheduledAt?: Date;
   closesAt?: Date;
@@ -29,16 +30,10 @@ export type PreliminaryQuestion = BaseDoc & {
 };
 
 export type AttemptStatus =
-  | "in-progress"
-  | "submitted"
-  | "auto-submitted"
-  | "expired";
+  "in-progress" | "submitted" | "auto-submitted" | "expired";
 
 export type AutoSubmitReason =
-  | "tab-change"
-  | "time-expired"
-  | "manual"
-  | "visibility-hidden";
+  "tab-change" | "time-expired" | "manual" | "visibility-hidden";
 
 export type PreliminaryAttempt = BaseDoc & {
   examId: ObjectId;
@@ -67,6 +62,7 @@ export type WrittenExam = BaseDoc & {
   durationMinutes: number;
   totalQuestions: number;
   totalMarks: number;
+  questionsPerAttempt?: number;
   status: ExamStatus;
   scheduledAt?: Date;
   closesAt?: Date;
@@ -84,10 +80,7 @@ export type WrittenQuestion = BaseDoc & {
 };
 
 export type SubmissionStatus =
-  | "in-progress"
-  | "submitted"
-  | "under-review"
-  | "graded";
+  "in-progress" | "submitted" | "under-review" | "graded";
 
 export type WrittenSubmission = BaseDoc & {
   examId: ObjectId;
@@ -105,12 +98,13 @@ export type WrittenSubmission = BaseDoc & {
   gradedAt?: Date;
   activeLock: boolean;
   shuffledOrder: number[];
+  selectedQuestionIds?: ObjectId[];
   autoSubmitReason?: AutoSubmitReason;
   perQuestionAnswers: {
     questionId: ObjectId;
-    pdfUrl?: string;
-    pdfPublicId?: string;
-    uploadedAt?: Date;
+    pdfUrl?: string | null;
+    pdfPublicId?: string | null;
+    uploadedAt?: Date | null;
   }[];
   perQuestionScores: {
     questionId: ObjectId;
@@ -128,6 +122,11 @@ export type ActiveExam =
   | {
       kind: "written";
       submissionId: ObjectId;
+      examId: ObjectId;
+    }
+  | {
+      kind: "free";
+      attemptId: ObjectId;
       examId: ObjectId;
     }
   | null;

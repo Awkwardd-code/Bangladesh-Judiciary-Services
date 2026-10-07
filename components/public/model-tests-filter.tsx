@@ -13,7 +13,7 @@ export function ModelTestsFilter() {
   const searchParams = useSearchParams();
   const current = new URLSearchParams(searchParams.toString());
   const search = searchParams.get("search") ?? "";
-  const category = searchParams.get("category") ?? "all";
+  const scope = searchParams.get("scope") ?? "all";
 
   function update(key: string, value: string) {
     const query = buildQuery(current, { [key]: value });
@@ -26,7 +26,7 @@ export function ModelTestsFilter() {
     <section className="bg-cream px-4 pb-4 pt-8 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <FilterBar
-          showClear={Boolean(search || category !== "all")}
+          showClear={Boolean(search || scope !== "all")}
           onClear={() => router.replace(pathname, { scroll: false })}
         >
           <SearchInput
@@ -36,13 +36,14 @@ export function ModelTestsFilter() {
             className="sm:max-w-80"
           />
           <FilterSelect
-            value={category}
-            onValueChange={(value) => update("category", value)}
-            placeholder="All exam types"
-            aria-label="Filter model tests by exam type"
+            value={scope}
+            onValueChange={(value) => update("scope", value)}
+            placeholder="All model tests"
+            aria-label="Filter model tests by price type"
             options={[
-              { value: "preliminary", label: "Preliminary" },
-              { value: "written", label: "Written" },
+              { value: "all", label: "All" },
+              { value: "free", label: "Free" },
+              { value: "paid", label: "Paid" },
             ]}
           />
         </FilterBar>

@@ -4,9 +4,13 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
-import { WrittenExamClient } from "@/components/dashboard/written-exam-client";
+import { ExamRunner } from "@/components/dashboard/exam-runner";
 import { requireSession } from "@/lib/auth-guard";
-import { writtenExamsCol, writtenQuestionsCol, writtenSubmissionsCol } from "@/lib/collections";
+import {
+  writtenExamsCol,
+  writtenQuestionsCol,
+  writtenSubmissionsCol,
+} from "@/lib/collections";
 import { getActiveExam } from "@/lib/exam-lock";
 import { checkExamAccess } from "@/lib/exam-access";
 
@@ -22,7 +26,9 @@ export default async function WrittenExamPage({
   const session = await requireSession();
 
   if (!session) {
-    redirect(`/login?next=${encodeURIComponent(`/dashboard/mock-exams/written/${(await params).id}`)}`);
+    redirect(
+      `/login?next=${encodeURIComponent(`/dashboard/mock-exams/written/${(await params).id}`)}`
+    );
   }
 
   const { id } = await params;
@@ -69,20 +75,29 @@ export default async function WrittenExamPage({
     );
   }
 
-  if (!access.allowed && access.reason === "outside-window") {
+  if (
+    !access.allowed &&
+    (access.reason === "not-yet-open" || access.reason === "closed")
+  ) {
     return (
       <BlockedExamState
-        title="This exam is not currently open."
+        title={
+          access.reason === "not-yet-open"
+            ? "This exam is not open yet."
+            : "This exam is no longer open."
+        }
         description={
-          exam.scheduledAt
-            ? `Scheduled to open ${exam.scheduledAt.toLocaleString()}.`
-            : "The exam is outside its availability window."
+          access.reason === "not-yet-open"
+            ? `Scheduled to open ${access.opensAt?.toLocaleString() ?? exam.scheduledAt?.toLocaleString() ?? "on a future date"}.`
+            : `Closed on ${access.closesAt?.toLocaleString() ?? exam.closesAt?.toLocaleString() ?? "a past date"}.`
         }
       />
     );
   }
 
-  const questions = await (await writtenQuestionsCol())
+  const questions = await (
+    await writtenQuestionsCol()
+  )
     .find({ examId })
     .sort({ order: 1 })
     .toArray();
@@ -119,43 +134,64 @@ export default async function WrittenExamPage({
 
   const submission =
     active && active.kind === "written"
-      ? await (await writtenSubmissionsCol()).findOne({
+      ? await (
+          await writtenSubmissionsCol()
+        ).findOne({
           _id: active.submissionId,
           userId,
           examId,
           activeLock: true,
         })
       : null;
+  const selectedQuestionIds = submission?.selectedQuestionIds ?? [];
+  const selectedQuestions =
+    selectedQuestionIds.length > 0
+      ? selectedQuestionIds
+          .map((questionId) =>
+            questions.find((question) => question._id.equals(questionId))
+          )
+          .filter((question) => question !== undefined)
+      : questions;
 
   return (
-    <WrittenExamClient
+    <ExamRunner
+      key={exam._id.toString()}
       exam={{
         id: exam._id.toString(),
+        kind: "written",
         title: exam.title,
-        description: exam.description ?? "",
         durationMinutes: exam.durationMinutes,
         totalQuestions: exam.totalQuestions,
         totalMarks: exam.totalMarks,
+        questionsPerAttempt:
+          exam.questionsPerAttempt ?? selectedQuestions.length,
+        hasWrittenQuestions: true,
       }}
-      questions={questions.map((question) => ({
+      questions={selectedQuestions.map((question, position) => ({
         id: question._id.toString(),
+        position,
+        source: "written_questions" as const,
         questionText: question.questionText,
         maxMarks: question.maxMarks,
+        marks: question.maxMarks,
         subject: question.subject ?? "General",
       }))}
-      submission={
+      attempt={
         submission
           ? {
               id: submission._id.toString(),
               startedAt: submission.startedAt.toISOString(),
               expiresAt: submission.expiresAt.toISOString(),
               shuffledOrder: submission.shuffledOrder,
-              perQuestionAnswers: submission.perQuestionAnswers.map((answer) => ({
-                questionId: answer.questionId.toString(),
-                pdfUrl: answer.pdfUrl,
-                pdfPublicId: answer.pdfPublicId,
-                uploadedAt: answer.uploadedAt?.toISOString(),
-              })),
+              answers: [],
+              perQuestionAnswers: submission.perQuestionAnswers.map(
+                (answer) => ({
+                  questionId: answer.questionId.toString(),
+                  pdfUrl: answer.pdfUrl ?? null,
+                  pdfPublicId: answer.pdfPublicId ?? null,
+                  uploadedAt: answer.uploadedAt?.toISOString() ?? null,
+                })
+              ),
             }
           : null
       }

@@ -15,7 +15,10 @@ export default async function DashboardLayout({
   const session = await requireSession();
 
   if (!session) {
-    redirect("/login?next=/dashboard&session=invalid");
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[dashboard-layout] redirecting to login: no valid session");
+    }
+    redirect("/login?next=/dashboard");
   }
 
   return (

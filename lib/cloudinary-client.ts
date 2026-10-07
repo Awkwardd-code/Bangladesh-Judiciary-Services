@@ -20,6 +20,7 @@ type CloudinaryResponse = {
 export async function uploadToCloudinary(
   file: File,
   folder: string,
+  resourceType: "image" | "raw" = "image",
 ): Promise<CloudinaryUploadResult> {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
@@ -36,7 +37,7 @@ export async function uploadToCloudinary(
   formData.set("folder", folder);
 
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
     {
       method: "POST",
       body: formData,

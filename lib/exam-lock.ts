@@ -1,6 +1,10 @@
 import { ObjectId } from "mongodb";
 
-import { preliminaryAttemptsCol, writtenSubmissionsCol } from "@/lib/collections";
+import {
+  freeTestAttemptsCol,
+  preliminaryAttemptsCol,
+  writtenSubmissionsCol,
+} from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
 import type { ActiveExam } from "@/lib/types/exam";
 
@@ -35,11 +39,24 @@ export async function getActiveExam(
     };
   }
 
+  const freeAttempt = await (await freeTestAttemptsCol()).findOne({
+    userId,
+    activeLock: true,
+  });
+
+  if (freeAttempt) {
+    return {
+      kind: "free",
+      attemptId: freeAttempt._id,
+      examId: freeAttempt.freeTestId,
+    };
+  }
+
   return null;
 }
 
 export async function releaseExamLock(
-  kind: "preliminary" | "written",
+  kind: "preliminary" | "written" | "free",
   id: ObjectId,
 ): Promise<void> {
   await ensureIndexes();
@@ -47,7 +64,9 @@ export async function releaseExamLock(
   const collection =
     kind === "preliminary"
       ? await preliminaryAttemptsCol()
-      : await writtenSubmissionsCol();
+      : kind === "written"
+        ? await writtenSubmissionsCol()
+        : await freeTestAttemptsCol();
 
   await collection.updateOne(
     { _id: id },

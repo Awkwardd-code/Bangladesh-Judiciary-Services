@@ -13,7 +13,7 @@ export function MockExamsFilter() {
   const searchParams = useSearchParams();
   const current = new URLSearchParams(searchParams.toString());
   const search = searchParams.get("search") ?? "";
-  const category = searchParams.get("category") ?? "all";
+  const category = searchParams.get("kind") ?? "all";
 
   function update(key: string, value: string) {
     const query = buildQuery(current, { [key]: value });
@@ -36,11 +36,12 @@ export function MockExamsFilter() {
       />
       <FilterSelect
         value={category}
-        onValueChange={(value) => update("category", value)}
-        placeholder="All exam types"
+        onValueChange={(value) => update("kind", value)}
+        placeholder="All model tests"
         options={[
           { value: "preliminary", label: "Preliminary" },
           { value: "written", label: "Written" },
+          { value: "free", label: "Free" },
         ]}
       />
     </FilterBar>

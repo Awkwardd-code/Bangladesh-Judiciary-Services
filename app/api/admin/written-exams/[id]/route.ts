@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (!parsed.success) {
       return fail(
         parsed.error.issues[0]?.message ?? "Invalid written exam",
-        400,
+        400
       );
     }
 
@@ -113,12 +113,33 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
     const totals = await getTotals(examId);
 
-    if (parsed.data.status === "published" && totals.totalQuestions === 0) {
-      return fail("Cannot publish an exam with no questions", 400);
+    const nextQuestionsPerAttempt =
+      parsed.data.questionsPerAttempt ?? existing.questionsPerAttempt ?? 0;
+    const minimumRequired = Math.max(1, nextQuestionsPerAttempt);
+
+    if (
+      parsed.data.status === "published" &&
+      totals.totalQuestions < minimumRequired
+    ) {
+      return fail(
+        `Add at least ${minimumRequired} questions before publishing.`,
+        400
+      );
+    }
+
+    if (
+      parsed.data.questionsPerAttempt !== undefined &&
+      parsed.data.questionsPerAttempt > totals.totalQuestions
+    ) {
+      return fail(
+        "Questions per attempt cannot exceed the total number of questions in this exam.",
+        400
+      );
     }
 
     const updateSet = {
       ...parsed.data,
+      questionsPerAttempt: nextQuestionsPerAttempt,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)
         : existing.scheduledAt,
@@ -136,7 +157,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       "written-exam.update",
       { examId: examId.toString(), previousStatus: existing.status },
       getClientIp(req),
-      req.headers.get("user-agent") ?? "unknown",
+      req.headers.get("user-agent") ?? "unknown"
     );
 
     return ok({ exam: await exams.findOne({ _id: examId }) });
@@ -179,7 +200,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     ].filter((publicId): publicId is string => Boolean(publicId));
 
     await Promise.allSettled(
-      publicIds.map((publicId) => deleteFile(publicId, "raw")),
+      publicIds.map((publicId) => deleteFile(publicId, "raw"))
     );
     await Promise.all([
       (await writtenQuestionsCol()).deleteMany({ examId }),
@@ -192,7 +213,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       "written-exam.delete",
       { examId: examId.toString() },
       getClientIp(req),
-      req.headers.get("user-agent") ?? "unknown",
+      req.headers.get("user-agent") ?? "unknown"
     );
 
     return ok({ message: "Written exam deleted." });

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { AdminHeader } from "@/components/layout/admin-header";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { useAdminShell } from "@/components/layout/admin-shell-provider";
+import { Toaster } from "@/components/ui/toaster";
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { collapsed } = useAdminShell();
@@ -21,6 +22,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <AdminHeader />
         <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }
