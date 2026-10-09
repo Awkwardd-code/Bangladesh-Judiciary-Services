@@ -50,8 +50,8 @@ export function ModelTestsList({ exams }: { exams: PublicExam[] }) {
                 <Link
                   href={
                     exam.examType === "preliminary"
-                      ? `/dashboard/mock-exams/${exam.id}`
-                      : `/dashboard/mock-exams/written/${exam.id}`
+                      ? `/exam/preliminary/${exam.id}`
+                      : `/exam/written/${exam.id}`
                   }
                   className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
                 >

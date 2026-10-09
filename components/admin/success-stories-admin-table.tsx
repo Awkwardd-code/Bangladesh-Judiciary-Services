@@ -20,6 +20,7 @@ import {
   type AdminSuccessStory,
 } from "@/components/admin/success-story-editor";
 import { SuccessStoryModerationDialog } from "@/components/admin/success-story-moderation-dialog";
+import { TableRowsSkeleton } from "@/components/skeletons/table-rows-skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -103,13 +104,13 @@ export function SuccessStoriesAdminTable() {
         setError(
           caughtError instanceof Error
             ? caughtError.message
-            : "Unable to load stories.",
+            : "Unable to load stories."
         );
       } finally {
         setLoading(false);
       }
     },
-    [page, searchParams],
+    [page, searchParams]
   );
 
   useEffect(() => {
@@ -179,7 +180,7 @@ export function SuccessStoriesAdminTable() {
 
   async function loadAllStoryIds() {
     const firstResponse = await fetch(
-      "/api/admin/success-stories?page=1&limit=100",
+      "/api/admin/success-stories?page=1&limit=100"
     );
     const firstResult = (await firstResponse.json()) as {
       error?: string;
@@ -195,7 +196,7 @@ export function SuccessStoriesAdminTable() {
 
     for (let currentPage = 2; currentPage <= totalPages; currentPage += 1) {
       const response = await fetch(
-        `/api/admin/success-stories?page=${currentPage}&limit=100`,
+        `/api/admin/success-stories?page=${currentPage}&limit=100`
       );
       const result = (await response.json()) as {
         error?: string;
@@ -243,7 +244,7 @@ export function SuccessStoriesAdminTable() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to reorder stories.",
+          : "Unable to reorder stories."
       );
     }
   }
@@ -261,7 +262,11 @@ export function SuccessStoriesAdminTable() {
 
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
-          <p className="p-8 text-sm text-muted">Loading stories...</p>
+          <TableRowsSkeleton
+            rows={8}
+            columns={6}
+            widths={["w-3/4", "w-1/2", "w-5/6", "w-2/3", "w-1/3", "w-1/2"]}
+          />
         ) : stories.length === 0 ? (
           <div className="p-10 text-center">
             <Sparkles

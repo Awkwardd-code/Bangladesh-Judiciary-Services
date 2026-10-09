@@ -38,6 +38,45 @@ export function MaterialCard({
       : null;
   const locked = !hasAccess && !material.isFreePreview;
 
+  async function downloadFile() {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const response = await fetch(
+        `/api/materials/${material.id}/download`,
+      );
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(payload.error ?? "Unable to download this file.");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const filename = response.headers
+        .get("content-disposition")
+        ?.match(/filename="([^"]+)"/i)?.[1];
+      link.href = objectUrl;
+      link.download =
+        filename ??
+        `${material.title}.${material.kind === "doc" ? "doc" : "pdf"}`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+    } catch (error) {
+      console.error("Download course material error", error);
+      toast(
+        error instanceof Error
+          ? error.message
+          : "Unable to download this file.",
+        "error",
+      );
+    } finally {
+      setOpening(false);
+    }
+  }
+
   async function openLink() {
     if (opening) return;
     const popup = window.open("about:blank", "_blank");
@@ -115,14 +154,15 @@ export function MaterialCard({
             <ArrowUpRight size={16} />
           </button>
         ) : (
-          <a
-            href={`/api/materials/${material.id}/download`}
-            download
-            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-primary px-3 text-sm text-cream"
+          <button
+            type="button"
+            onClick={() => void downloadFile()}
+            disabled={opening}
+            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-primary px-3 text-sm text-cream disabled:opacity-60"
           >
-            Download
+            {opening ? "Downloading…" : "Download"}
             <Download size={16} />
-          </a>
+          </button>
         )}
       </div>
     </Card>

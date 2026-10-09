@@ -102,8 +102,10 @@ export function FreeTestsStudentClient({
             <Link
               href={
                 activeExam.kind === "free"
-                  ? `/dashboard/free-tests/${activeExam.examId}`
-                  : `/dashboard/mock-exams/${activeExam.examId}`
+                  ? `/exam/free/${activeExam.examId}`
+                  : activeExam.kind === "written"
+                    ? `/exam/written/${activeExam.examId}`
+                    : `/exam/preliminary/${activeExam.examId}`
               }
               className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream transition hover:bg-primary-dark"
             >
@@ -303,7 +305,7 @@ export function FreeTestsStudentClient({
                     </button>
                   ) : (
                     <Link
-                      href={`/dashboard/free-tests/${freeTest.id}`}
+                      href={`/exam/free/${freeTest.id}`}
                       className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-cream transition hover:bg-primary-dark"
                     >
                       Start

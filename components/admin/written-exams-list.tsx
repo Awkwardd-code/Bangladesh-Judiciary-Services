@@ -17,6 +17,7 @@ import {
   type WrittenExamRecord,
 } from "@/components/admin/written-exam-editor";
 import { ExamCard } from "@/components/shared/exam-card";
+import { AdminMockExamCardsSkeleton } from "@/components/skeletons/admin-mock-exams-skeleton";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   DropdownMenu,
@@ -194,7 +195,9 @@ export function WrittenExamsList() {
       ) : null}
 
       {loading ? (
-        <p className="mt-6 text-sm text-muted">Loading written exams...</p>
+        <div className="mt-6">
+          <AdminMockExamCardsSkeleton />
+        </div>
       ) : filteredExams.length === 0 ? (
         <div className="mt-5 rounded-lg border border-dashed border-border p-10 text-center">
           <FileText

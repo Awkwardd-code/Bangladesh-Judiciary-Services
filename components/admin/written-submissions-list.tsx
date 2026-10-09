@@ -9,6 +9,7 @@ import { FilterBar } from "@/components/ui/filter-bar";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { SearchInput } from "@/components/ui/search-input";
+import { TableRowsSkeleton } from "@/components/skeletons/table-rows-skeleton";
 import { buildQuery } from "@/lib/query-params";
 
 type ExamOption = {
@@ -97,7 +98,7 @@ export function WrittenSubmissionsList() {
       try {
         const response = await fetch(
           `/api/admin/written-submissions?${params}`,
-          { signal: controller.signal },
+          { signal: controller.signal }
         );
         const result = (await response.json()) as {
           error?: string;
@@ -127,7 +128,7 @@ export function WrittenSubmissionsList() {
         setError(
           caughtError instanceof Error
             ? caughtError.message
-            : "Unable to load submissions.",
+            : "Unable to load submissions."
         );
       } finally {
         if (active) {
@@ -181,7 +182,9 @@ export function WrittenSubmissionsList() {
   return (
     <div className="mt-6">
       <FilterBar
-        showClear={Boolean(search || examId !== "all" || status !== "all" || pendingOnly)}
+        showClear={Boolean(
+          search || examId !== "all" || status !== "all" || pendingOnly
+        )}
         onClear={() => router.replace(pathname, { scroll: false })}
       >
         <SearchInput
@@ -195,7 +198,10 @@ export function WrittenSubmissionsList() {
           onValueChange={(value) => updateFilter("examId", value)}
           placeholder="All written exams"
           aria-label="Filter by written exam"
-          options={exams.map((exam) => ({ value: exam._id, label: exam.title }))}
+          options={exams.map((exam) => ({
+            value: exam._id,
+            label: exam.title,
+          }))}
         />
         <FilterSelect
           value={status}
@@ -232,7 +238,7 @@ export function WrittenSubmissionsList() {
 
       <div className="mt-5 overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
-          <p className="p-8 text-sm text-muted">Loading submissions...</p>
+          <TableRowsSkeleton rows={8} columns={6} />
         ) : submissions.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted">
             No written submissions found.

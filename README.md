@@ -291,6 +291,8 @@ Check `.env.local` and compare it with `.env.example`.
 - confirm the cloud name and API key are correct
 - verify the upload preset exists
 - check the API secret value
+- for material downloads returning `401` or `403`, ensure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` are set for the same Cloudinary account as the uploaded assets
+- the app uses a server-signed private download request for restricted raw files; the unsigned upload preset does not provide download authorization
 
 ### Build failures
 
@@ -305,4 +307,3 @@ This helps catch issues before deployment.
 ## Notes
 
 This project is designed to support a production-ready learning platform for BJS exam preparation while keeping the codebase consistent across local development, local production builds, and Vercel deployment.
-

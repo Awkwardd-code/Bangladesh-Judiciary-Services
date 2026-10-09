@@ -19,6 +19,7 @@ export type AboutComparisonRow = {
 };
 
 export type About = BaseDoc & {
+  singleton?: true;
   heroKicker: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -39,5 +40,5 @@ export type About = BaseDoc & {
 
 export type AboutShape = Omit<
   About,
-  "_id" | "createdAt" | "updatedAt" | "updatedBy"
+  "_id" | "createdAt" | "updatedAt" | "updatedBy" | "singleton"
 >;

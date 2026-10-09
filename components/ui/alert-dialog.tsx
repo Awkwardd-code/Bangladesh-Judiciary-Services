@@ -57,7 +57,9 @@ export function AlertDialogHeader({ children }: { children: ReactNode }) {
 }
 
 export function AlertDialogTitle({ children }: { children: ReactNode }) {
-  return <h2 className="font-heading text-xl font-bold text-primary">{children}</h2>;
+  return (
+    <h2 className="font-heading text-xl font-bold text-primary">{children}</h2>
+  );
 }
 
 export function AlertDialogDescription({ children }: { children: ReactNode }) {
@@ -75,7 +77,7 @@ export function AlertDialogCancel({ children }: { children: ReactNode }) {
     <button
       type="button"
       onClick={context?.hide}
-      className="h-10 rounded-md border border-border px-4 text-sm text-foreground"
+      className="h-10 cursor-pointer rounded-md border border-border px-4 text-sm text-foreground"
     >
       {children}
     </button>
@@ -98,7 +100,7 @@ export function AlertDialogAction({
         onClick?.();
         context?.hide();
       }}
-      className="h-10 rounded-md bg-primary px-4 text-sm text-cream"
+      className="h-10 cursor-pointer rounded-md bg-primary px-4 text-sm text-cream"
     >
       {children}
     </button>

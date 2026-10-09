@@ -3,6 +3,10 @@ import { ObjectId } from "mongodb";
 
 import { fail, ok } from "@/lib/api-response";
 import { coursesCol, materialsCol } from "@/lib/collections";
+import {
+  getAuthenticatedRawUrl,
+  getPrivateRawDownloadUrl,
+} from "@/lib/cloudinary";
 import { ensureIndexes } from "@/lib/indexes";
 import { getEnrollmentAccess } from "@/lib/enrollment";
 import { withGuard } from "@/lib/route-guard";
@@ -52,7 +56,22 @@ export const GET = withGuard(
       let upstream: Response;
 
       try {
-        upstream = await fetch(material.url, {
+        const isAuthenticatedRaw =
+          sourceUrl.pathname.includes("/raw/authenticated/");
+        const downloadUrl = isAuthenticatedRaw
+          ? material.publicId
+            ? getAuthenticatedRawUrl(material.publicId)
+            : null
+          : material.url;
+        if (!downloadUrl) {
+          clearTimeout(timeout);
+          console.error("Authenticated Cloudinary material has no public ID", {
+            materialId: material._id.toString(),
+          });
+          return fail("Unable to fetch the file.", 502);
+        }
+
+        upstream = await fetch(downloadUrl, {
           cache: "no-store",
           signal: controller.signal,
         });
@@ -62,15 +81,61 @@ export const GET = withGuard(
         return fail("Unable to fetch the file.", 502);
       }
 
+      let usedPrivateDownload = false;
+      if (
+        (!upstream.ok || !upstream.body) &&
+        (upstream.status === 401 || upstream.status === 403) &&
+        material.publicId
+      ) {
+        const format =
+          sourceUrl.pathname.match(/\.(pdf|docx?)$/i)?.[1]?.toLowerCase() ??
+          (material.kind === "doc" ? "doc" : "pdf");
+        const deliveryType = sourceUrl.pathname.includes("/raw/authenticated/")
+          ? "authenticated"
+          : sourceUrl.pathname.includes("/raw/private/")
+            ? "private"
+            : "upload";
+        const privateDownloadUrl = getPrivateRawDownloadUrl(
+          material.publicId,
+          format,
+          deliveryType,
+        );
+
+        try {
+          upstream = await fetch(privateDownloadUrl, {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          usedPrivateDownload = true;
+        } catch (error) {
+          clearTimeout(timeout);
+          console.error("Private Cloudinary material download failed", {
+            materialId: material._id.toString(),
+            error,
+          });
+          return fail("Unable to fetch the file.", 502);
+        }
+      }
+
       if (!upstream.ok || !upstream.body) {
         clearTimeout(timeout);
+        const cloudinaryError = (await upstream.clone().text()).slice(0, 500);
         console.error("Cloudinary material download failed", {
           materialId: material._id.toString(),
           status: upstream.status,
+          hasPublicId: Boolean(material.publicId),
+          usedPrivateDownload,
+          cloudinaryError,
         });
+        if (cloudinaryError.includes('actions=["download"]')) {
+          return fail(
+            "Cloudinary denied the download because the configured API key lacks the download permission. Grant this API key download access in Cloudinary, or enable public PDF/ZIP delivery for the asset.",
+            502,
+          );
+        }
         if (upstream.status === 401 || upstream.status === 403) {
           return fail(
-            "This file is not publicly accessible in Cloudinary.",
+            "Cloudinary denied access to this file. Check the Cloudinary API credentials and asset delivery type.",
             502,
           );
         }

@@ -1,5 +1,5 @@
-import { WrittenSubmissionSkeleton } from "@/components/skeletons/written-submission-skeleton";
+import { AdminWrittenEvaluationSkeleton } from "@/components/skeletons/admin-written-evaluation-skeleton";
 
 export default function WrittenSubmissionDetailLoading() {
-  return <WrittenSubmissionSkeleton />;
+  return <AdminWrittenEvaluationSkeleton />;
 }

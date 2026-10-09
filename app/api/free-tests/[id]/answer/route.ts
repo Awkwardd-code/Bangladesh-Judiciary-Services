@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { fail, ok } from "@/lib/api-response";
 import { freeTestAttemptsCol } from "@/lib/collections";
-import { deleteFile, uploadPdf } from "@/lib/cloudinary";
+import { deleteFile, type UploadResult, uploadPdf } from "@/lib/cloudinary";
 import { ensureIndexes } from "@/lib/indexes";
 import { withGuard } from "@/lib/route-guard";
 
@@ -14,6 +14,28 @@ const answerSchema = z.object({
   questionId: z.string().regex(objectIdPattern),
   selectedOptionIndex: z.number().int().min(0).max(3),
 });
+
+function getCloudinaryHttpCode(error: unknown): number | null {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  if ("http_code" in error && typeof error.http_code === "number") {
+    return error.http_code;
+  }
+
+  if (
+    "error" in error &&
+    error.error &&
+    typeof error.error === "object" &&
+    "http_code" in error.error &&
+    typeof error.error.http_code === "number"
+  ) {
+    return error.error.http_code;
+  }
+
+  return null;
+}
 
 export const POST = withGuard(
   { kind: "session" },
@@ -105,10 +127,28 @@ export const POST = withGuard(
           return fail("This answer is already locked.", 403);
         }
 
-        const upload = await uploadPdf(
-          Buffer.from(await file.arrayBuffer()),
-          `bjs-prep/free-tests/submissions/${session.userId}`
-        );
+        let upload: UploadResult;
+
+        try {
+          upload = await uploadPdf(
+            Buffer.from(await file.arrayBuffer()),
+            `bjs-prep/free-tests/submissions/${session.userId}`
+          );
+        } catch (error) {
+          const httpCode = getCloudinaryHttpCode(error);
+
+          if (httpCode === 403) {
+            console.error("Cloudinary denied free-test PDF upload", {
+              httpCode,
+            });
+            return fail(
+              "Cloudinary denied this PDF upload. Check that PDF uploads and upload access are enabled for the Cloudinary account.",
+              502
+            );
+          }
+
+          throw error;
+        }
         const uploadedAt = new Date();
         const updateResult = await attempts.updateOne(
           {

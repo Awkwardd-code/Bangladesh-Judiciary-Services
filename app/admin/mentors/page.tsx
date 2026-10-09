@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { MentorsTable } from "@/components/admin/mentors-table";
+import { AdminMentorsSkeleton } from "@/components/skeletons/admin-mentors-skeleton";
 
 export const metadata: Metadata = {
   title: "Mentors — Admin — BJS Prep",
@@ -10,13 +11,7 @@ export const metadata: Metadata = {
 
 export default function MentorsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-6xl">
-          <p className="text-sm text-muted">Loading mentors...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<AdminMentorsSkeleton />}>
       <MentorsTable />
     </Suspense>
   );

@@ -1,16 +1,32 @@
 import { Card } from "@/components/ui/card";
-import { SkLine } from "@/components/skeletons/primitives";
+import { SkButton } from "@/components/skeletons/primitives";
 
-export function FilterBarSkeleton({ selects = 2 }: { selects?: number }) {
+type FilterBarSkeletonProps = {
+  hasSearch?: boolean;
+  selects?: number;
+  hasClear?: boolean;
+};
+
+export function FilterBarSkeleton({
+  hasSearch = true,
+  selects = 2,
+  hasClear = true,
+}: FilterBarSkeletonProps) {
   return (
     <Card
-      className="flex flex-col gap-3 border-border bg-card p-4 md:flex-row"
+      className="
+        flex flex-col gap-3 border-border bg-card p-4 md:flex-row
+        md:items-center
+      "
       aria-hidden="true"
     >
-      <SkLine className="flex-1" height="h-10" />
+      {hasSearch ? (
+        <SkButton width="w-full lg:w-72" height="h-10" className="flex-1" />
+      ) : null}
       {Array.from({ length: selects }, (_, index) => (
-        <SkLine key={index} className="md:w-40" height="h-10" />
+        <SkButton key={index} width="w-full md:w-44" height="h-10" />
       ))}
+      {hasClear ? <SkButton width="w-32" height="h-10" /> : null}
     </Card>
   );
 }

@@ -1,5 +1,5 @@
-import { ProfilePageSkeleton } from "@/components/skeletons/profile-page-skeleton";
+import { AdminStudentDetailSkeleton } from "@/components/skeletons/admin-student-detail-skeleton";
 
 export default function AdminStudentDetailLoading() {
-  return <ProfilePageSkeleton />;
+  return <AdminStudentDetailSkeleton />;
 }

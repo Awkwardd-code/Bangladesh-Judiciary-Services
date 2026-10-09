@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminWrittenSubmissionsSkeleton } from "@/components/skeletons/admin-written-submissions-skeleton";
 
 export default function AdminWrittenSubmissionsLoading() {
-  return <AdminTableSkeleton hasFilters rows={10} cols={6} />;
+  return <AdminWrittenSubmissionsSkeleton />;
 }

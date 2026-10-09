@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminWrittenExamDetailSkeleton } from "@/components/skeletons/admin-written-exam-detail-skeleton";
 
 export default function AdminWrittenExamDetailLoading() {
-  return <AdminTableSkeleton rows={6} cols={4} />;
+  return <AdminWrittenExamDetailSkeleton />;
 }

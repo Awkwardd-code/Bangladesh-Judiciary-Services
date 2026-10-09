@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { MentorEditor } from "@/components/admin/mentor-editor";
 import { MentorsFilter } from "@/components/admin/mentors-filter";
+import { TableRowsSkeleton } from "@/components/skeletons/table-rows-skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,46 +72,54 @@ export function MentorsTable() {
   const [deletingMentor, setDeletingMentor] = useState<MentorRecord>();
   const [busyId, setBusyId] = useState("");
 
-  const loadMentors = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    setError("");
+  const loadMentors = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: "20",
-        search,
-        isPublished,
-      });
-      const response = await fetch(`/api/admin/mentors?${params}`, { signal });
-      const result = (await response.json()) as {
-        error?: string;
-        data?: {
-          mentors?: MentorRecord[];
-          pagination?: Pagination;
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: "20",
+          search,
+          isPublished,
+        });
+        const response = await fetch(`/api/admin/mentors?${params}`, {
+          signal,
+        });
+        const result = (await response.json()) as {
+          error?: string;
+          data?: {
+            mentors?: MentorRecord[];
+            pagination?: Pagination;
+          };
         };
-      };
 
-      if (!response.ok) {
-        throw new Error(result.error ?? "Unable to load mentors.");
+        if (!response.ok) {
+          throw new Error(result.error ?? "Unable to load mentors.");
+        }
+
+        setMentors(result.data?.mentors ?? []);
+        setPagination(result.data?.pagination ?? emptyPagination);
+      } catch (caughtError) {
+        if (
+          caughtError instanceof DOMException &&
+          caughtError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Unable to load mentors."
+        );
+      } finally {
+        setLoading(false);
       }
-
-      setMentors(result.data?.mentors ?? []);
-      setPagination(result.data?.pagination ?? emptyPagination);
-    } catch (caughtError) {
-      if (caughtError instanceof DOMException && caughtError.name === "AbortError") {
-        return;
-      }
-
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Unable to load mentors.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [isPublished, page, search]);
+    },
+    [isPublished, page, search]
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -148,7 +157,7 @@ export function MentorsTable() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to update mentor status.",
+          : "Unable to update mentor status."
       );
     } finally {
       setBusyId("");
@@ -163,10 +172,9 @@ export function MentorsTable() {
     setBusyId(deletingMentor.id);
 
     try {
-      const response = await fetch(
-        `/api/admin/mentors/${deletingMentor.id}`,
-        { method: "DELETE" },
-      );
+      const response = await fetch(`/api/admin/mentors/${deletingMentor.id}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
         throw new Error("Unable to delete mentor.");
@@ -178,7 +186,7 @@ export function MentorsTable() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to delete mentor.",
+          : "Unable to delete mentor."
       );
     } finally {
       setBusyId("");
@@ -217,7 +225,7 @@ export function MentorsTable() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to reorder mentors.",
+          : "Unable to reorder mentors."
       );
     } finally {
       setBusyId("");
@@ -228,7 +236,11 @@ export function MentorsTable() {
     const firstPage = await fetchMentorPage(1);
     const ids = firstPage.mentors.map((mentor) => mentor.id);
 
-    for (let pageNumber = 2; pageNumber <= firstPage.pagination.totalPages; pageNumber += 1) {
+    for (
+      let pageNumber = 2;
+      pageNumber <= firstPage.pagination.totalPages;
+      pageNumber += 1
+    ) {
       const nextPage = await fetchMentorPage(pageNumber);
       ids.push(...nextPage.mentors.map((mentor) => mentor.id));
     }
@@ -237,7 +249,10 @@ export function MentorsTable() {
   }
 
   async function fetchMentorPage(pageNumber: number) {
-    const params = new URLSearchParams({ page: String(pageNumber), limit: "100" });
+    const params = new URLSearchParams({
+      page: String(pageNumber),
+      limit: "100",
+    });
     const response = await fetch(`/api/admin/mentors?${params}`);
     const result = (await response.json()) as {
       error?: string;
@@ -284,17 +299,28 @@ export function MentorsTable() {
       <MentorsFilter />
 
       {error ? (
-        <p role="alert" className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700"
+        >
           {error}
         </p>
       ) : null}
 
       <section className="mt-5 overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
-          <p className="p-8 text-sm text-muted">Loading mentors...</p>
+          <TableRowsSkeleton
+            rows={8}
+            columns={6}
+            widths={["w-10", "w-3/4", "w-5/6", "w-1/2", "w-2/3", "w-1/3"]}
+          />
         ) : mentors.length === 0 ? (
           <div className="p-10 text-center">
-            <Users aria-hidden="true" className="mx-auto text-muted" size={36} />
+            <Users
+              aria-hidden="true"
+              className="mx-auto text-muted"
+              size={36}
+            />
             <p className="mt-3 text-sm text-muted">No mentors yet.</p>
             <button
               type="button"
@@ -316,7 +342,9 @@ export function MentorsTable() {
                     <th className="px-5 py-3 font-medium">Experience</th>
                     <th className="px-5 py-3 font-medium">Order</th>
                     <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 text-right font-medium">Actions</th>
+                    <th className="px-5 py-3 text-right font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -419,7 +447,8 @@ export function MentorsTable() {
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-xs text-muted">
-                      {mentor.yearsOfExperience} years experience · Order {mentor.order}
+                      {mentor.yearsOfExperience} years experience · Order{" "}
+                      {mentor.order}
                     </span>
                     <MentorStatus published={mentor.isPublished} />
                   </div>
@@ -466,9 +495,7 @@ function Specializations({ mentor }: { mentor: MentorRecord }) {
         </Badge>
       ))}
       {remaining > 0 ? (
-        <Badge className="px-2 py-1 text-[10px] text-muted">
-          +{remaining}
-        </Badge>
+        <Badge className="px-2 py-1 text-[10px] text-muted">+{remaining}</Badge>
       ) : null}
     </div>
   );

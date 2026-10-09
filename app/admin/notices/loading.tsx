@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminNoticesSkeleton } from "@/components/skeletons/admin-notices-skeleton";
 
 export default function AdminNoticesLoading() {
-  return <AdminTableSkeleton hasFilters rows={8} cols={5} />;
+  return <AdminNoticesSkeleton />;
 }

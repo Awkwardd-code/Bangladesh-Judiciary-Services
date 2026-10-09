@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { NoticesFilter } from "@/components/admin/notices-filter";
+import { ListSkeleton } from "@/components/skeletons/list-skeleton";
 import { ButtonWithIcon } from "@/components/ui/button-with-icon";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -100,7 +101,7 @@ export function NoticesTable() {
             pinned: notice.pinned,
             status: notice.status,
           }
-        : blank,
+        : blank
     );
   }
 
@@ -128,7 +129,7 @@ export function NoticesTable() {
       await load();
     } catch (cause) {
       setFormError(
-        cause instanceof Error ? cause.message : "Unable to save notice.",
+        cause instanceof Error ? cause.message : "Unable to save notice."
       );
     } finally {
       setSaving(false);
@@ -165,7 +166,7 @@ export function NoticesTable() {
       <NoticesFilter />
       <div className="mt-5 overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
-          <p className="p-8 text-sm text-muted">Loading notices...</p>
+          <ListSkeleton count={8} hasThumb={false} />
         ) : notices.length === 0 ? (
           <div className="p-10 text-center">
             <Megaphone className="mx-auto text-muted" size={36} />
@@ -238,13 +239,17 @@ export function NoticesTable() {
                 minLength={3}
                 maxLength={200}
                 required
-                onBlur={() => setTouched((current) => ({ ...current, title: true }))}
+                onBlur={() =>
+                  setTouched((current) => ({ ...current, title: true }))
+                }
                 onChange={(event) =>
                   setForm({ ...form, title: event.target.value })
                 }
               />
               {touched.title && form.title.trim().length < 3 ? (
-                <p className="text-xs text-red-600">Title must be 3+ characters.</p>
+                <p className="text-xs text-red-600">
+                  Title must be 3+ characters.
+                </p>
               ) : null}
               <Input
                 placeholder="Excerpt"
@@ -271,7 +276,9 @@ export function NoticesTable() {
                 minLength={20}
                 maxLength={10000}
                 required
-                onBlur={() => setTouched((current) => ({ ...current, body: true }))}
+                onBlur={() =>
+                  setTouched((current) => ({ ...current, body: true }))
+                }
                 onChange={(event) =>
                   setForm({ ...form, body: event.target.value })
                 }

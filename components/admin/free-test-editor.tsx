@@ -18,6 +18,7 @@ import {
 
 import { ExamLifecycleBar } from "@/components/admin/exam-lifecycle-bar";
 import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
+import { AdminFreeTestEditorSkeleton } from "@/components/skeletons/admin-free-test-editor-skeleton";
 import { toast } from "@/components/ui/toaster";
 import type {
   ResolvedQuestion,
@@ -64,6 +65,8 @@ const emptyForm: FreeTestForm = {
   scheduledAt: "",
   closesAt: "",
 };
+
+const emptyQuestions: ResolvedQuestion[] = [];
 
 function toInputValue(value: string | null | undefined): string {
   if (!value) {
@@ -139,7 +142,7 @@ function getServingStatus(target: number, poolSize: number) {
 
 export function FreeTestEditor({
   freeTest,
-  initialQuestions = [],
+  initialQuestions = emptyQuestions,
 }: FreeTestEditorProps) {
   const router = useRouter();
   const isEditing = Boolean(freeTest?.id);
@@ -269,8 +272,7 @@ export function FreeTestEditor({
     selectedWrittenCount,
   ]);
 
-  const saveDisabled =
-    saving;
+  const saveDisabled = saving;
   const readinessIssues = [
     Number(form.preliminaryDurationMinutes) > 0 &&
     selectedPreliminaryCount === 0
@@ -279,8 +281,7 @@ export function FreeTestEditor({
     Number(form.writtenDurationMinutes) > 0 && selectedWrittenCount === 0
       ? "Select written questions or remove the written duration."
       : "",
-    selectedPreliminaryCount > 0 &&
-    Number(form.preliminaryDurationMinutes) <= 0
+    selectedPreliminaryCount > 0 && Number(form.preliminaryDurationMinutes) <= 0
       ? "Set a preliminary duration."
       : "",
     selectedWrittenCount > 0 && Number(form.writtenDurationMinutes) <= 0
@@ -587,6 +588,7 @@ export function FreeTestEditor({
 
     setSaving(true);
     setError(null);
+    let redirecting = false;
 
     try {
       const payload = {
@@ -709,8 +711,8 @@ export function FreeTestEditor({
 
       if (!isEditing) {
         toast("Free test saved.");
-        router.push(`/admin/free-tests/${freeTestId}`);
-        router.refresh();
+        redirecting = true;
+        window.location.replace("/admin/free-tests");
         return;
       }
 
@@ -724,8 +726,14 @@ export function FreeTestEditor({
           : "Something went wrong while saving this free test."
       );
     } finally {
-      setSaving(false);
+      if (!redirecting) {
+        setSaving(false);
+      }
     }
+  }
+
+  if (saving) {
+    return <AdminFreeTestEditorSkeleton />;
   }
 
   return (
@@ -747,7 +755,8 @@ export function FreeTestEditor({
               {freeTest?.title || "New free test"}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Prelim: {selectedPreliminaryCount} · Written: {selectedWrittenCount}
+              Prelim: {selectedPreliminaryCount} · Written:{" "}
+              {selectedWrittenCount}
             </p>
           </div>
 
@@ -772,11 +781,7 @@ export function FreeTestEditor({
               type="button"
               onClick={() => void save("published")}
               disabled={saveDisabled || !phasesReady}
-              title={
-                !phasesReady
-                  ? readinessIssues.join(" ")
-                  : undefined
-              }
+              title={!phasesReady ? readinessIssues.join(" ") : undefined}
               className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-cream disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Globe size={16} />
@@ -1405,7 +1410,9 @@ function PhaseProgress({
     <div>
       <div className="mb-1 flex justify-between text-[11px] text-muted">
         <span>{label}</span>
-        <span>{count}/{effectiveTarget}</span>
+        <span>
+          {count}/{effectiveTarget}
+        </span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-primary/10">
         <div

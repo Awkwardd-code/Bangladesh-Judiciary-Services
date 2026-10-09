@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArchiveRestore, Eye, EyeOff, Globe, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { AdminWrittenExamDetailSkeleton } from "@/components/skeletons/admin-written-exam-detail-skeleton";
 import { ExamLifecycleBar } from "@/components/admin/exam-lifecycle-bar";
 import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
 import { ImportExcelDialog } from "@/components/admin/import-excel-dialog";
@@ -354,7 +355,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
             {error}
           </p>
         ) : null}
-        <p className="text-sm text-muted">Loading written exam...</p>
+        <AdminWrittenExamDetailSkeleton />
       </div>
     );
   }
@@ -384,7 +385,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/dashboard/mock-exams/written/${examId}`}
+            href={`/exam/written/${examId}`}
             target="_blank"
             className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-4 text-sm text-foreground"
           >

@@ -53,14 +53,14 @@ const kindLabels = {
 
 function getExamHref(exam: ExamCardData) {
   if (exam.kind === "free") {
-    return `/dashboard/free-tests/${exam.id}`;
+    return `/exam/free/${exam.id}`;
   }
 
   if (exam.kind === "written") {
-    return `/dashboard/mock-exams/written/${exam.id}`;
+    return `/exam/written/${exam.id}`;
   }
 
-  return `/dashboard/mock-exams/${exam.id}`;
+  return `/exam/preliminary/${exam.id}`;
 }
 
 export function ExamCard({

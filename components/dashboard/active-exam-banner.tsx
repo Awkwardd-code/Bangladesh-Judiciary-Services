@@ -18,10 +18,10 @@ export function ActiveExamBanner({
 
   const targetPath =
     active.kind === "preliminary"
-      ? `/dashboard/mock-exams/${active.examId}`
+      ? `/exam/preliminary/${active.examId}`
       : active.kind === "written"
-        ? `/dashboard/mock-exams/written/${active.examId}`
-        : `/dashboard/free-tests/${active.examId}`;
+        ? `/exam/written/${active.examId}`
+        : `/exam/free/${active.examId}`;
 
   const label =
     active.kind === "free" ? "Resume free test" : "Resume exam";

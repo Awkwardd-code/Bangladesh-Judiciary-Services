@@ -42,7 +42,7 @@ export function QuestionCard({
   const inputId = `written-answer-${question.id}`;
 
   return (
-    <Card className="relative rounded-lg border-border bg-card p-6 shadow-sm">
+    <Card className="relative rounded-none border-0 bg-transparent p-0 shadow-none">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-heading text-lg font-semibold text-primary">
           Q{index + 1}
@@ -82,6 +82,7 @@ export function QuestionCard({
               <button
                 key={`${question.id}-${optionIndex}`}
                 type="button"
+                aria-label={`Select option ${optionIndex + 1}`}
                 disabled={isLocked}
                 onClick={() => onOptionClick(question.id, optionIndex)}
                 className={`flex w-full cursor-pointer items-start gap-3 rounded-md border p-4 text-left text-sm transition-colors disabled:cursor-not-allowed ${

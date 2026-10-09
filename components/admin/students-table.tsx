@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { AdminStudentsRowsSkeleton } from "@/components/skeletons/admin-students-skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,7 +72,7 @@ export function StudentsTable() {
       .catch((cause: unknown) => {
         if (!controller.signal.aborted) {
           setError(
-            cause instanceof Error ? cause.message : "Unable to load students.",
+            cause instanceof Error ? cause.message : "Unable to load students."
           );
         }
       })
@@ -82,7 +83,10 @@ export function StudentsTable() {
     return () => controller.abort();
   }, [query]);
 
-  async function updateStudent(student: Student, action: "approve" | "disable") {
+  async function updateStudent(
+    student: Student,
+    action: "approve" | "disable"
+  ) {
     const response = await fetch(`/api/admin/students/${student.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -132,7 +136,7 @@ export function StudentsTable() {
           </p>
         ) : null}
         {loading ? (
-          <p className="px-5 py-8 text-sm text-muted">Loading students...</p>
+          <AdminStudentsRowsSkeleton />
         ) : students.length === 0 ? (
           <div className="px-5 py-12 text-center">
             <Users className="mx-auto text-muted" size={36} />
@@ -167,7 +171,10 @@ export function StudentsTable() {
                 </Badge>
               </span>
               <span className="md:col-span-1">
-                <StatusBadge status={student.status} disabled={student.disabled} />
+                <StatusBadge
+                  status={student.status}
+                  disabled={student.disabled}
+                />
               </span>
               <span className="text-sm capitalize md:col-span-1">
                 {student.role}

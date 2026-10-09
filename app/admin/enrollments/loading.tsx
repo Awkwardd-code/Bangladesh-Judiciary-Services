@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminEnrollmentsSkeleton } from "@/components/skeletons/admin-enrollments-skeleton";
 
 export default function AdminEnrollmentsLoading() {
-  return <AdminTableSkeleton hasStats hasFilters rows={10} cols={6} />;
+  return <AdminEnrollmentsSkeleton />;
 }

@@ -43,7 +43,7 @@ export function AboutApproach({ about }: { about: AboutShape }) {
           </h2>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
           {pillars.length > 0 ? (
             pillars.map((pillar, index) => {
               const Icon = ICON_MAP[String(pillar.iconName || "book-open").toLowerCase()] ?? BookOpen;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AdminWrittenEvaluationSkeleton } from "@/components/skeletons/admin-written-evaluation-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,7 +63,7 @@ export function WrittenEvaluationClient({
 
     try {
       const response = await fetch(
-        `/api/admin/written-submissions/${submissionId}`,
+        `/api/admin/written-submissions/${submissionId}`
       );
       const result = (await response.json()) as {
         error?: string;
@@ -78,7 +79,7 @@ export function WrittenEvaluationClient({
         record.submission.perQuestionScores.map((score) => [
           score.questionId,
           score,
-        ]),
+        ])
       );
       setData(record);
       setFeedback(record.submission.feedback ?? "");
@@ -91,14 +92,14 @@ export function WrittenEvaluationClient({
             awardedMarks: score?.awardedMarks ?? 0,
             comment: score?.comment ?? "",
           };
-        }),
+        })
       );
       setDirty(false);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to load submission.",
+          : "Unable to load submission."
       );
     } finally {
       setLoading(false);
@@ -111,20 +112,20 @@ export function WrittenEvaluationClient({
 
   const totalScore = useMemo(
     () => grades.reduce((sum, grade) => sum + grade.awardedMarks, 0),
-    [grades],
+    [grades]
   );
   const maxScore = useMemo(
     () =>
       data?.questions.reduce((sum, question) => sum + question.maxMarks, 0) ??
       0,
-    [data],
+    [data]
   );
 
   function updateGrade(questionId: string, changes: Partial<QuestionGrade>) {
     setGrades((current) =>
       current.map((grade) =>
-        grade.questionId === questionId ? { ...grade, ...changes } : grade,
-      ),
+        grade.questionId === questionId ? { ...grade, ...changes } : grade
+      )
     );
     setDirty(true);
     setSavedMessage("");
@@ -149,7 +150,7 @@ export function WrittenEvaluationClient({
             perQuestionScores: grades,
             feedback,
           }),
-        },
+        }
       );
       const result = (await response.json()) as { error?: string };
 
@@ -164,7 +165,7 @@ export function WrittenEvaluationClient({
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to save grades.",
+          : "Unable to save grades."
       );
     } finally {
       setSaving(false);
@@ -172,7 +173,7 @@ export function WrittenEvaluationClient({
   }
 
   if (loading) {
-    return <p className="text-sm text-muted">Loading submission...</p>;
+    return <AdminWrittenEvaluationSkeleton />;
   }
 
   if (!data) {
@@ -274,7 +275,7 @@ export function WrittenEvaluationClient({
           <div className="mt-5 space-y-4">
             {data.questions.map((question) => {
               const grade = grades.find(
-                (item) => item.questionId === question._id,
+                (item) => item.questionId === question._id
               );
 
               if (!grade) {

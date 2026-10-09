@@ -38,4 +38,6 @@ next-env.d.ts
 .vscode/*
 !.vscode/extensions.json
 .idea/
-.xlsx
+/BJS_Preli_Question_Bank_1000.xlsx
+/BJS_Written_Question_Bank_1000.xlsx
+/a-simple-pdf.pdf

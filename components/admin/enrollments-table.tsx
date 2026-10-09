@@ -5,6 +5,7 @@ import { Check, MoreHorizontal, RotateCcw, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { TableRowsSkeleton } from "@/components/skeletons/table-rows-skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -76,7 +77,7 @@ export function EnrollmentsTable() {
           setError(
             cause instanceof Error
               ? cause.message
-              : "Unable to load enrollments.",
+              : "Unable to load enrollments."
           );
         }
       })
@@ -89,7 +90,7 @@ export function EnrollmentsTable() {
 
   async function updateStatus(
     enrollment: EnrollmentRow,
-    action: "approve" | "reject" | "revoke",
+    action: "approve" | "reject" | "revoke"
   ) {
     const response = await fetch(`/api/admin/enrollments/${enrollment.id}`, {
       method: "PATCH",
@@ -123,13 +124,16 @@ export function EnrollmentsTable() {
   return (
     <section className="mt-5 space-y-4">
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded-md bg-red-50 p-3 text-sm text-red-700"
+        >
           {error}
         </p>
       ) : null}
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
-          <p className="p-8 text-sm text-muted">Loading enrollments...</p>
+          <TableRowsSkeleton rows={10} columns={6} />
         ) : rows.length === 0 ? (
           <p className="px-6 py-12 text-center text-sm text-muted">
             No enrollments match these filters.

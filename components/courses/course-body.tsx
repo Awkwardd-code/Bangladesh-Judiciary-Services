@@ -2,6 +2,7 @@ import { CheckCircle2, Lock } from "lucide-react";
 
 import type { CourseAccess } from "@/components/courses/course-detail-types";
 import { Badge } from "@/components/ui/badge";
+import { CourseMaterialAction } from "@/components/courses/course-material-action";
 import type { Course } from "@/lib/types/course";
 
 type PublicCourse = Pick<
@@ -109,12 +110,11 @@ export function CourseBody({
                 </div>
 
                 {access?.hasAccess || (access && item.isFreePreview) ? (
-                  <a
-                    href={`/api/materials/${item.id}/download`}
-                    className="text-sm font-medium text-accent hover:underline"
-                  >
-                    View
-                  </a>
+                  <CourseMaterialAction
+                    id={item.id}
+                    title={item.title}
+                    kind={item.kind}
+                  />
                 ) : (
                   <span className="inline-flex items-center gap-2 text-sm text-muted">
                     <Lock size={14} />

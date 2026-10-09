@@ -5,103 +5,130 @@ import { fail, ok } from "@/lib/api-response";
 import { requireAdmin } from "@/lib/auth-guard";
 import { aboutsCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
-import { buildDefaultAboutSeed } from "@/lib/seed/about-default";
-import { aboutUpdateSchema } from "@/lib/validators/content";
+import { defaultAboutSeed } from "@/lib/seed/about-default";
+import type { About } from "@/lib/types/about";
+import type { AboutShape } from "@/lib/types/about";
+import { aboutUpdateSchema } from "@/lib/validators/about";
 
-function serializeAbout(doc: any) {
-  const { _id, createdAt, updatedAt, updatedBy, ...rest } = doc;
+function serializeAbout(about: About): AboutShape {
   return {
-    id: _id.toString(),
-    ...rest,
-    updatedBy: updatedBy?.toString() ?? null,
-    createdAt,
-    updatedAt,
+    heroKicker: about.heroKicker,
+    heroTitle: about.heroTitle,
+    heroSubtitle: about.heroSubtitle,
+    missionKicker: about.missionKicker,
+    missionTitle: about.missionTitle,
+    missionParagraphs: about.missionParagraphs,
+    approachKicker: about.approachKicker,
+    approachTitle: about.approachTitle,
+    approachPillars: about.approachPillars,
+    whyKicker: about.whyKicker,
+    whyTitle: about.whyTitle,
+    whyComparisonRows: about.whyComparisonRows,
+    facultyKicker: about.facultyKicker,
+    facultyTitle: about.facultyTitle,
+    stats: about.stats,
   };
 }
 
 export async function GET() {
-  const session = await requireAdmin();
-
-  if (!session) {
-    return fail("Forbidden", 403);
-  }
-
   try {
-    await ensureIndexes();
+    const session = await requireAdmin();
 
-    const collection = await aboutsCol();
-    const doc = await collection.findOne({});
-
-    if (!doc) {
-      const seed = buildDefaultAboutSeed(new ObjectId(session.userId));
-      await collection.insertOne(seed);
-      return ok({ about: serializeAbout(seed) });
+    if (!session) {
+      return fail("Forbidden", 403);
     }
 
-    return ok({ about: serializeAbout(doc) });
+    await ensureIndexes();
+
+    const about = await (await aboutsCol()).findOne({});
+
+    if (!about) {
+      return ok({
+        about: null,
+        defaults: defaultAboutSeed,
+      });
+    }
+
+    return ok({ about: serializeAbout(about) });
   } catch (error) {
     console.error("Get about error", error);
     return fail("Server error", 500);
   }
 }
 
-export async function PUT(req: NextRequest) {
-  const session = await requireAdmin();
-
-  if (!session) {
-    return fail("Forbidden", 403);
-  }
-
-  let body: unknown;
-
+export async function PUT(request: NextRequest) {
   try {
-    body = await req.json();
-  } catch {
-    return fail("Invalid request", 400);
-  }
+    const session = await requireAdmin();
 
-  const parsed = aboutUpdateSchema.safeParse(body);
+    if (!session) {
+      return fail("Forbidden", 403);
+    }
 
-  if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Invalid about payload", 400);
-  }
+    let body: unknown;
 
-  try {
+    try {
+      body = await request.json();
+    } catch {
+      return fail("Invalid request", 400);
+    }
+
+    const parsed = aboutUpdateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return fail(
+        parsed.error.issues[0]?.message ?? "Invalid about payload",
+        400
+      );
+    }
+
     await ensureIndexes();
 
     const collection = await aboutsCol();
     const now = new Date();
-    const userObjectId = new ObjectId(session.userId);
-    const updatePayload = {
+    const fields = {
       ...parsed.data,
-      updatedBy: userObjectId,
+      singleton: true as const,
+      updatedBy: new ObjectId(session.userId),
       updatedAt: now,
     };
-
     const existing = await collection.findOne({});
 
-    if (!existing) {
-      const seed = {
-        ...buildDefaultAboutSeed(userObjectId),
-        ...updatePayload,
-        _id: new ObjectId(),
-        createdAt: now,
-      };
-      await collection.insertOne(seed);
-      return ok({ about: serializeAbout(seed) });
+    if (existing) {
+      await collection.updateOne({ _id: existing._id }, { $set: fields });
+    } else {
+      try {
+        await collection.insertOne({
+          _id: new ObjectId(),
+          ...fields,
+          createdAt: now,
+        });
+      } catch (insertError) {
+        if (
+          !insertError ||
+          typeof insertError !== "object" ||
+          !("code" in insertError) ||
+          insertError.code !== 11000
+        ) {
+          throw insertError;
+        }
+
+        const concurrentAbout = await collection.findOne({ singleton: true });
+
+        if (!concurrentAbout) {
+          throw insertError;
+        }
+
+        await collection.updateOne(
+          { _id: concurrentAbout._id },
+          { $set: fields }
+        );
+      }
     }
 
-    await collection.updateOne(
-      { _id: existing._id },
-      {
-        $set: updatePayload,
-      },
-    );
-
-    const updated = await collection.findOne({ _id: existing._id });
+    const updated = await collection.findOne({ singleton: true });
 
     if (!updated) {
-      return fail("About page not found", 404);
+      throw new Error("About page update did not produce a document.");
     }
 
     return ok({ about: serializeAbout(updated) });

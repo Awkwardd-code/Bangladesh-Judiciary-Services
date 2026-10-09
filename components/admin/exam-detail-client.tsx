@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { AdminExamDetailSkeleton } from "@/components/skeletons/admin-exam-detail-skeleton";
 import { ExamLifecycleBar } from "@/components/admin/exam-lifecycle-bar";
 import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
 import { ExamEditor } from "@/components/admin/exam-editor";
@@ -269,7 +270,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
     await load();
   }
 
-  if (!exam) return <p className="text-sm text-muted">Loading exam...</p>;
+  if (!exam) return <AdminExamDetailSkeleton />;
   return (
     <div className="mx-auto max-w-5xl">
       <Link href="/admin/mock-exams" className="text-sm text-accent">
@@ -288,7 +289,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/dashboard/mock-exams/${examId}`}
+            href={`/exam/preliminary/${examId}`}
             target="_blank"
             className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-4 py-2 text-sm text-foreground"
           >

@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminSuccessStoriesSkeleton } from "@/components/skeletons/admin-success-stories-skeleton";
 
 export default function AdminSuccessStoriesLoading() {
-  return <AdminTableSkeleton hasStats hasFilters rows={8} cols={6} />;
+  return <AdminSuccessStoriesSkeleton />;
 }

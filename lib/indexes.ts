@@ -34,15 +34,15 @@ export async function ensureIndexes(): Promise<void> {
   await users.createIndex({ email: 1 }, { unique: true });
   await users.updateMany(
     { isAdmin: { $exists: false } },
-    { $set: { isAdmin: 0 } },
+    { $set: { isAdmin: 0 } }
   );
   await users.updateMany(
     { sessionVersion: { $exists: false } },
-    { $set: { sessionVersion: 1 } },
+    { $set: { sessionVersion: 1 } }
   );
   await users.updateMany(
     { disabled: { $exists: false } },
-    { $set: { disabled: false } },
+    { $set: { disabled: false } }
   );
   await users.createIndex({ roll: 1 }, { unique: true, sparse: true });
   await users.createIndex({ studentId: 1 }, { unique: true, sparse: true });
@@ -51,21 +51,21 @@ export async function ensureIndexes(): Promise<void> {
   await pendingRegistrations.createIndex({ email: 1 }, { unique: true });
   await pendingRegistrations.createIndex(
     { expiresAt: 1 },
-    { expireAfterSeconds: 0 },
+    { expireAfterSeconds: 0 }
   );
 
   await passwordResetTokens.createIndex({ token: 1 }, { unique: true });
   await passwordResetTokens.createIndex({ userId: 1 });
   await passwordResetTokens.createIndex(
     { expiresAt: 1 },
-    { expireAfterSeconds: 0 },
+    { expireAfterSeconds: 0 }
   );
 
   await preliminaryExams.createIndex({ status: 1, scheduledAt: -1 });
 
   await preliminaryQuestions.createIndex(
     { examId: 1, order: 1 },
-    { unique: true },
+    { unique: true }
   );
 
   await preliminaryAttempts.createIndex({
@@ -78,12 +78,23 @@ export async function ensureIndexes(): Promise<void> {
     score: -1,
     submittedAt: 1,
   });
+  await preliminaryAttempts.createIndex({
+    status: 1,
+    score: -1,
+    submittedAt: 1,
+  });
+  await preliminaryAttempts.createIndex({
+    examId: 1,
+    status: 1,
+    score: -1,
+    submittedAt: 1,
+  });
   await preliminaryAttempts.createIndex(
     { userId: 1 },
     {
       unique: true,
       partialFilterExpression: { activeLock: true },
-    },
+    }
   );
 
   await writtenExams.createIndex({ status: 1, scheduledAt: -1 });
@@ -92,18 +103,29 @@ export async function ensureIndexes(): Promise<void> {
 
   await writtenSubmissions.createIndex(
     { userId: 1, examId: 1 },
-    { unique: true },
+    { unique: true }
   );
   await writtenSubmissions.createIndex({
     status: 1,
     submittedAt: -1,
+  });
+  await writtenSubmissions.createIndex({
+    status: 1,
+    totalScore: -1,
+    submittedAt: 1,
+  });
+  await writtenSubmissions.createIndex({
+    examId: 1,
+    status: 1,
+    totalScore: -1,
+    submittedAt: 1,
   });
   await writtenSubmissions.createIndex(
     { userId: 1 },
     {
       unique: true,
       partialFilterExpression: { activeLock: true },
-    },
+    }
   );
 
   await mentors.createIndex({ isPublished: 1, order: 1, _id: 1 });
@@ -119,10 +141,20 @@ export async function ensureIndexes(): Promise<void> {
   await successStories.createIndex({ reviewedBy: 1 });
 
   await about.createIndex({ updatedAt: -1 });
+  await about.createIndex(
+    { singleton: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { singleton: true },
+    }
+  );
   await notices.createIndex({ status: 1, pinned: -1, publishedAt: -1 });
   await payments.createIndex({ status: 1, paidAt: -1 });
   await payments.createIndex({ userId: 1 });
-  await payments.createIndex({ transactionId: 1 }, { unique: true, sparse: true });
+  await payments.createIndex(
+    { transactionId: 1 },
+    { unique: true, sparse: true }
+  );
   // NOTE: unique sparse prevents two payments from sharing the same
   // transaction ID while still allowing records without one.
 
@@ -134,12 +166,23 @@ export async function ensureIndexes(): Promise<void> {
 
   await freeTestAttempts.createIndex({ userId: 1, createdAt: -1 });
   await freeTestAttempts.createIndex({ freeTestId: 1, userId: 1 });
+  await freeTestAttempts.createIndex({
+    status: 1,
+    score: -1,
+    submittedAt: 1,
+  });
+  await freeTestAttempts.createIndex({
+    freeTestId: 1,
+    status: 1,
+    score: -1,
+    submittedAt: 1,
+  });
   await freeTestAttempts.createIndex(
     { userId: 1 },
     {
       unique: true,
       partialFilterExpression: { activeLock: true },
-    },
+    }
   );
 
   await materials.createIndex({ courseId: 1, order: 1 });
@@ -155,7 +198,7 @@ export async function ensureIndexes(): Promise<void> {
   await authAudit.createIndex({ email: 1, createdAt: -1 });
   await authAudit.createIndex(
     { createdAt: 1 },
-    { expireAfterSeconds: 90 * 24 * 60 * 60 },
+    { expireAfterSeconds: 90 * 24 * 60 * 60 }
   );
 
   indexesReady = true;

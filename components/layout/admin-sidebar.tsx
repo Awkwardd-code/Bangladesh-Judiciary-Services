@@ -10,6 +10,7 @@ import {
   FileText,
   LayoutDashboard,
   Megaphone,
+  Trophy,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -35,6 +36,11 @@ const navItems = [
     label: "Model Tests",
     href: "/admin/mock-exams",
     icon: FileText,
+  },
+  {
+    label: "Leaderboard",
+    href: "/admin/leaderboard",
+    icon: Trophy,
   },
   {
     label: "Question Bank",
@@ -72,7 +78,7 @@ export function AdminSidebar() {
             overflow-hidden bg-primary text-cream transition-[width]
             duration-300 ease-in-out lg:flex
           `,
-          collapsed ? "lg:w-16" : "lg:w-64",
+          collapsed ? "lg:w-16" : "lg:w-64"
         )}
       >
         <SidebarContent
@@ -114,7 +120,7 @@ function SidebarContent({
       <div
         className={cn(
           "flex items-center px-4 pt-6",
-          collapsed ? "justify-center pb-4" : "justify-between pb-2",
+          collapsed ? "justify-center pb-4" : "justify-between pb-2"
         )}
       >
         <Link
@@ -123,7 +129,7 @@ function SidebarContent({
           title="BJS Prep Admin"
           className={cn(
             "font-heading font-bold",
-            collapsed ? "text-base" : mobile ? "pr-12 text-lg" : "text-lg",
+            collapsed ? "text-base" : mobile ? "pr-12 text-lg" : "text-lg"
           )}
         >
           {collapsed ? (
@@ -168,7 +174,7 @@ function SidebarContent({
                 "focus-visible:ring-offset-primary",
                 active
                   ? "bg-cream/10 font-medium text-cream"
-                  : "text-cream/80 hover:bg-cream/10 hover:text-cream",
+                  : "text-cream/80 hover:bg-cream/10 hover:text-cream"
               )}
             >
               {active && (
@@ -194,7 +200,7 @@ function SidebarContent({
             "mb-2 flex min-h-10 cursor-pointer items-center gap-3 rounded-md text-sm",
             "text-cream/70 hover:bg-cream/10 hover:text-cream",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-            collapsed ? "justify-center px-2" : "px-3",
+            collapsed ? "justify-center px-2" : "px-3"
           )}
         >
           <ArrowLeft size={18} />

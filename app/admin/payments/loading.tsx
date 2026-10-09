@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminPaymentsSkeleton } from "@/components/skeletons/admin-payments-skeleton";
 
 export default function AdminPaymentsLoading() {
-  return <AdminTableSkeleton hasStats hasFilters rows={10} cols={7} />;
+  return <AdminPaymentsSkeleton />;
 }

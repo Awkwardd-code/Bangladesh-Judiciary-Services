@@ -1,18 +1,41 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AlertTriangle, Clock, Info, Loader2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  Check,
+  Clock3,
+  FileQuestion,
+  Info,
+  Loader2,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 
-import { QuestionCard } from "@/components/dashboard/question-card";
+import { ExamPaperFooter } from "@/components/exam/exam-paper-footer";
+import { ExamPaperHeader } from "@/components/exam/exam-paper-header";
+import { ExamPaperSkeleton } from "@/components/exam/exam-paper-skeleton";
+import { ExamSubmittingScreen } from "@/components/exam/exam-submitting-screen";
+import { ExamThankYou } from "@/components/exam/exam-thank-you";
+import { QuestionCard } from "@/components/exam/question-card";
 import type {
   RunnerQuestion,
   UploadedPdf,
-} from "@/components/dashboard/question-card";
+} from "@/components/exam/question-card";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/toaster";
 
 type ExamKind = "preliminary" | "written" | "free";
+type SubmitReason =
+  "manual" | "tab-change" | "visibility-hidden" | "time-expired";
+
+type SubmittedAttempt = {
+  attemptId: string;
+  score: number | null;
+  autoSubmitReason: SubmitReason;
+};
 
 type RunnerQuestionData = RunnerQuestion & {
   position: number;
@@ -176,7 +199,6 @@ function toUploadedPdf(answer: {
 }
 
 export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
-  const router = useRouter();
   const [examDetails, setExamDetails] = useState(exam);
   const initialQuestionList = questions ?? [];
   const initialQuestionIds = attempt ? getQuestionIds(attempt) : [];
@@ -242,7 +264,13 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     );
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submittingOverlay, setSubmittingOverlay] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedAttempt, setSubmittedAttempt] =
+    useState<SubmittedAttempt | null>(null);
+  const [autoSubmitReason, setAutoSubmitReason] = useState<SubmitReason | null>(
+    null
+  );
   const [starting, setStarting] = useState(false);
   const [phaseTransitioning, setPhaseTransitioning] = useState(false);
   const [phaseOverlayVisible, setPhaseOverlayVisible] = useState(false);
@@ -346,6 +374,8 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
 
     submitLockRef.current = true;
     setSubmitting(true);
+    setSubmittingOverlay(true);
+    setAutoSubmitReason(reason);
 
     try {
       const endpoint =
@@ -369,20 +399,43 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
         throw new Error(payload?.error ?? "Unable to submit this exam.");
       }
 
+      const attemptResult =
+        payload?.data?.attempt ?? payload?.data?.submission ?? null;
+      const rawScore =
+        typeof attemptResult?.score === "number"
+          ? attemptResult.score
+          : typeof attemptResult?.totalScore === "number"
+            ? attemptResult.totalScore
+            : null;
+      const score =
+        rawScore !== null && examDetails.totalMarks > 0
+          ? Math.round((rawScore / examDetails.totalMarks) * 100)
+          : null;
+
+      setSubmittedAttempt({
+        attemptId,
+        score,
+        autoSubmitReason: reason,
+      });
       setSubmitted(true);
       setConfirmationOpen(false);
-      const resultPath =
-        exam.kind === "written"
-          ? `/dashboard/mock-exams/written/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`
-          : exam.kind === "preliminary"
-            ? `/dashboard/mock-exams/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`
-            : `/dashboard/free-tests/${exam.id}/result?attemptId=${encodeURIComponent(attemptId)}`;
+      setSubmittingOverlay(false);
+      window.history.replaceState(
+        { ...window.history.state, submitted: true },
+        "",
+        window.location.href
+      );
 
-      router.replace(resultPath);
+      if (phaseOverlayTimerRef.current !== null) {
+        window.clearTimeout(phaseOverlayTimerRef.current);
+        phaseOverlayTimerRef.current = null;
+      }
     } catch (error) {
       console.error("Exam submission error", error);
       submitLockRef.current = false;
       setSubmitting(false);
+      setSubmittingOverlay(false);
+      setAutoSubmitReason(null);
       toast(
         error instanceof Error ? error.message : "Unable to submit this exam.",
         "error"
@@ -408,6 +461,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
 
     transitionAttemptedRef.current = true;
     setPhaseTransitioning(true);
+    setPhaseOverlayVisible(true);
 
     try {
       const response = await fetch(`/api/free-tests/${exam.id}/phase`, {
@@ -450,6 +504,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       );
     } catch (error) {
       console.error("Free test phase transition error", error);
+      setPhaseOverlayVisible(false);
       toast(
         error instanceof Error
           ? error.message
@@ -476,7 +531,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   );
 
   useEffect(() => {
-    if (!hasActiveAttempt || !expiresAt) {
+    if (!hasActiveAttempt || !expiresAt || submitted || submittingOverlay) {
       return undefined;
     }
 
@@ -498,10 +553,16 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     }, 1000);
 
     return () => window.clearInterval(tick);
-  }, [canTransitionToWritten, expiresAt, hasActiveAttempt]);
+  }, [
+    canTransitionToWritten,
+    expiresAt,
+    hasActiveAttempt,
+    submitted,
+    submittingOverlay,
+  ]);
 
   useEffect(() => {
-    if (!hasActiveAttempt || submitted || canSwitchTabs) {
+    if (!hasActiveAttempt || submitted || submittingOverlay || canSwitchTabs) {
       return undefined;
     }
 
@@ -543,7 +604,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       window.removeEventListener("blur", handleBlur);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [canSwitchTabs, hasActiveAttempt, submitted]);
+  }, [canSwitchTabs, hasActiveAttempt, submitted, submittingOverlay]);
 
   async function handleStart() {
     if (starting) {
@@ -804,226 +865,257 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     void submitExam("manual");
   }
 
-  function formatTime(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainder = seconds % 60;
-    const format = (value: number) => value.toString().padStart(2, "0");
-
-    return hours > 0
-      ? `${format(hours)}:${format(minutes)}:${format(remainder)}`
-      : `${format(minutes)}:${format(remainder)}`;
+  if (submittingOverlay) {
+    return <ExamSubmittingScreen reason={autoSubmitReason} />;
   }
 
-  if (startDialogOpen) {
+  if (phaseOverlayVisible) {
+    return <ExamPaperSkeleton withTimer withFooter />;
+  }
+
+  if (submitted && submittedAttempt) {
+    const resultHref =
+      exam.kind === "preliminary"
+        ? `/dashboard/mock-exams/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`
+        : exam.kind === "written"
+          ? `/dashboard/mock-exams/written/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`
+          : `/dashboard/free-tests/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`;
+
     return (
-      <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-12">
-        <Card className="w-full max-w-2xl border-border bg-card p-6 shadow-sm">
-          <h1 className="font-heading text-3xl font-semibold text-primary">
-            {examDetails.title}
-          </h1>
-
-          <div className="mt-6 rounded-md border border-border bg-muted/5 p-4 text-sm text-foreground">
-            <ul className="list-disc space-y-2 pl-5">
-              <li>Duration: {examDetails.durationMinutes} minutes.</li>
-              <li>Questions: {effectiveQuestionCount}.</li>
-              <li>All questions are shown on one page.</li>
-              {hasWritten ? (
-                <li>
-                  Each written answer must be uploaded as a PDF (max 10 MB).
-                </li>
-              ) : (
-                <li>Each question locks once you select an answer.</li>
-              )}
-              {hasPhases ? (
-                <>
-                  <li>
-                    Preliminary phase: {examDetails.preliminaryDurationMinutes}{" "}
-                    minutes.
-                  </li>
-                  <li>
-                    Written phase: {examDetails.writtenDurationMinutes} minutes.
-                  </li>
-                  <li>
-                    Starting the written phase ends the preliminary phase.
-                  </li>
-                </>
-              ) : null}
-              {!canSwitchTabs ? (
-                <li>
-                  Switching browser tabs will submit your exam immediately.
-                </li>
-              ) : (
-                <li>
-                  You may switch tabs to reference materials. The timer
-                  continues.
-                </li>
-              )}
-              <li>
-                When the timer expires, your exam is submitted automatically.
-              </li>
-              {examDetails.passMarkPercent ? (
-                <li>Pass mark: {examDetails.passMarkPercent}%.</li>
-              ) : null}
-            </ul>
-          </div>
-
-          <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={readRules}
-              onChange={(event) => setReadRules(event.target.checked)}
-              className="mt-1 h-4 w-4 cursor-pointer accent-primary"
-            />
-            <span>I have read and understood the rules.</span>
-          </label>
-
-          <div className="mt-6 flex justify-end">
-            <button
-              type="button"
-              onClick={() => void handleStart()}
-              disabled={!readRules || starting}
-              className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-5 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {starting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Starting...
-                </>
-              ) : (
-                "Begin"
-              )}
-            </button>
-          </div>
-        </Card>
-      </div>
+      <ExamThankYou
+        kind={exam.kind}
+        examTitle={examDetails.title}
+        resultHref={resultHref}
+        autoSubmitReason={submittedAttempt.autoSubmitReason}
+        score={submittedAttempt.score}
+        passMarkPercent={examDetails.passMarkPercent}
+      />
     );
   }
 
-  if (submitted) {
+  if (startDialogOpen) {
+    const examRules = [
+      "All questions are shown on one page.",
+      hasWritten
+        ? "Written answers must be uploaded as a PDF (max 10 MB)."
+        : "Each question locks once you select an answer.",
+      ...(hasPhases
+        ? [
+            `Preliminary phase: ${examDetails.preliminaryDurationMinutes} minutes.`,
+            `Written phase: ${examDetails.writtenDurationMinutes} minutes. Starting it ends the preliminary phase.`,
+          ]
+        : []),
+      canSwitchTabs
+        ? "You may switch tabs to reference materials; the timer continues."
+        : "Switching tabs or minimising the window will submit your exam immediately.",
+      "When the timer expires, your exam is submitted automatically.",
+      ...(examDetails.passMarkPercent !== null &&
+      examDetails.passMarkPercent !== undefined
+        ? [`Pass mark: ${examDetails.passMarkPercent}%.`]
+        : []),
+    ];
+
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
-        <Card className="flex items-center gap-3 border-border bg-card p-6">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <p className="text-sm text-foreground">
-            Your exam has been submitted.
-          </p>
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:px-6">
+        <Card className="w-full max-w-3xl overflow-hidden rounded-2xl border-border bg-card shadow-[0_16px_50px_rgba(18,33,63,0.08)]">
+          <div className="h-1.5 bg-accent" />
+          <div className="p-6 sm:p-9 lg:p-10">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary">
+                <BookOpen aria-hidden="true" size={23} />
+              </div>
+              <div className="min-w-0 pt-0.5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+                  Before you begin
+                </p>
+                <h1 className="mt-1 font-heading text-2xl font-semibold text-primary sm:text-3xl">
+                  {examDetails.title}
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Take a moment to review the exam details and rules.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-background/70 p-4">
+                <Clock3
+                  aria-hidden="true"
+                  className="shrink-0 text-accent"
+                  size={20}
+                />
+                <div>
+                  <p className="text-xs text-muted">Duration</p>
+                  <p className="mt-0.5 font-semibold text-primary">
+                    {examDetails.durationMinutes} min
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-background/70 p-4">
+                <FileQuestion
+                  aria-hidden="true"
+                  className="shrink-0 text-accent"
+                  size={20}
+                />
+                <div>
+                  <p className="text-xs text-muted">Questions</p>
+                  <p className="mt-0.5 font-semibold text-primary">
+                    {effectiveQuestionCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <section
+              aria-labelledby="exam-rules-heading"
+              className="mt-7 rounded-xl border border-border bg-background/60 p-5 sm:p-6"
+            >
+              <h2
+                id="exam-rules-heading"
+                className="flex items-center gap-2 text-sm font-semibold text-primary"
+              >
+                <ShieldCheck
+                  aria-hidden="true"
+                  className="text-accent"
+                  size={18}
+                />
+                Exam rules
+              </h2>
+              <ul className="mt-4 space-y-3">
+                {examRules.map((rule) => (
+                  <li
+                    key={rule}
+                    className="flex items-start gap-3 text-sm leading-6 text-foreground"
+                  >
+                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/5 text-primary">
+                      <Check aria-hidden="true" size={13} />
+                    </span>
+                    <span>{rule}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 text-sm leading-6 text-foreground transition-colors hover:bg-background/70">
+              <input
+                type="checkbox"
+                checked={readRules}
+                onChange={(event) => setReadRules(event.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 accent-primary"
+              />
+              <span>I have read and understood the exam rules.</span>
+            </label>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted">
+                Your timer starts when you select Begin exam.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleStart()}
+                disabled={!readRules || starting}
+                className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {starting ? (
+                  <>
+                    <Loader2
+                      aria-hidden="true"
+                      className="animate-spin"
+                      size={17}
+                    />
+                    Preparing exam…
+                  </>
+                ) : (
+                  <>
+                    Begin exam
+                    <ArrowRight aria-hidden="true" size={17} />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </Card>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-body text-[15px] font-semibold text-primary">
-            {examDetails.title}
-            {hasPhases ? (
-              <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium capitalize">
-                {currentPhase === "preliminary"
-                  ? "Phase 1 of 2 · Preliminary"
-                  : "Phase 2 of 2 · Written"}
-              </span>
-            ) : null}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <div
-              className={`font-mono text-2xl font-semibold ${
-                timeLeftSeconds < 300
-                  ? "animate-pulse text-red-600"
-                  : "text-primary"
-              }`}
-            >
-              <span className="inline-flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                {formatTime(timeLeftSeconds)}
-              </span>
-            </div>
-
-            <p className="text-sm text-muted">
-              Answered {answeredCount} / {displayedQuestions.length}
-            </p>
-
-            {canTransitionToWritten ? (
-              <button
-                type="button"
-                onClick={() => void transitionToWrittenPhase()}
-                disabled={phaseTransitioning}
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {phaseTransitioning
-                  ? "Starting written phase..."
-                  : "Submit preliminary phase"}
-              </button>
+    <div className="min-h-screen bg-background pb-4">
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        <Card className="overflow-visible border-border bg-card shadow-sm">
+          <ExamPaperHeader
+            examTitle={examDetails.title}
+            durationMinutes={
+              currentPhase === "preliminary"
+                ? (examDetails.preliminaryDurationMinutes ??
+                  examDetails.durationMinutes)
+                : currentPhase === "written"
+                  ? (examDetails.writtenDurationMinutes ??
+                    examDetails.durationMinutes)
+                  : examDetails.durationMinutes
+            }
+            totalMarks={examDetails.totalMarks}
+            sessionYear={
+              examDetails.title.match(/\b20\d{2}\b/)?.[0] ?? "Current Session"
+            }
+            kind={exam.kind}
+            timeLeftSeconds={timeLeftSeconds}
+            phase={hasPhases ? currentPhase : null}
+          />
+          <div
+            className={`mx-6 mt-6 flex items-start gap-3 rounded-md p-4 text-sm lg:mx-8 ${
+              hasWritten
+                ? "border border-blue-200 bg-blue-50 text-blue-900"
+                : "border border-amber-200 bg-amber-50 text-amber-900"
+            }`}
+          >
+            {hasWritten ? (
+              <Info className="mt-0.5 h-5 w-5 shrink-0" />
             ) : (
-              <button
-                type="button"
-                onClick={requestManualSubmit}
-                disabled={submitting}
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting
-                  </>
-                ) : (
-                  hasPhases && isWrittenPhase
-                    ? "Submit test"
-                    : exam.kind === "free"
-                      ? "Submit test"
-                      : "Submit exam"
-                )}
-              </button>
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             )}
+            <p>
+              {canSwitchTabs
+                ? "You may switch tabs to reference materials. The timer continues in the background."
+                : "Do not switch tabs or minimise the window. Doing so submits your exam immediately."}
+            </p>
           </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <div
-          className={`flex items-start gap-3 rounded-md p-4 text-sm ${
-            hasWritten
-              ? "border border-blue-200 bg-blue-50 text-blue-900"
-              : "border border-amber-200 bg-amber-50 text-amber-900"
-          }`}
-        >
-          {hasWritten ? (
-            <Info className="mt-0.5 h-5 w-5 shrink-0" />
-          ) : (
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          )}
-          <p>
-            {canSwitchTabs
-              ? "You may switch tabs to reference materials. The timer continues in the background."
-              : "Do not switch tabs or minimise the window. Doing so submits your exam immediately."}
-          </p>
-        </div>
+          <div className="space-y-8 px-6 py-8 lg:px-8">
+            {displayedQuestions.map((question, index) => {
+              const isMCQ =
+                Array.isArray(question.options) && question.options.length > 0;
+              const selectedOptionIndex = answers[question.id] ?? null;
 
-        <div className="space-y-6 py-8">
-          {displayedQuestions.map((question, index) => {
-            const isMCQ =
-              Array.isArray(question.options) && question.options.length > 0;
-            const selectedOptionIndex = answers[question.id] ?? null;
-
-            return (
-              <QuestionCard
-                key={question.id}
-                index={index}
-                question={question}
-                isMCQ={isMCQ}
-                isLocked={locked.has(question.id)}
-                selectedOptionIndex={selectedOptionIndex}
-                uploadedPdf={uploadedPdfs[question.id] ?? null}
-                isUploading={uploadingPdf.has(question.id)}
-                onOptionClick={handleOptionClick}
-                onPdfUpload={handlePdfUpload}
-              />
-            );
-          })}
-        </div>
+              return (
+                <QuestionCard
+                  key={question.id}
+                  index={index}
+                  question={question}
+                  isMCQ={isMCQ}
+                  isLocked={locked.has(question.id)}
+                  selectedOptionIndex={selectedOptionIndex}
+                  uploadedPdf={uploadedPdfs[question.id] ?? null}
+                  isUploading={uploadingPdf.has(question.id)}
+                  onOptionClick={handleOptionClick}
+                  onPdfUpload={handlePdfUpload}
+                />
+              );
+            })}
+          </div>
+          <ExamPaperFooter
+            submitting={submitting}
+            onSubmit={requestManualSubmit}
+            kind={exam.kind}
+            onPhaseSubmit={
+              canTransitionToWritten
+                ? () => void transitionToWrittenPhase()
+                : undefined
+            }
+            phaseSubmitting={phaseTransitioning}
+            phaseSubmitLabel="Submit preliminary phase"
+          />
+        </Card>
       </main>
 
       {confirmationOpen ? (
@@ -1083,19 +1175,6 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
               </button>
             </div>
           </Card>
-        </div>
-      ) : null}
-
-      {phaseOverlayVisible ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary-dark/90 p-6 text-center text-cream">
-          <div>
-            <p className="font-heading text-2xl font-semibold">
-              Preliminary phase complete.
-            </p>
-            <p className="mt-2 text-base">
-              Starting written phase…
-            </p>
-          </div>
         </div>
       ) : null}
     </div>

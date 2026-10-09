@@ -1,5 +1,5 @@
-import { AdminTableSkeleton } from "@/components/skeletons/admin-table-skeleton";
+import { AdminMentorsSkeleton } from "@/components/skeletons/admin-mentors-skeleton";
 
 export default function AdminMentorsLoading() {
-  return <AdminTableSkeleton hasFilters rows={8} cols={6} />;
+  return <AdminMentorsSkeleton />;
 }
