@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Check, Clock, FileQuestion } from "lucide-react";
 
 type ExamPaperHeaderProps = {
   examTitle: string;
@@ -9,6 +9,9 @@ type ExamPaperHeaderProps = {
   sessionYear: string;
   kind: "preliminary" | "written" | "free";
   timeLeftSeconds: number;
+  negativeMarking?: number;
+  answeredCount: number;
+  remainingCount: number;
   phase?: "preliminary" | "written" | null;
 };
 
@@ -28,6 +31,9 @@ export function ExamPaperHeader({
   sessionYear,
   kind,
   timeLeftSeconds,
+  negativeMarking = 0,
+  answeredCount,
+  remainingCount,
   phase,
 }: ExamPaperHeaderProps) {
   return (
@@ -79,12 +85,12 @@ export function ExamPaperHeader({
       </div>
 
       <div className="sticky top-0 z-30 border-y border-border bg-card px-6 py-3 shadow-sm lg:px-8">
-        <div className="flex items-center justify-between gap-4">
-          <div>
+        <div className="grid grid-cols-2 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:gap-6">
+          <div className="min-w-0">
             <p className="text-xs text-muted">Time remaining</p>
             <p
               className={`
-                mt-1 inline-flex items-center gap-2 font-mono text-xl font-semibold
+                mt-1 inline-flex items-center gap-2 font-mono text-lg font-semibold sm:text-xl
                 ${timeLeftSeconds < 300 ? "animate-pulse text-red-600" : "text-primary"}
               `}
               role="timer"
@@ -95,13 +101,56 @@ export function ExamPaperHeader({
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-1">
-            {phase ? (
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium capitalize text-primary">
-                {phase}
-              </span>
-            ) : null}
-            <span className="text-xs capitalize text-muted">{kind} exam</span>
+          <div
+            className="flex items-center gap-2 sm:min-w-28"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <Check aria-hidden="true" size={17} className="shrink-0 text-emerald-600" />
+            <div>
+              <p className="text-xs text-muted">Answered</p>
+              <p className="mt-1 font-mono text-base font-semibold text-primary">
+                {answeredCount}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className="flex items-center justify-end gap-2 sm:min-w-28"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <FileQuestion
+              aria-hidden="true"
+              size={17}
+              className="shrink-0 text-accent"
+            />
+            <div>
+              <p className="text-xs text-muted">Left</p>
+              <p className="mt-1 font-mono text-base font-semibold text-primary">
+                {remainingCount}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-2 sm:border-0 sm:pt-0 sm:text-right">
+            <div className="flex items-center gap-2 sm:ml-auto">
+              {phase ? (
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium capitalize text-primary">
+                  {phase}
+                </span>
+              ) : null}
+              <div>
+                <span className="block text-xs capitalize text-muted">
+                  {kind} exam
+                </span>
+                {negativeMarking > 0 && phase !== "written" ? (
+                  <span className="mt-1 block text-[10px] text-red-600">
+                    −{negativeMarking} per wrong answer
+                  </span>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       </div>

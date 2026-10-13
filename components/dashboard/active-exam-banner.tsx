@@ -16,8 +16,9 @@ export function ActiveExamBanner({
     return null;
   }
 
-  const targetPath =
-    active.kind === "preliminary"
+  const targetPath = active.unified
+    ? `/exam/${active.examId}`
+    : active.kind === "preliminary"
       ? `/exam/preliminary/${active.examId}`
       : active.kind === "written"
         ? `/exam/written/${active.examId}`

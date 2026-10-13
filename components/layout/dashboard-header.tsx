@@ -5,9 +5,8 @@ import { useDashboardShell } from "@/components/layout/dashboard-shell-provider"
 
 const BREADCRUMBS: Record<string, string[]> = {
   "/dashboard": ["Dashboard"],
-  "/dashboard/mock-exams": ["Dashboard", "Mock Exams"],
+  "/dashboard/exams": ["Dashboard", "Exams"],
   "/dashboard/results": ["Dashboard", "Results"],
-  "/dashboard/materials": ["Dashboard", "Materials"],
   "/dashboard/profile": ["Dashboard", "Profile"],
 };
 

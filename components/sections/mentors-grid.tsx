@@ -18,7 +18,7 @@ export function MentorsGrid({
         <header className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
-              BJS Prep Faculty
+              LegalPath Bangladesh Faculty
             </p>
             <h2 className="mt-2 font-heading text-2xl font-bold text-primary">
               Meet the mentors

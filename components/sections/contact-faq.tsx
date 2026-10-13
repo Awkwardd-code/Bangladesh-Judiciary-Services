@@ -19,7 +19,7 @@ const items = [
   {
     question: "What payment methods do you accept?",
     answer:
-      "We accept bKash, Nagad, and bank transfer. Payment details are shared after enrollment.",
+      "We accept bKash, Nagad, and Upay. Submit your sender number and transaction ID; course access is granted after an administrator verifies the payment.",
   },
   {
     question: "Can I access the courses on mobile?",

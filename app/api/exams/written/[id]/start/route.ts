@@ -69,7 +69,8 @@ export const POST = withGuard(
       if (
         active &&
         active.kind === "written" &&
-        active.examId.toString() === examId.toString()
+        active.examId.toString() === examId.toString() &&
+        active.submissionId
       ) {
         const submission = await (
           await writtenSubmissionsCol()

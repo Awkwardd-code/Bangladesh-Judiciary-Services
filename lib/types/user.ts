@@ -21,6 +21,8 @@ export type User = BaseDoc & {
   approved: boolean;
   avatarUrl?: string;
   avatarPublicId?: string;
+  freeExamsUsed?: number;
+  freeExamsLimit?: number;
   lastLoginAt?: Date;
 };
 

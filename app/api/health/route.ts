@@ -16,9 +16,9 @@ export const GET = withGuard({ kind: "public" }, async () => {
   }
 
   return NextResponse.json({
-    ok: true,
+    ok: dbOk,
     env: process.env.NODE_ENV ?? "development",
     time: new Date().toISOString(),
     dbOk,
-  });
+  }, { status: dbOk ? 200 : 503 });
 });

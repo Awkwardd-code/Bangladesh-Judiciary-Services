@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Students — Admin — BJS Prep",
+  title: "Students — Admin — LegalPath Bangladesh",
   description: "Manage all registered students.",
 };
 

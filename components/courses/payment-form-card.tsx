@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Landmark, Loader2, Wallet } from "lucide-react";
+import { AlertTriangle, Loader2, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -9,13 +9,13 @@ import { Card } from "@/components/ui/card";
 const methodOptions = [
   { value: "bkash", label: "bKash", icon: Wallet },
   { value: "nagad", label: "Nagad", icon: Wallet },
-  { value: "bank", label: "Bank Transfer", icon: Landmark },
+  { value: "upay", label: "Upay", icon: Wallet },
 ] as const;
 
 const senderLabel: Record<string, string> = {
   bkash: "Your bKash number",
   nagad: "Your Nagad number",
-  bank: "Your bank account number",
+  upay: "Your Upay number",
 };
 
 export function PaymentFormCard({
@@ -27,6 +27,7 @@ export function PaymentFormCard({
     title: string;
     price: number;
     currency: string;
+    discountPercent?: number;
   };
 }) {
   const router = useRouter();
@@ -51,6 +52,9 @@ export function PaymentFormCard({
     senderNumber.trim().length < 6 ||
     !isValidSender ||
     !isValidTransaction;
+  const payableAmount = Math.round(
+    course.price * (1 - (course.discountPercent ?? 0) / 100),
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,7 +112,7 @@ export function PaymentFormCard({
                 </p>
               </div>
               <div className="font-heading text-2xl font-bold text-primary">
-                {course.currency} {course.price.toLocaleString()}
+                {course.currency} {payableAmount.toLocaleString()}
               </div>
             </div>
 

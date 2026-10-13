@@ -17,7 +17,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 import { enrollmentsCol, paymentsCol, usersCol } from "@/lib/collections";
 
 export const metadata: Metadata = {
-  title: "Admin — BJS Prep",
+  title: "Admin — LegalPath Bangladesh",
   description: "Platform overview for administrators.",
 };
 

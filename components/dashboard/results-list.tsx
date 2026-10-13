@@ -17,18 +17,18 @@ export function ResultsList({ results }: { results: RecentAttempt[] }) {
       filter === "All"
         ? results
         : results.filter((result) => result.category === filter),
-    [filter, results],
+    [filter, results]
   );
 
   if (results.length === 0) {
     return (
-      <section className="mt-8 rounded-lg border border-border bg-card p-8 text-center">
+      <section className="mt-8 rounded-2xl border border-dashed border-border bg-card p-10 text-center shadow-sm">
         <p className="font-medium text-foreground">No results yet</p>
         <p className="mt-2 text-sm text-muted">
           Your completed tests will appear here.
         </p>
         <Link
-          href="/dashboard/mock-exams"
+          href="/dashboard/exams"
           className="mt-5 inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm text-cream"
         >
           Take a test
@@ -53,8 +53,8 @@ export function ResultsList({ results }: { results: RecentAttempt[] }) {
             onClick={() => setFilter(item)}
             className={`cursor-pointer rounded-full border px-4 py-2 text-sm ${
               filter === item
-                ? "border-primary bg-primary text-cream"
-                : "border-border bg-card text-muted"
+                ? "border-primary bg-primary text-cream shadow-sm"
+                : "border-border bg-card text-muted hover:border-primary/30 hover:text-primary"
             }`}
           >
             {item}
@@ -64,13 +64,12 @@ export function ResultsList({ results }: { results: RecentAttempt[] }) {
       {filteredResults.map((result) => {
         const status = displayStatus(result.status);
         const ungraded =
-          result.category === "Written" &&
-          !["graded"].includes(result.status);
+          result.category === "Written" && !["graded"].includes(result.status);
 
         return (
           <Card
             key={`${result.category}-${result.id}`}
-            className="border-border bg-card p-4 shadow-sm sm:p-6"
+            className="rounded-2xl border-border/80 bg-card p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6"
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1">
@@ -100,7 +99,7 @@ export function ResultsList({ results }: { results: RecentAttempt[] }) {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                <div className="text-right">
+                <div className="min-w-24 rounded-xl bg-primary/[0.04] px-4 py-2 text-right">
                   <p className="text-xs uppercase tracking-wide text-muted">
                     Score
                   </p>
@@ -114,7 +113,7 @@ export function ResultsList({ results }: { results: RecentAttempt[] }) {
             <div className="mt-6">
               <Link
                 href={result.href}
-                className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm text-foreground hover:border-primary hover:text-primary"
+                className="inline-flex h-9 items-center rounded-full border border-border px-4 text-sm font-medium text-foreground hover:border-primary hover:text-primary"
               >
                 View details
               </Link>

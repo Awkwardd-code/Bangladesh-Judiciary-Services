@@ -14,10 +14,11 @@ export function CoursesFilter() {
   const current = new URLSearchParams(searchParams.toString());
   const search = searchParams.get("search") ?? "";
   const category = searchParams.get("category") ?? "all";
+  const type = searchParams.get("type") ?? "all";
   const sort = searchParams.get("sort") ?? "newest";
 
   function update(key: string, value: string) {
-    const query = buildQuery(current, { [key]: value });
+    const query = buildQuery(current, { [key]: value, page: 1 });
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });
@@ -27,7 +28,7 @@ export function CoursesFilter() {
     <section className="bg-cream px-4 pb-4 pt-8 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <FilterBar
-          showClear={Boolean(search || category !== "all" || sort !== "newest")}
+          showClear={Boolean(search || category !== "all" || type !== "all" || sort !== "newest")}
           onClear={() => router.replace(pathname, { scroll: false })}
         >
           <SearchInput
@@ -42,10 +43,19 @@ export function CoursesFilter() {
             placeholder="All categories"
             aria-label="Filter courses by category"
             options={[
-              { value: "preliminary", label: "Preliminary" },
-              { value: "written", label: "Written" },
-              { value: "viva", label: "Viva" },
-              { value: "foundation", label: "Foundation" },
+              { value: "BJS", label: "BJS" },
+              { value: "BAR", label: "BAR" },
+              { value: "LLB", label: "LLB" },
+            ]}
+          />
+          <FilterSelect
+            value={type}
+            onValueChange={(value) => update("type", value)}
+            placeholder="All types"
+            aria-label="Filter courses by cost"
+            options={[
+              { value: "free", label: "Free" },
+              { value: "paid", label: "Paid" },
             ]}
           />
           <FilterSelect

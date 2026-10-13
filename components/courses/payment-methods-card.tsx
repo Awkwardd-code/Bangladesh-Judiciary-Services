@@ -1,4 +1,4 @@
-import { Copy, Landmark, QrCode, Wallet } from "lucide-react";
+import { QrCode, Wallet } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 
@@ -6,23 +6,23 @@ const methodConfig = [
   {
     name: "bKash",
     label: "Send Money",
-    number: "01XXXXXXXXX",
+    number: process.env.NEXT_PUBLIC_BKASH_NUMBER ?? "",
     icon: Wallet,
     type: "bkash",
   },
   {
     name: "Nagad",
     label: "Send Money",
-    number: "01XXXXXXXXX",
+    number: process.env.NEXT_PUBLIC_NAGAD_NUMBER ?? "",
     icon: Wallet,
     type: "nagad",
   },
   {
-    name: "Bank",
-    label: "Bank Transfer",
-    number: "XXXX-XXXX-XXXX",
-    icon: Landmark,
-    type: "bank",
+    name: "Upay",
+    label: "Send Money",
+    number: process.env.NEXT_PUBLIC_UPAY_NUMBER ?? "",
+    icon: Wallet,
+    type: "upay",
   },
 ] as const;
 
@@ -59,27 +59,11 @@ export function PaymentMethodsCard() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-xs font-medium text-primary"
-                    >
-                      <Copy size={14} />
-                      Copy
-                    </button>
                   </div>
 
-                  {method.type === "bank" ? (
-                    <div className="space-y-1 text-sm text-primary">
-                      <p className="font-sans font-semibold text-primary">
-                        A/C: {method.number}
-                      </p>
-                      <p className="text-muted">Bank: Example Bank Ltd</p>
-                    </div>
-                  ) : (
-                    <div className="font-heading text-lg font-semibold text-primary">
-                      {method.number}
-                    </div>
-                  )}
+                  <div className="font-heading text-lg font-semibold text-primary">
+                    {method.number || "Contact support for payment details"}
+                  </div>
                 </div>
               );
             })}

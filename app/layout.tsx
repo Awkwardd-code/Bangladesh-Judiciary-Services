@@ -16,13 +16,13 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: "BJS Prep | Bangladesh Judicial Service Exam Preparation",
-    template: "%s | BJS Prep",
+    default: "LegalPath Bangladesh | Bangladesh Judicial Service Exam Preparation",
+    template: "%s | LegalPath Bangladesh",
   },
   description:
     "Structured, mentor-led preparation for the Bangladesh Judicial Service exam.",
   openGraph: {
-    title: "BJS Prep",
+    title: "LegalPath Bangladesh",
     description:
       "Courses, model tests, and written evaluation for serious candidates.",
     type: "website",

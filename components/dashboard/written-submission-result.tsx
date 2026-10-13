@@ -15,7 +15,7 @@ export function WrittenSubmissionResult({
   score: number;
   maxScore: number;
   submittedAt: Date | null;
-  answersPdfUrl: string;
+  answersPdfUrl?: string | null;
   feedback?: string;
 }) {
   const isGraded = status === "graded";
@@ -57,19 +57,21 @@ export function WrittenSubmissionResult({
           </div>
         ) : null}
       </Card>
-      <Card className="border-border bg-card p-6">
-        <h2 className="font-heading text-lg font-semibold text-primary">
-          Submitted answer
-        </h2>
-        <a
-          href={answersPdfUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex text-sm text-primary underline"
-        >
-          View uploaded answer PDF
-        </a>
-      </Card>
+      {answersPdfUrl ? (
+        <Card className="border-border bg-card p-6">
+          <h2 className="font-heading text-lg font-semibold text-primary">
+            Submitted answer
+          </h2>
+          <a
+            href={answersPdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex text-sm text-primary underline"
+          >
+            View uploaded answer PDF
+          </a>
+        </Card>
+      ) : null}
     </main>
   );
 }

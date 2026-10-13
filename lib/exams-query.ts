@@ -113,6 +113,7 @@ export async function listUnifiedExams(filters: ExamListFilters): Promise<{
       scheduledAt?: Date;
       closesAt?: Date;
       courseId?: ObjectId;
+      type?: "free" | "paid";
       createdAt?: Date;
     },
     kind: "preliminary" | "written" | "free",
@@ -121,6 +122,8 @@ export async function listUnifiedExams(filters: ExamListFilters): Promise<{
   ): UnifiedExamCard => {
     const courseId = item.courseId?.toString() ?? null;
     const courseInfo = courseId ? (courseMap.get(courseId) ?? null) : null;
+    const examType = (item as any).type ?? (isFree ? "free" : "paid");
+    const resolvedIsFree = examType === "free" || isFree;
 
     const totalQuestions = Number(item.totalQuestions ?? 0);
     let questionsPerAttempt = Number(
@@ -168,7 +171,7 @@ export async function listUnifiedExams(filters: ExamListFilters): Promise<{
         typeof item.passMarkPercent === "number"
           ? Number(item.passMarkPercent)
           : undefined,
-      isFree,
+      isFree: resolvedIsFree,
       price: Number(price ?? 0),
       courseId,
       courseTitle: courseInfo?.title ?? null,

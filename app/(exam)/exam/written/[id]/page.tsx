@@ -15,7 +15,7 @@ import { getActiveExam } from "@/lib/exam-lock";
 import { checkExamAccess } from "@/lib/exam-access";
 
 export const metadata: Metadata = {
-  title: "Take Written Mock Exam — BJS Prep",
+  title: "Take Written Mock Exam — LegalPath Bangladesh",
 };
 
 export default async function WrittenExamPage({
@@ -75,20 +75,17 @@ export default async function WrittenExamPage({
     );
   }
 
-  if (
-    !access.allowed &&
-    (access.reason === "not-yet-open" || access.reason === "closed")
-  ) {
+  if (!access.allowed && access.reason === "outside-window") {
     return (
       <BlockedExamState
         title={
-          access.reason === "not-yet-open"
+          access.opensAt && access.opensAt.getTime() > Date.now()
             ? "This exam is not open yet."
             : "This exam is no longer open."
         }
         description={
-          access.reason === "not-yet-open"
-            ? `Scheduled to open ${access.opensAt?.toLocaleString() ?? exam.scheduledAt?.toLocaleString() ?? "on a future date"}.`
+          access.opensAt && access.opensAt.getTime() > Date.now()
+            ? `Scheduled to open ${access.opensAt.toLocaleString() ?? exam.scheduledAt?.toLocaleString() ?? "on a future date"}.`
             : `Closed on ${access.closesAt?.toLocaleString() ?? exam.closesAt?.toLocaleString() ?? "a past date"}.`
         }
       />
@@ -133,7 +130,7 @@ export default async function WrittenExamPage({
   }
 
   const submission =
-    active && active.kind === "written"
+    active && active.kind === "written" && active.submissionId
       ? await (
           await writtenSubmissionsCol()
         ).findOne({
@@ -147,10 +144,14 @@ export default async function WrittenExamPage({
   const selectedQuestions =
     selectedQuestionIds.length > 0
       ? selectedQuestionIds
-          .map((questionId) =>
-            questions.find((question) => question._id.equals(questionId))
+          .map(
+            (questionId: ObjectId) =>
+              questions.find(
+                (question: (typeof questions)[number]) =>
+                  question._id.equals(questionId),
+              ),
           )
-          .filter((question) => question !== undefined)
+          .filter((question): question is (typeof questions)[number] => question !== undefined)
       : questions;
 
   return (
@@ -167,15 +168,17 @@ export default async function WrittenExamPage({
           exam.questionsPerAttempt ?? selectedQuestions.length,
         hasWrittenQuestions: true,
       }}
-      questions={selectedQuestions.map((question, position) => ({
-        id: question._id.toString(),
-        position,
-        source: "written_questions" as const,
-        questionText: question.questionText,
-        maxMarks: question.maxMarks,
-        marks: question.maxMarks,
-        subject: question.subject ?? "General",
-      }))}
+      questions={selectedQuestions.map(
+        (question: (typeof selectedQuestions)[number], position: number) => ({
+          id: question._id.toString(),
+          position,
+          source: "written_questions" as const,
+          questionText: question.questionText,
+          maxMarks: question.maxMarks,
+          marks: question.maxMarks,
+          subject: question.subject ?? "General",
+        }),
+      )}
       attempt={
         submission
           ? {
@@ -185,12 +188,12 @@ export default async function WrittenExamPage({
               shuffledOrder: submission.shuffledOrder,
               answers: [],
               perQuestionAnswers: submission.perQuestionAnswers.map(
-                (answer) => ({
+                (answer: (typeof submission.perQuestionAnswers)[number]) => ({
                   questionId: answer.questionId.toString(),
                   pdfUrl: answer.pdfUrl ?? null,
                   pdfPublicId: answer.pdfPublicId ?? null,
                   uploadedAt: answer.uploadedAt?.toISOString() ?? null,
-                })
+                }),
               ),
             }
           : null

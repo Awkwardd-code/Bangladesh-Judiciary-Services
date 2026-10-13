@@ -104,13 +104,16 @@ function ErrorCard() {
           <p className="mt-2 text-sm text-cream/70">
             Enter your email and we&apos;ll send a new verification link.
           </p>
-          <Label htmlFor="resend-email" className="mt-5 block text-left text-cream">
+          <Label
+            htmlFor="resend-email"
+            className="mt-5 block text-left text-cream"
+          >
             Email
           </Label>
           <Input id="resend-email" type="email" className="mt-2" />
           <Button
             type="button"
-            className="mt-4 w-full rounded-md bg-accent text-primary-dark hover:bg-cream"
+            className="mt-4 w-full rounded-md bg-accent-soft text-primary-dark hover:bg-cream"
           >
             Send
           </Button>

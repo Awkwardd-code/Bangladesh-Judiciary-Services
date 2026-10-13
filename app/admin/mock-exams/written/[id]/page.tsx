@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { WrittenExamDetailClient } from "@/components/admin/written-exam-detail-client";
 
 export const metadata: Metadata = {
-  title: "Written Exam — Admin — BJS Prep",
+  title: "Written Exam — Admin — LegalPath Bangladesh",
 };
 
 export default async function WrittenExamDetailPage({

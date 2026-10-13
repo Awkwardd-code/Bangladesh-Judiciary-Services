@@ -57,7 +57,7 @@ export function ExamResultView({
       ? Math.round((attempt.score / exam.totalMarks) * 100)
       : 0;
   const examList =
-    kind === "free" ? "/dashboard/free-tests" : "/dashboard/mock-exams";
+    kind === "free" ? "/dashboard/free-tests" : "/dashboard/exams";
   const pass =
     passed ??
     (attempt.passMarkPercent != null
@@ -67,11 +67,11 @@ export function ExamResultView({
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <Link
-        href="/dashboard/results"
+        href={examList}
         className="inline-flex cursor-pointer items-center gap-2 text-sm text-primary hover:underline"
       >
         <ArrowLeft size={16} />
-        Back to results
+        {kind === "free" ? "Back to free exams" : "Back to exams"}
       </Link>
 
       <header>
@@ -80,8 +80,7 @@ export function ExamResultView({
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
           <span>Submitted {relativeTime(attempt.submittedAt)}</span>
-          {attempt.autoSubmitReason &&
-          attempt.autoSubmitReason !== "manual" ? (
+          {attempt.autoSubmitReason && attempt.autoSubmitReason !== "manual" ? (
             <Badge className="border-amber-200 bg-amber-50 text-amber-800">
               {autoSubmitLabel(attempt.autoSubmitReason)}
             </Badge>
@@ -119,7 +118,11 @@ export function ExamResultView({
         </Card>
 
         <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2 lg:grid-cols-3">
-          <StatCard label="Correct" value={attempt.correctCount} tone="success" />
+          <StatCard
+            label="Correct"
+            value={attempt.correctCount}
+            tone="success"
+          />
           <StatCard label="Wrong" value={attempt.wrongCount} tone="danger" />
           <StatCard label="Skipped" value={attempt.skippedCount} tone="muted" />
         </div>
@@ -134,9 +137,7 @@ export function ExamResultView({
             <span>
               Preliminary: {phaseBreakdown.preliminaryDurationMinutes} min
             </span>
-            <span>
-              Written: {phaseBreakdown.writtenDurationMinutes} min
-            </span>
+            <span>Written: {phaseBreakdown.writtenDurationMinutes} min</span>
           </div>
         </Card>
       ) : null}
@@ -174,17 +175,17 @@ export function ExamResultView({
 
       <footer className="flex flex-wrap gap-3 pb-6">
         <Link
-          href="/dashboard/results"
+          href={examList}
           className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-4 text-sm text-primary"
         >
           <ArrowLeft size={16} />
-          Back to results
+          {kind === "free" ? "Back to free exams" : "Back to exams"}
         </Link>
         <Link
-          href={examList}
+          href="/dashboard"
           className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 text-sm text-cream"
         >
-          Take another exam
+          Dashboard
           <ArrowRight size={16} />
         </Link>
       </footer>
@@ -228,7 +229,9 @@ function relativeTime(value: string | null) {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hr ago`;
   const days = Math.floor(hours / 24);
-  return days < 30 ? `${days} day${days === 1 ? "" : "s"} ago` : date.toLocaleDateString("en");
+  return days < 30
+    ? `${days} day${days === 1 ? "" : "s"} ago`
+    : date.toLocaleDateString("en");
 }
 
 function autoSubmitLabel(reason: string) {

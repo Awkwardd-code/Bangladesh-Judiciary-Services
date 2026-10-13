@@ -1,211 +1,115 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Clock, Scale, CheckCircle2, Play } from "lucide-react";
+import { ArrowRight, BookOpen, Clock } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import type { HomeStats } from "@/components/sections/hero";
+import type { CourseCategory } from "@/lib/types/course";
+import { getCategoryMeta } from "@/lib/types/course";
 
-const emptyStats = {
-  mockExams: 0,
-  attempts: 0,
+export type PublicExamBatch = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  coverUrl?: string;
+  category: CourseCategory;
+  price: number;
+  durationLabel: string;
 };
 
-export function ModelTestsBand({
-  stats = emptyStats,
-}: {
-  stats?: Pick<HomeStats, "mockExams" | "attempts">;
-}) {
-  const hasStats = stats.mockExams > 0 || stats.attempts > 0;
-
+export function ModelTestsBand({ batches }: { batches: PublicExamBatch[] }) {
   return (
-    <section className="relative overflow-hidden bg-[#0A1428] px-6 py-16 text-cream lg:py-20">
-      {/* Background decorations */}
+    <section className="relative overflow-hidden bg-primary-dark px-4 py-16 text-cream sm:px-6 lg:py-20">
       <div
         aria-hidden="true"
-        className="
-          pointer-events-none absolute -left-32 top-1/2 h-80 w-80
-          -translate-y-1/2 rounded-full bg-accent/5 blur-3xl
-        "
+        className="pointer-events-none absolute -left-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-accent/5 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="
-          pointer-events-none absolute -right-24 -top-24 h-72 w-72
-          rounded-full bg-accent/10 blur-3xl
-        "
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl"
       />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        {/* Left column: copy */}
-        <div>
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-            <span
-              aria-hidden="true"
-              className="h-px w-6 bg-accent/60"
-            />
-            Model Tests
-          </p>
-
-          <h2 className="mt-4 max-w-md font-heading text-3xl font-bold leading-tight lg:text-4xl">
-            Check your preparation with{" "}
-            <span className="text-accent">real exam simulations.</span>
-          </h2>
-
-          <p className="mt-5 max-w-md leading-7 text-cream/75">
-            Sharpen your skills with full-length mock exams modelled on the
-            Bangladeshi Judicial Service examination — with instant scoring and
-            detailed written evaluation.
-          </p>
-
-          {/* Feature checklist */}
-          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-cream/70">
-            {["Timed sessions", "Instant scoring", "Written feedback"].map(
-              (item) => (
-                <li key={item} className="inline-flex items-center gap-1.5">
-                  <CheckCircle2
-                    size={14}
-                    strokeWidth={2.25}
-                    className="text-accent"
-                    aria-hidden="true"
-                  />
-                  {item}
-                </li>
-              )
-            )}
-          </ul>
-
+      <div className="relative mx-auto max-w-6xl">
+        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              <span aria-hidden="true" className="h-px w-6 bg-accent/60" />
+              Model Tests
+            </p>
+            <h2 className="mt-4 font-heading text-3xl font-bold leading-tight sm:text-4xl">
+              Find your next
+              <span className="text-accent"> exam batch.</span>
+            </h2>
+            <p className="mt-4 max-w-xl leading-7 text-cream/75">
+              Structured model test batches with focused practice, a clear
+              schedule, and exam preparation for your program.
+            </p>
+          </div>
           <Link
-            href="/model-tests"
-            className="
-              group mt-7 inline-flex h-11 cursor-pointer items-center
-              justify-center gap-2 rounded-full border border-accent
-              px-6 text-sm font-semibold text-accent transition-all
-              duration-200 hover:bg-accent hover:text-primary
-              focus-visible:outline-none focus-visible:ring-2
-              focus-visible:ring-accent focus-visible:ring-offset-2
-              focus-visible:ring-offset-[#0A1428]
-            "
+            href="/exam-courses"
+            className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-accent-on-dark px-5 text-sm font-semibold text-accent-on-dark transition-colors hover:bg-accent-soft hover:text-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            Try a Model Test
-            <ArrowUpRight
+            Browse all model tests
+            <ArrowRight
               size={16}
-              strokeWidth={2.25}
-              className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              className="transition-transform group-hover:translate-x-1"
             />
           </Link>
-
-          {/* Stats */}
-          {hasStats && (
-            <dl className="mt-10 flex items-center gap-8 border-t border-cream/10 pt-6">
-              <div>
-                <dd className="font-heading text-2xl font-bold text-cream">
-                  {stats.mockExams.toLocaleString()}
-                </dd>
-                <dt className="mt-1 text-xs text-cream/60">
-                  published mock exams
-                </dt>
-              </div>
-              <div aria-hidden="true" className="h-10 w-px bg-cream/15" />
-              <div>
-                <dd className="font-heading text-2xl font-bold text-cream">
-                  {stats.attempts.toLocaleString()}
-                </dd>
-                <dt className="mt-1 text-xs text-cream/60">
-                  attempts by students
-                </dt>
-              </div>
-            </dl>
-          )}
         </div>
 
-        {/* Right column: preview card */}
-        <div className="relative ml-auto w-full max-w-md">
-          <Scale
-            aria-hidden="true"
-            size={200}
-            strokeWidth={1}
-            className="
-              pointer-events-none absolute right-0 top-1/2 hidden
-              -translate-y-1/2 text-accent opacity-[0.06] lg:block
-            "
-          />
-
-          <Card
-            className="
-              relative z-10 ml-auto max-w-md overflow-hidden rounded-2xl
-              bg-white p-5 shadow-2xl ring-1 ring-black/5
-            "
-          >
-            {/* Card header */}
-            <div className="flex items-center justify-between gap-4">
-              <Badge className="border-accent/40 bg-accent/10 text-xs font-semibold text-accent">
-                Preliminary
-              </Badge>
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted">
-                <Clock aria-hidden="true" size={14} />
-                180 min
-              </span>
-            </div>
-
-            <h3 className="mt-4 text-base font-semibold text-primary">
-              Criminal Procedure Code
-            </h3>
-            <p className="mt-1 text-xs text-muted">
-              100 questions · Full syllabus
+        {batches.length > 0 ? (
+          <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {batches.map((batch) => (
+              <Link
+                key={batch.id}
+                href={`/courses/${batch.slug}`}
+                className="group overflow-hidden rounded-xl border border-cream/10 bg-card text-primary shadow-lg transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <div className="relative aspect-[16/9] overflow-hidden bg-primary/5">
+                  <Image
+                    src={batch.coverUrl ?? "/course-placeholder.svg"}
+                    alt={batch.title}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                  <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-card/95 px-3 py-1 text-xs font-semibold text-primary">
+                    {getCategoryMeta(batch.category).shortLabel} model tests
+                  </span>
+                </div>
+                <div className="flex h-full flex-col p-5">
+                  <h3 className="line-clamp-2 font-heading text-lg font-semibold">
+                    {batch.title}
+                  </h3>
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
+                    {batch.description}
+                  </p>
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+                      <Clock aria-hidden="true" size={14} />
+                      {batch.durationLabel}
+                    </span>
+                    <span className="font-heading text-lg font-bold text-primary">
+                      {batch.price > 0
+                        ? `৳${batch.price.toLocaleString()}`
+                        : "Free"}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-9 rounded-xl border border-dashed border-cream/20 bg-cream/5 p-8 text-center sm:p-10">
+            <BookOpen className="mx-auto text-accent" size={30} />
+            <p className="mt-3 font-medium text-cream">
+              New model test batches are coming soon.
             </p>
-
-            {/* Progress bar */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between text-[11px] font-medium text-muted">
-                <span>Syllabus coverage</span>
-                <span className="text-primary">100%</span>
-              </div>
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/20">
-                <div className="h-full w-full rounded-full bg-accent" />
-              </div>
-            </div>
-
-            <div className="my-4 border-t border-border" />
-
-            <div className="flex items-center justify-between gap-4">
-              <Link
-                href="/model-tests"
-                className="
-                  group inline-flex h-9 cursor-pointer items-center gap-1.5
-                  rounded-lg bg-primary px-4 text-xs font-semibold text-cream
-                  transition-all duration-200 hover:bg-primary/90
-                  focus-visible:outline-none focus-visible:ring-2
-                  focus-visible:ring-primary focus-visible:ring-offset-2
-                "
-              >
-                <Play
-                  size={12}
-                  strokeWidth={2.5}
-                  className="fill-current"
-                  aria-hidden="true"
-                />
-                Start Test
-              </Link>
-              <Link
-                href="/model-tests"
-                className="
-                  group inline-flex min-h-9 cursor-pointer items-center
-                  gap-1 text-xs font-medium text-muted transition-colors
-                  hover:text-foreground focus-visible:outline-none
-                  focus-visible:ring-2 focus-visible:ring-primary
-                  focus-visible:ring-offset-2
-                "
-              >
-                View details
-                <ArrowUpRight
-                  size={14}
-                  strokeWidth={2.25}
-                  className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                />
-              </Link>
-            </div>
-          </Card>
-        </div>
+            <p className="mt-1 text-sm text-cream/65">
+              Explore all programs to find a course for your preparation.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

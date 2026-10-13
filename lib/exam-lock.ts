@@ -1,6 +1,8 @@
 import { ObjectId } from "mongodb";
 
 import {
+  examAttemptsCol,
+  examsCol,
   freeTestAttemptsCol,
   preliminaryAttemptsCol,
   writtenSubmissionsCol,
@@ -12,6 +14,22 @@ export async function getActiveExam(
   userId: ObjectId,
 ): Promise<ActiveExam> {
   await ensureIndexes();
+
+  const attempt = await (await examAttemptsCol()).findOne(
+    { userId, activeLock: true },
+    { sort: { startedAt: -1 } },
+  );
+
+  if (attempt) {
+    const exam = await (await examsCol()).findOne({ _id: attempt.examId });
+
+    return {
+      kind: exam?.kind ?? "preliminary",
+      attemptId: attempt._id,
+      examId: attempt.examId,
+      unified: Boolean(exam),
+    };
+  }
 
   const preliminary = await (await preliminaryAttemptsCol()).findOne({
     userId,

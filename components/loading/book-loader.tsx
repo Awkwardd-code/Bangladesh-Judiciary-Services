@@ -28,7 +28,7 @@ export function BookLoader({ compact = false }: BookLoaderProps) {
 
       <div className="flex flex-col items-center gap-2">
         <p className="font-heading text-sm font-semibold uppercase tracking-widest text-primary/70">
-          BJS Prep
+          LegalPath Bangladesh
         </p>
         <p className="text-xs text-muted">Preparing your study room...</p>
       </div>

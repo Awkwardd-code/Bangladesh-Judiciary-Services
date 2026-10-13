@@ -10,8 +10,8 @@ import type { Mentor } from "@/lib/types/mentor";
 import type { PublicMentor } from "@/lib/types/mentor";
 
 export const metadata: Metadata = {
-  title: "Mentors — BJS Prep",
-  description: "Meet the faculty guiding BJS Prep students.",
+  title: "Mentors — LegalPath Bangladesh",
+  description: "Meet the faculty guiding LegalPath Bangladesh students.",
 };
 
 export const revalidate = 60;

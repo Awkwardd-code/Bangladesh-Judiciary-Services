@@ -19,11 +19,11 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return { title: "Result — BJS Prep" };
+  if (!ObjectId.isValid(id)) return { title: "Result — LegalPath Bangladesh" };
   const exam = await (await preliminaryExamsCol()).findOne({
     _id: new ObjectId(id),
   });
-  return { title: `Result — ${exam?.title ?? "Exam"} — BJS Prep` };
+  return { title: `Result — ${exam?.title ?? "Exam"} — LegalPath Bangladesh` };
 }
 
 export default async function PreliminaryResultPage({
@@ -74,27 +74,29 @@ export default async function PreliminaryResultPage({
     (total, question) => total + question.marks,
     0,
   );
-  const resultQuestions = attempt.answers.flatMap((answer, position) => {
-    const question = questionMap.get(answer.questionId.toString());
-    if (!question) return [];
-    return [
-      {
-        position,
-        questionId: question._id.toString(),
-        questionText: question.questionText,
-        options: question.options,
-        correctOptionIndex: question.correctOptionIndex,
-        selectedOptionIndex: answer.selectedOptionIndex,
-        isCorrect:
-          answer.selectedOptionIndex !== null &&
-          answer.selectedOptionIndex === question.correctOptionIndex,
-        skipped: answer.selectedOptionIndex === null,
-        marks: question.marks,
-        subject: question.subject ?? "General",
-        explanation: question.explanation,
-      },
-    ];
-  });
+  const resultQuestions = attempt.answers.flatMap(
+    (answer: (typeof attempt.answers)[number], position: number) => {
+      const question = questionMap.get(answer.questionId.toString());
+      if (!question) return [];
+      return [
+        {
+          position,
+          questionId: question._id.toString(),
+          questionText: question.questionText,
+          options: question.options,
+          correctOptionIndex: question.correctOptionIndex,
+          selectedOptionIndex: answer.selectedOptionIndex,
+          isCorrect:
+            answer.selectedOptionIndex !== null &&
+            answer.selectedOptionIndex === question.correctOptionIndex,
+          skipped: answer.selectedOptionIndex === null,
+          marks: question.marks,
+          subject: question.subject ?? "General",
+          explanation: question.explanation,
+        },
+      ];
+    },
+  );
 
   return (
     <ExamResultView

@@ -6,7 +6,7 @@ export function ModelTestsFeatured() {
     <section className="bg-primary-dark px-4 pb-12 text-cream sm:px-6 md:pb-20">
       <div className="mx-auto grid w-full max-w-4xl gap-6 rounded-xl border border-cream/15 bg-primary/70 p-5 sm:grid-cols-2 sm:p-8 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
-          <Badge className="border-transparent bg-accent text-[11px] font-semibold text-primary-dark">
+          <Badge className="border-transparent bg-accent-soft text-[11px] font-semibold text-primary-dark">
             FEATURED
           </Badge>
           <h2 className="mt-4 font-heading text-2xl font-bold">
@@ -23,15 +23,15 @@ export function ModelTestsFeatured() {
             "
           >
             <span className="flex items-center gap-2">
-              <FileText size={17} className="text-accent" />
+              <FileText size={17} className="text-accent-on-dark" />
               100 questions
             </span>
             <span className="flex items-center gap-2">
-              <Clock size={17} className="text-accent" />
+              <Clock size={17} className="text-accent-on-dark" />
               180 minutes
             </span>
             <span className="flex items-center gap-2">
-              <Target size={17} className="text-accent" />
+              <Target size={17} className="text-accent-on-dark" />
               Full syllabus
             </span>
           </div>
@@ -43,7 +43,7 @@ export function ModelTestsFeatured() {
           </div>
           <Button
             href="/model-tests/1"
-            className="mt-4 w-full rounded-md bg-accent text-primary-dark hover:bg-cream"
+            className="mt-4 w-full rounded-md bg-accent-soft text-primary-dark hover:bg-cream"
           >
             Start Test
           </Button>

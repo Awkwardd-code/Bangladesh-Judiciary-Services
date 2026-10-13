@@ -51,13 +51,13 @@ const notices: Notice[] = [
     id: "payment-methods",
     date: "05 September 2026",
     title: "Payment methods expanded.",
-    excerpt: "You can now pay using bKash, Nagad, and bank transfer.",
+    excerpt: "You can now pay using bKash, Nagad, and Upay.",
     tag: "Update",
   },
   {
     id: "welcome",
     date: "28 August 2026",
-    title: "Welcome to BJS Prep.",
+    title: "Welcome to LegalPath Bangladesh.",
     excerpt:
       "An introduction to the platform, our mission, and what you can expect.",
     tag: "General",

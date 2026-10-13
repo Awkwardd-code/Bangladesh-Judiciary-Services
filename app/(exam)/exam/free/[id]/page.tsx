@@ -20,7 +20,7 @@ import type { ActiveExam } from "@/lib/types/exam";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Free Model Test — BJS Prep",
+  title: "Free Model Test — LegalPath Bangladesh",
 };
 
 export default async function StudentFreeTestPage({
@@ -114,6 +114,7 @@ export default async function StudentFreeTestPage({
             writtenQuestionCount,
             totalMarks: freeTest.totalMarks,
             questionsPerAttempt: freeTest.questionsPerAttempt,
+            negativeMarking: freeTest.negativeMarking ?? 0,
             passMarkPercent: freeTest.passMarkPercent,
             hasWrittenQuestions:
               freeTest.questions?.some(

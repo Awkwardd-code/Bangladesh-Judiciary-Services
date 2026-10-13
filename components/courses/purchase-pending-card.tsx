@@ -54,8 +54,8 @@ export function PurchasePendingCard({
           </div>
 
           <p className="mt-6 text-sm text-muted">
-            Didn&apos;t receive an email? Check spam or contact
-            support@bjsprep.com with your transaction ID.
+            You can check your enrollment status from your dashboard while the
+            transaction is being reviewed.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

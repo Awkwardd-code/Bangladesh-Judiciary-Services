@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Users, FileText, Target } from "lucide-react";
+import { ArrowUpRight, Check, FileText, Target, Users } from "lucide-react";
 
 import type { About } from "@/lib/types/about";
 
@@ -22,14 +22,14 @@ const DEFAULT_CONTENT = {
 };
 
 const HIGHLIGHTS = [
-  "Mentor-led",
-  "Model Tests",
-  "Written Evaluation",
-  "Lifetime Access",
+  "Structured courses",
+  "Model test batches",
+  "Progress tracking",
 ];
 
 function formatStat(value: number) {
-  if (value >= 1000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k+`;
+  if (value >= 1000)
+    return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k+`;
   return `${value}+`;
 }
 
@@ -41,61 +41,73 @@ export function Hero({ stats, about }: HeroProps = {}) {
   const statItems = stats
     ? [
         { icon: Users, label: "Students", value: formatStat(stats.students) },
-        { icon: FileText, label: "Mock Exams", value: formatStat(stats.mockExams) },
+        {
+          icon: FileText,
+          label: "Mock Exams",
+          value: formatStat(stats.mockExams),
+        },
         { icon: Target, label: "Attempts", value: formatStat(stats.attempts) },
       ]
     : [];
 
   return (
-    <section className="relative w-full overflow-hidden bg-primary">
-      {/* Background decorations */}
+    <section className="relative isolate w-full overflow-hidden bg-primary text-cream">
       <div
         aria-hidden="true"
-        className="
-          pointer-events-none absolute -bottom-32 -left-32 h-96 w-96
-          rounded-full bg-[#0F1B33] opacity-60 blur-3xl
-        "
+        className="pointer-events-none absolute -bottom-48 -left-28 size-[30rem] rounded-full bg-primary-dark opacity-80 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="
-          pointer-events-none absolute -right-24 -top-24 h-80 w-80
-          rounded-full bg-accent/10 opacity-60 blur-3xl
-        "
+        className="pointer-events-none absolute -right-24 -top-28 size-96 rounded-full bg-accent/15 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_35%,rgba(255,255,255,0.07),transparent_35%)]"
       />
 
-      <div className="relative mx-auto max-w-6xl px-6 py-14 lg:py-20">
-        <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
-          {/* Left column: content */}
-          <div className="order-2 flex flex-col lg:order-1 lg:col-span-7">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-accent">
+      <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <div className="grid items-center gap-8 sm:grid-cols-[1.15fr_0.85fr] sm:gap-6 md:gap-10 lg:gap-12">
+          <div className="flex flex-col">
+            <p className="inline-flex w-fit items-center gap-2 rounded-full border border-cream/15 bg-cream/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-on-dark">
+              <span
+                aria-hidden="true"
+                className="size-1.5 rounded-full bg-accent"
+              />
               {kicker}
             </p>
 
             <h1
               className="
-                mt-4 font-heading text-4xl font-extrabold leading-[1.05]
-                tracking-tight text-cream sm:text-5xl lg:text-6xl
-                xl:text-[64px]
+                mt-4 max-w-3xl font-heading text-3xl font-extrabold
+                leading-[1.06] tracking-tight text-cream sm:text-4xl
+                lg:text-[56px] xl:text-[62px]
               "
             >
               {title}
             </h1>
 
-            <p className="mt-5 max-w-lg text-base text-cream/75 sm:text-lg">
+            <p className="mt-4 max-w-xl text-sm leading-6 text-cream/70 sm:text-lg sm:leading-7">
               {subtitle}
             </p>
 
-            {/* CTAs */}
-            <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+            <ul className="mt-4 hidden flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-cream/65 sm:flex sm:text-[13px]">
+              {HIGHLIGHTS.map((item) => (
+                <li key={item} className="inline-flex items-center gap-1.5">
+                  <Check size={13} className="text-accent" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/courses"
                 className="
                   group inline-flex w-full cursor-pointer items-center
-                  justify-center gap-2 rounded-full bg-cream px-6 py-3
-                  text-sm font-semibold text-primary transition-all
-                  duration-200 hover:bg-cream/90 hover:shadow-lg
-                  hover:shadow-cream/20 focus-visible:outline-none
+                  justify-center gap-2 rounded-full bg-accent-soft px-6 py-3.5
+                  text-sm font-bold text-primary-dark transition-all
+                  duration-200 hover:-translate-y-0.5 hover:bg-accent-soft/90
+                  hover:shadow-lg hover:shadow-accent/20 focus-visible:outline-none
                   focus-visible:ring-2 focus-visible:ring-accent
                   focus-visible:ring-offset-2 focus-visible:ring-offset-primary
                   sm:w-auto
@@ -109,19 +121,19 @@ export function Hero({ stats, about }: HeroProps = {}) {
                 />
               </Link>
               <Link
-                href="/model-tests"
+                href="/exam-courses"
                 className="
                   group inline-flex w-full cursor-pointer items-center
-                  justify-center gap-2 rounded-full border border-cream/40
-                  px-6 py-3 text-sm font-semibold text-cream
-                  transition-all duration-200 hover:border-cream/60
+                  justify-center gap-2 rounded-full border border-cream/20
+                  bg-cream/[0.04] px-6 py-3.5 text-sm font-semibold text-cream
+                  transition-all duration-200 hover:border-cream/40
                   hover:bg-cream/10 focus-visible:outline-none
                   focus-visible:ring-2 focus-visible:ring-accent
                   focus-visible:ring-offset-2 focus-visible:ring-offset-primary
                   sm:w-auto
                 "
               >
-                Take a Model Test
+                Browse Model Tests
                 <ArrowUpRight
                   size={16}
                   strokeWidth={2.25}
@@ -130,22 +142,24 @@ export function Hero({ stats, about }: HeroProps = {}) {
               </Link>
             </div>
 
-            {/* Stats (conditional) */}
             {statItems.length > 0 && (
-              <dl className="mt-12 grid max-w-md grid-cols-3 gap-6">
+              <dl className="mt-6 grid max-w-xl grid-cols-3 divide-x divide-cream/15 rounded-xl border border-cream/10 bg-cream/[0.04] py-3">
                 {statItems.map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex flex-col gap-1">
-                    <Icon
-                      size={18}
-                      strokeWidth={2}
-                      className="text-accent"
-                      aria-hidden="true"
-                    />
+                  <div
+                    key={label}
+                    className="flex flex-col items-center gap-1 px-2 sm:items-start sm:px-5"
+                  >
                     <dt className="sr-only">{label}</dt>
-                    <dd className="font-heading text-2xl font-bold text-cream">
+                    <dd className="flex items-center gap-2 font-heading text-lg font-bold text-cream sm:text-xl">
+                      <Icon
+                        size={17}
+                        strokeWidth={2}
+                        className="hidden text-accent sm:block"
+                        aria-hidden="true"
+                      />
                       {value}
                     </dd>
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-cream/50">
+                    <span className="text-center text-[9px] font-medium uppercase tracking-wider text-cream/50 sm:text-left">
                       {label}
                     </span>
                   </div>
@@ -153,55 +167,44 @@ export function Hero({ stats, about }: HeroProps = {}) {
               </dl>
             )}
 
-            {/* Highlights */}
-            <ul className="mt-10 flex flex-wrap items-center gap-x-1 gap-y-2 text-[13px] text-cream/60 sm:mt-12">
-              {HIGHLIGHTS.map((item, i) => (
-                <li key={item} className="flex items-center">
-                  {i > 0 && (
-                    <span aria-hidden="true" className="px-3 text-accent">
-                      ·
-                    </span>
-                  )}
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
           </div>
 
-          {/* Right column: image */}
           <div
             className="
-              order-1 mx-auto w-full max-w-[320px] sm:max-w-[360px]
-              lg:order-2 lg:col-span-5 lg:ml-auto lg:max-w-[420px]
+              mx-auto w-full sm:max-w-[320px]
+              md:ml-auto md:max-w-[380px] lg:max-w-[420px]
             "
           >
-            <div className="relative">
-              {/* Decorative frame behind image */}
+            <div className="relative px-2 pb-2">
               <div
                 aria-hidden="true"
                 className="
-                  absolute -inset-3 rounded-3xl border border-cream/10
-                  bg-gradient-to-br from-cream/5 to-transparent
+                  absolute inset-x-0 bottom-0 top-6 rounded-[1.75rem]
+                  border border-cream/10 bg-gradient-to-br from-cream/10
+                  to-transparent
                 "
               />
-              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-cream/10">
-                {/* NOTE: Place the portrait at public/images/hero-mentor.jpg. */}
+              <div className="relative aspect-[2.2/1] w-full overflow-hidden rounded-[1.5rem] bg-primary-dark shadow-2xl shadow-black/25 ring-1 ring-cream/15 sm:aspect-[1.16/1]">
                 <Image
-                  src="/mentor.jpg"
+                  src="/mentor.jpeg"
                   alt="Mentor in formal attire"
                   fill
                   priority
                   sizes="(min-width: 1024px) 420px, 100vw"
-                  className="object-cover"
+                  className="object-cover object-[50%_10%]"
                 />
-                {/* Subtle gradient overlay for depth */}
                 <div
                   aria-hidden="true"
-                  className="
-                    pointer-events-none absolute inset-0
-                    bg-gradient-to-t from-primary/40 via-transparent to-transparent
-                  "
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/55 via-transparent to-transparent"
                 />
+                <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-white/15 bg-primary/75 p-3 text-cream shadow-lg backdrop-blur-md sm:bottom-5 sm:left-5 sm:right-5 sm:p-4">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    Prepare with purpose
+                  </p>
+                  <p className="mt-1 font-heading text-base font-semibold sm:text-lg">
+                    A clearer path to your legal career
+                  </p>
+                </div>
               </div>
             </div>
           </div>

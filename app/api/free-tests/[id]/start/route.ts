@@ -250,6 +250,7 @@ function serializeFreeTest(freeTest: FreeTest) {
     writtenDurationMinutes: freeTest.writtenDurationMinutes ?? 0,
     writtenQuestionsPerAttempt: freeTest.writtenQuestionsPerAttempt ?? 0,
     questionsPerAttempt: freeTest.questionsPerAttempt,
+    negativeMarking: freeTest.negativeMarking ?? 0,
     passMarkPercent: freeTest.passMarkPercent,
   };
 }

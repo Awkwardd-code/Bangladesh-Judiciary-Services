@@ -281,7 +281,7 @@ function PreExam({ onStart, examId }: { onStart: () => void; examId: string }) {
           <li>Objective questions are auto-graded on submission</li>
         </ul>
         <button type="button" onClick={onStart} className="mt-8 h-12 w-full rounded-md bg-primary text-cream hover:bg-primary-dark">Start Test</button>
-        <Link href="/dashboard/mock-exams" className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-md border border-border text-sm text-foreground">Cancel</Link>
+        <Link href="/dashboard/exams" className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-md border border-border text-sm text-foreground">Cancel</Link>
       </Card>
     </div>
   );
@@ -336,7 +336,7 @@ function Submitted({ answeredCount }: { answeredCount: number }) {
           <SummaryRow label="Time taken" value="—" />
         </div>
         <Link href="/dashboard/results" className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-md bg-primary text-sm text-cream">View results</Link>
-        <Link href="/dashboard/mock-exams" className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-md border border-border text-sm text-foreground">Back to mock exams</Link>
+        <Link href="/dashboard/exams" className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-md border border-border text-sm text-foreground">Back to exams</Link>
         <p className="sr-only">NOTE: all grading, timing, and persistence are client-side for MVP. Real implementation will submit to /api/exams/[id]/submit and be server-validated.</p>
       </Card>
     </div>

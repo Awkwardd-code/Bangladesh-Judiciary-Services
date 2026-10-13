@@ -5,13 +5,26 @@ import { fail, ok } from "@/lib/api-response";
 import { requireSession } from "@/lib/auth-guard";
 import { coursesCol } from "@/lib/collections";
 import { getEnrollmentAccess } from "@/lib/enrollment";
+import type { Course } from "@/lib/types/course";
 
-function serializeCourse(course: Record<string, unknown>) {
-  const { _id, ...rest } = course;
+function serializeCourse(course: Course) {
+  const { _id, segments, ...rest } = course;
+  const sanitizedSegments = Array.isArray(segments)
+    ? segments.map((segment) => ({
+        ...segment,
+        subSegments: (segment.subSegments ?? []).map((subSegment) => {
+          const payload = { ...subSegment.payload };
+          delete payload.pdfUrl;
+          delete payload.pdfPublicId;
+          return { ...subSegment, payload };
+        }),
+      }))
+    : segments;
 
   return {
     id: (_id as ObjectId).toString(),
     ...rest,
+    ...(segments ? { segments: sanitizedSegments } : {}),
   };
 }
 
@@ -39,7 +52,10 @@ export async function GET(
       course._id,
     );
 
-    if (course.price > 0 && !access.hasAccess) {
+    if (
+      (course.price > 0 || course.programKind === "exam") &&
+      !access.hasAccess
+    ) {
       return ok({
         course: serializeCourse(course),
         access: {

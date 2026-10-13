@@ -8,7 +8,11 @@ import {
 import { Hero, type HomeStats } from "@/components/sections/hero";
 import { HowToEnroll } from "@/components/sections/how-to-enroll";
 import { MentorAndCta } from "@/components/sections/mentor-and-cta";
-import { ModelTestsBand } from "@/components/sections/model-tests-band";
+import {
+  ModelTestsBand,
+  type PublicExamBatch,
+} from "@/components/sections/model-tests-band";
+import { ProgramStrip } from "@/components/sections/program-strip";
 import { SuccessStoriesPreview } from "@/components/sections/success-stories-preview";
 import { WhyChooseUs } from "@/components/sections/why-choose-us";
 import { HomeHeroSkeleton } from "@/components/skeletons/home-hero-skeleton";
@@ -28,6 +32,7 @@ import {
   successStoriesCol,
   usersCol,
 } from "@/lib/collections";
+import { PROGRAMS } from "@/lib/program-meta";
 import type { About } from "@/lib/types/about";
 import type { Course } from "@/lib/types/course";
 import type { Mentor, PublicMentor } from "@/lib/types/mentor";
@@ -37,7 +42,7 @@ import type {
 } from "@/lib/types/success-story";
 
 export const metadata: Metadata = {
-  title: "BJS Prep — Bangladesh Judicial Service Exam Preparation",
+  title: "Bangladesh Judicial Service Exam Preparation",
   description:
     "From campus to court. Structured, mentor-led preparation for the Bangladesh Judicial Service exam.",
 };
@@ -51,12 +56,44 @@ export default function Home() {
       const records = await (
         await coursesCol()
       )
-        .find({ isPublished: true })
+        .find({
+          isPublished: true,
+          status: "published",
+          programKind: { $ne: "exam" },
+        })
         .sort({ order: 1, createdAt: -1 })
         .limit(3)
         .toArray();
 
       return records.map(toPublicCourse);
+    },
+    []
+  );
+  const examBatchesPromise = safeFetch<PublicExamBatch[]>(
+    "published exam batches",
+    async () => {
+      const batches = await (
+        await coursesCol()
+      )
+        .find({
+          programKind: "exam",
+          isPublished: true,
+          status: "published",
+        })
+        .sort({ order: 1, createdAt: -1 })
+        .limit(3)
+        .toArray();
+
+      return batches.map((batch) => ({
+        id: batch._id.toString(),
+        title: batch.title,
+        slug: batch.slug,
+        description: batch.description,
+        coverUrl: batch.coverUrl,
+        category: batch.category,
+        price: batch.price,
+        durationLabel: batch.durationLabel,
+      }));
     },
     []
   );
@@ -119,6 +156,7 @@ export default function Home() {
       <Suspense fallback={<HomeHeroSkeleton />}>
         <HomeHero statsPromise={statsPromise} aboutPromise={aboutPromise} />
       </Suspense>
+      <ProgramStrip programs={PROGRAMS} />
       <Suspense fallback={<HomeWhySkeleton />}>
         <WhyChooseUs />
       </Suspense>
@@ -126,7 +164,7 @@ export default function Home() {
         <HomeFeaturedCourses coursesPromise={coursesPromise} />
       </Suspense>
       <Suspense fallback={<HomeModelTestsSkeleton />}>
-        <HomeModelTests statsPromise={statsPromise} />
+        <HomeModelTests batchesPromise={examBatchesPromise} />
       </Suspense>
       <HowToEnroll />
       <Suspense fallback={<HomeStoriesSkeleton />}>
@@ -162,13 +200,13 @@ async function HomeFeaturedCourses({
 }
 
 async function HomeModelTests({
-  statsPromise,
+  batchesPromise,
 }: {
-  statsPromise: Promise<HomeStats>;
+  batchesPromise: Promise<PublicExamBatch[]>;
 }) {
-  const stats = await statsPromise;
+  const batches = await batchesPromise;
 
-  return <ModelTestsBand stats={stats} />;
+  return <ModelTestsBand batches={batches} />;
 }
 
 async function HomeSuccessStories({

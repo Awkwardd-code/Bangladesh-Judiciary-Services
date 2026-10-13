@@ -6,5 +6,5 @@ export default async function LegacyPreliminaryExamPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/exam/preliminary/${id}`);
+  redirect(`/exam/${id}`);
 }

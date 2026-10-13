@@ -9,7 +9,7 @@ import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Results — BJS Prep",
+  title: "Results — LegalPath Bangladesh",
   description: "Your mock exam history and performance.",
 };
 
@@ -40,7 +40,7 @@ export default async function ResultsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl space-y-1">
       <ResultsHeader />
       <ResultsStats
         testsTaken={recentAttempts.length}

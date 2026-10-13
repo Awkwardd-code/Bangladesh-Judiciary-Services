@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 import { fail, ok } from "@/lib/api-response";
 import { logAdminAction } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth-guard";
-import { enrollmentsCol } from "@/lib/collections";
+import { enrollmentsCol, paymentsCol } from "@/lib/collections";
 import { getClientIp } from "@/lib/rate-limit";
 
 export async function PATCH(
@@ -60,6 +60,22 @@ export async function PATCH(
     }
 
     await collection.updateOne({ _id: enrollment._id }, { $set: update });
+    if (enrollment.paymentId && body.action !== "revoke") {
+      await (await paymentsCol()).updateOne(
+        { _id: enrollment.paymentId },
+        {
+          $set: {
+            status: body.action === "approve" ? "completed" : "failed",
+            reviewedBy: new ObjectId(session.userId),
+            reviewedAt: now,
+            updatedAt: now,
+            ...(body.action === "approve"
+              ? { paidAt: now }
+              : { rejectionReason: body.reason || "Payment not verified" }),
+          },
+        },
+      );
+    }
 
     await logAdminAction(
       new ObjectId(session.userId),

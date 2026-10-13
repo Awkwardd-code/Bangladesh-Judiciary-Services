@@ -1,7 +1,9 @@
 import type { CourseCategory } from "@/lib/types/course";
+import type { SerializedSegment } from "@/lib/types/course";
 
 export type CourseDetail = {
   id: string;
+  programKind?: "course" | "exam";
   title: string;
   slug: string;
   description: string;
@@ -18,6 +20,9 @@ export type CourseDetail = {
   totalClasses: number;
   totalMockTests: number;
   totalMaterials: number;
+  lessonCount: number;
+  pdfNoteCount: number;
+  studentCount: number;
   features: Array<{
     label: string;
     value: string;
@@ -28,6 +33,26 @@ export type CourseDetail = {
     description: string;
     order: number;
     estimatedHours: number;
+  }>;
+  segments: SerializedSegment[];
+  topics?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    order: number;
+  }>;
+  routine?: Array<{
+    title: string;
+    description: string;
+    scheduledAt: string;
+  }>;
+  tests?: Array<{
+    id: string;
+    title: string;
+    kind: "preliminary" | "written";
+    totalQuestions: number;
+    segmentId: string;
+    subSegmentId: string;
   }>;
   createdAt: string;
   updatedAt: string;

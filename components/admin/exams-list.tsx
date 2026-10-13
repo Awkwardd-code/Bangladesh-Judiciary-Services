@@ -11,14 +11,15 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { ExamEditor } from "@/components/admin/exam-editor";
 import { ExamCard } from "@/components/shared/exam-card";
+import { AdminMockExamCardsSkeleton } from "@/components/skeletons/admin-mock-exams-skeleton";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { SearchInput } from "@/components/ui/search-input";
 
 export type AdminExam = {
   _id: string;
+  kind: "preliminary" | "written";
   title: string;
   description?: string;
   durationMinutes: number;
@@ -28,11 +29,17 @@ export type AdminExam = {
   questionsPerAttempt?: number;
   status: "draft" | "published" | "archived";
   scheduledAt?: string;
+  courseId: string;
+  courseTitle: string;
+  courseSlug?: string;
+  courseCategory?: string;
+  segmentTitle: string;
+  subSegmentTitle: string;
 };
 
 export function ExamsList() {
   const [exams, setExams] = useState<AdminExam[]>([]);
-  const [modal, setModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
 
@@ -45,23 +52,29 @@ export function ExamsList() {
     return matchesSearch && matchesStatus;
   });
 
-  async function load() {
-    const response = await fetch("/api/admin/preliminary-exams");
-    const result = (await response.json()) as {
-      data?: { exams?: AdminExam[] };
-    };
-    setExams(result.data?.exams ?? []);
+  async function load(showLoading = false) {
+    if (showLoading) {
+      setLoading(true);
+    }
+    try {
+      const response = await fetch("/api/admin/exams?limit=100");
+      const result = (await response.json()) as {
+        data?: { exams?: AdminExam[] };
+      };
+      setExams(result.data?.exams ?? []);
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
   }
 
   useEffect(() => {
-    void load();
-    const open = () => setModal(true);
-    window.addEventListener("open-exam-editor", open);
-    return () => window.removeEventListener("open-exam-editor", open);
+    void load(true);
   }, []);
 
   async function changeStatus(exam: AdminExam) {
-    const response = await fetch(`/api/admin/preliminary-exams/${exam._id}`, {
+    const response = await fetch(`/api/admin/exams/${exam._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -83,7 +96,7 @@ export function ExamsList() {
       return;
     }
 
-    const response = await fetch(`/api/admin/preliminary-exams/${exam._id}`, {
+    const response = await fetch(`/api/admin/exams/${exam._id}`, {
       method: "DELETE",
     });
     const result = (await response.json()) as { error?: string };
@@ -107,14 +120,13 @@ export function ExamsList() {
             Create and manage model tests for students.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModal(true)}
+        <Link
+          href="/admin/exams/new"
           className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 text-sm text-cream"
         >
           <Plus size={16} />
           New exam
-        </button>
+        </Link>
       </header>
       <FilterBar
         className="mt-5"
@@ -142,13 +154,18 @@ export function ExamsList() {
           ]}
         />
       </FilterBar>
-      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {filteredExams.map((exam) => (
+      {loading ? (
+        <div className="mt-6">
+          <AdminMockExamCardsSkeleton />
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredExams.map((exam) => (
           <ExamCard
             key={exam._id}
             exam={{
               id: exam._id,
-              kind: "preliminary",
+              kind: exam.kind,
               title: exam.title,
               description: exam.description ?? "",
               durationMinutes: exam.durationMinutes,
@@ -158,17 +175,18 @@ export function ExamsList() {
               totalMarks: exam.totalMarks,
               isFree: false,
               price: 0,
-              courseId: null,
-              courseTitle: null,
-              courseSlug: null,
+              courseId: exam.courseId,
+              courseTitle: exam.courseTitle,
+              courseSlug: exam.courseSlug ?? null,
               status: exam.status,
             }}
             variant="admin"
-            href={`/admin/mock-exams/${exam._id}`}
+            subtitle={`${exam.courseCategory ?? ""} · ${exam.segmentTitle} → ${exam.subSegmentTitle}`}
+            href={`/admin/exams/${exam._id}`}
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 <Link
-                  href={`/admin/mock-exams/${exam._id}`}
+                  href={`/admin/exams/${exam._id}`}
                   className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm text-foreground hover:bg-primary/5"
                 >
                   <Pencil size={14} />
@@ -203,28 +221,16 @@ export function ExamsList() {
               </div>
             }
           />
-        ))}
-        {filteredExams.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted md:col-span-2 xl:col-span-3">
-            {exams.length === 0
-              ? "No model tests yet. Create your first exam."
-              : "No model tests match these filters."}
-          </div>
-        ) : null}
-      </div>
-      {modal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/70 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
-            <ExamEditor
-              onCancel={() => setModal(false)}
-              onSaved={() => {
-                setModal(false);
-                void load();
-              }}
-            />
-          </div>
+          ))}
+          {filteredExams.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted md:col-span-2 xl:col-span-3">
+              {exams.length === 0
+                ? "No model tests yet. Create your first exam."
+                : "No model tests match these filters."}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      )}
     </>
   );
 }

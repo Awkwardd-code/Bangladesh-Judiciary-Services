@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Menu, X } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  GraduationCap,
+  Landmark,
+  LogOut,
+  Menu,
+  Scale,
+  X,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -9,8 +18,8 @@ import { Button } from "@/components/ui/button";
 
 const links = [
   ["Home", "/"],
-  ["Courses", "/courses"],
-  ["Model Tests", "/model-tests"],
+  ["Programs", "/programs"],
+  ["Model Tests", "/exam-courses"],
   ["Mentors", "/mentors"],
   ["Success Stories", "/success-stories"],
   ["About", "/about"],
@@ -24,13 +33,10 @@ type SiteUser = {
   avatarUrl: string | null;
 };
 
-export function SiteHeader({
-  initialUser,
-}: {
-  initialUser: SiteUser | null;
-}) {
+export function SiteHeader({ initialUser }: { initialUser: SiteUser | null }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [programsMenuOpen, setProgramsMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const user = initialUser;
@@ -42,7 +48,7 @@ export function SiteHeader({
     function updateScrolledState() {
       const nextScrolled = window.scrollY > 0;
       setScrolled((current) =>
-        current === nextScrolled ? current : nextScrolled,
+        current === nextScrolled ? current : nextScrolled
       );
     }
 
@@ -91,6 +97,7 @@ export function SiteHeader({
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setProgramsMenuOpen(false);
     setUserMenuOpen(false);
   }, [pathname]);
 
@@ -125,19 +132,130 @@ export function SiteHeader({
       `}
     >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between border-b border-border px-4 sm:px-6 lg:border-transparent">
-        <Link href="/" className="font-heading text-lg font-bold text-primary">
-          BJS Prep
+        <Link
+          href="/"
+          aria-label="LegalPath Bangladesh home"
+          className="inline-flex shrink-0 items-center gap-2 font-heading text-lg font-bold text-primary"
+        >
+          LegalPath
+          <span className="rounded-full bg-primary/5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
+            BD
+          </span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
-          {links.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className="cursor-pointer text-sm text-muted transition-colors hover:text-primary"
-            >
-              {label}
-            </Link>
-          ))}
+          {links.map(([label, href]) =>
+            label === "Programs" ? (
+              <div
+                key={href}
+                className="relative"
+                onMouseEnter={() => setProgramsMenuOpen(true)}
+                onMouseLeave={() => setProgramsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-1">
+                  <Link
+                    href={href}
+                    className="
+                      cursor-pointer text-sm text-muted transition-colors
+                      hover:text-primary
+                    "
+                  >
+                    {label}
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label="Toggle programs menu"
+                    aria-haspopup="menu"
+                    aria-expanded={programsMenuOpen}
+                    onClick={() => setProgramsMenuOpen((isOpen) => !isOpen)}
+                    className="
+                      flex h-8 w-8 cursor-pointer items-center justify-center
+                      rounded text-muted hover:bg-primary/5 hover:text-primary
+                    "
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                </div>
+                {programsMenuOpen ? (
+                  <div
+                    role="menu"
+                    className="
+                      absolute left-0 top-full z-50 min-w-[240px] rounded-lg
+                      border border-border bg-card py-2 shadow-md
+                    "
+                  >
+                    <Link
+                      href="/programs/LLB"
+                      role="menuitem"
+                      className="
+                        flex cursor-pointer items-center gap-3 px-4 py-2.5
+                        text-sm hover:bg-primary/5
+                      "
+                    >
+                      <GraduationCap
+                        aria-hidden="true"
+                        className="text-primary"
+                        size={16}
+                      />
+                      LL.B Academy
+                    </Link>
+                    <Link
+                      href="/programs/BJS"
+                      role="menuitem"
+                      className="
+                        flex cursor-pointer items-center gap-3 px-4 py-2.5
+                        text-sm hover:bg-primary/5
+                      "
+                    >
+                      <Scale
+                        aria-hidden="true"
+                        className="text-primary"
+                        size={16}
+                      />
+                      BJS Program
+                    </Link>
+                    <Link
+                      href="/programs/BAR"
+                      role="menuitem"
+                      className="
+                        flex cursor-pointer items-center gap-3 px-4 py-2.5
+                        text-sm hover:bg-primary/5
+                      "
+                    >
+                      <Landmark
+                        aria-hidden="true"
+                        className="text-primary"
+                        size={16}
+                      />
+                      BAR Program
+                    </Link>
+                    <div className="my-1 h-px bg-border" />
+                    <Link
+                      href="/programs"
+                      role="menuitem"
+                      className="
+                        flex cursor-pointer items-center gap-3 px-4 py-2.5
+                        text-sm font-medium text-primary hover:bg-primary/5
+                      "
+                    >
+                      <ArrowRight size={16} />
+                      View all programs
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <Link
+                key={href}
+                href={href}
+                className="
+                  cursor-pointer text-sm text-muted transition-colors
+                  hover:text-primary
+                "
+              >
+                {label}
+              </Link>
+            )
+          )}
         </nav>
         <div className="flex items-center gap-2">
           {authChecked && user ? (
@@ -278,14 +396,52 @@ export function SiteHeader({
           className="border-b border-border bg-cream px-4 py-5 sm:px-6 md:hidden"
         >
           {links.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block cursor-pointer border-b border-border py-3 text-sm text-primary"
-            >
-              {label}
-            </Link>
+            <div key={href}>
+              <Link
+                href={href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="
+                  block cursor-pointer border-b border-border py-3 text-sm
+                  text-primary
+                "
+              >
+                {label}
+              </Link>
+              {label === "Programs" ? (
+                <div className="border-b border-border pb-2 pl-4">
+                  <Link
+                    href="/programs/LLB"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="
+                      block cursor-pointer py-2 text-sm text-muted
+                      hover:text-primary
+                    "
+                  >
+                    LL.B Academy
+                  </Link>
+                  <Link
+                    href="/programs/BJS"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="
+                      block cursor-pointer py-2 text-sm text-muted
+                      hover:text-primary
+                    "
+                  >
+                    BJS Program
+                  </Link>
+                  <Link
+                    href="/programs/BAR"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="
+                      block cursor-pointer py-2 text-sm text-muted
+                      hover:text-primary
+                    "
+                  >
+                    BAR Program
+                  </Link>
+                </div>
+              ) : null}
+            </div>
           ))}
           {authChecked && !user ? (
             <div className="mt-4 border-t border-border pt-4">

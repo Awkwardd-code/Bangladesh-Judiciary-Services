@@ -13,19 +13,27 @@ type ExamEditorProps = {
     _id: string;
     title: string;
     description?: string;
+    courseId: string;
+    segmentId: string;
+    subSegmentId: string;
+    kind: "preliminary" | "written";
     durationMinutes: number;
     questionsPerAttempt?: number;
     negativeMarking?: number;
     scheduledAt?: Date | string;
     closesAt?: Date | string;
   };
-  onSaved: () => void;
+  courseId?: string;
+  segmentId?: string;
+  subSegmentId?: string;
+  onSaved?: (id?: string) => void;
   onCancel?: () => void;
 };
 
 type ExamForm = {
   title: string;
   description: string;
+  kind: "preliminary" | "written";
   durationMinutes: string;
   questionsPerAttempt: string;
   negativeMarking: string;
@@ -36,6 +44,7 @@ type ExamForm = {
 const emptyForm: ExamForm = {
   title: "",
   description: "",
+  kind: "preliminary",
   durationMinutes: "180",
   questionsPerAttempt: "",
   negativeMarking: "0",
@@ -59,7 +68,14 @@ function toLocalDateTime(value?: Date | string) {
     .slice(0, 16);
 }
 
-export function ExamEditor({ exam, onSaved, onCancel }: ExamEditorProps) {
+export function ExamEditor({
+  exam,
+  courseId,
+  segmentId,
+  subSegmentId,
+  onSaved,
+  onCancel,
+}: ExamEditorProps) {
   const router = useRouter();
   const [form, setForm] = useState<ExamForm>(emptyForm);
   const [savedForm, setSavedForm] = useState<ExamForm>(emptyForm);
@@ -75,6 +91,7 @@ export function ExamEditor({ exam, onSaved, onCancel }: ExamEditorProps) {
       ? {
           title: exam.title,
           description: exam.description ?? "",
+          kind: exam.kind,
           durationMinutes: String(exam.durationMinutes),
           questionsPerAttempt: String(exam.questionsPerAttempt ?? ""),
           negativeMarking: String(exam.negativeMarking ?? 0),
@@ -127,6 +144,10 @@ export function ExamEditor({ exam, onSaved, onCancel }: ExamEditorProps) {
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
+        kind: form.kind,
+        courseId: exam?.courseId ?? courseId,
+        segmentId: exam?.segmentId ?? segmentId,
+        subSegmentId: exam?.subSegmentId ?? subSegmentId,
         durationMinutes: duration,
         questionsPerAttempt:
           form.questionsPerAttempt.trim() === ""
@@ -142,27 +163,41 @@ export function ExamEditor({ exam, onSaved, onCancel }: ExamEditorProps) {
       };
       const response = await fetch(
         exam
-          ? `/api/admin/preliminary-exams/${exam._id}`
-          : "/api/admin/preliminary-exams",
+          ? `/api/admin/exams/${exam._id}`
+          : "/api/admin/exams",
         {
           method: exam ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            ...payload,
+            courseId,
+            segmentId,
+            subSegmentId,
+          }),
         }
       );
       const result = (await response.json()) as {
         error?: string;
-        data?: { exam?: { _id?: string } };
+        data?: { exam?: { _id?: string }; id?: string; _id?: string };
       };
 
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to save this exam.");
       }
 
+      const createdId =
+        result.data?.exam?._id ??
+        result.data?.id ??
+        result.data?._id ??
+        undefined;
+
       setSavedForm(form);
-      onSaved();
       toast("Exam saved.");
-      router.push("/admin/mock-exams");
+      if (onSaved) {
+        onSaved(createdId);
+      } else {
+        router.push("/admin/exams");
+      }
       router.refresh();
     } catch (caughtError) {
       setError(
@@ -199,6 +234,23 @@ export function ExamEditor({ exam, onSaved, onCancel }: ExamEditorProps) {
       </header>
 
       <form onSubmit={save} className="mt-6 space-y-5">
+        <label className="block space-y-2 text-sm font-semibold text-primary">
+          Exam kind
+          <select
+            value={form.kind}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                kind: event.target.value as ExamForm["kind"],
+              }))
+            }
+            className="h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
+          >
+            <option value="preliminary">Preliminary</option>
+            <option value="written">Written</option>
+          </select>
+        </label>
+
         <label className="block space-y-2 text-sm font-semibold text-primary">
           Title
           <Input

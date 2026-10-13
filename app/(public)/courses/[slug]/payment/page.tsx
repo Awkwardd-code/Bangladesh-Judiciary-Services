@@ -6,7 +6,7 @@ import { PaymentFormCard } from "@/components/courses/payment-form-card";
 import { PaymentHeader } from "@/components/courses/payment-header";
 import { PaymentMethodsCard } from "@/components/courses/payment-methods-card";
 import { requireSession } from "@/lib/auth-guard";
-import { coursesCol } from "@/lib/collections";
+import { coursesCol, paymentsCol } from "@/lib/collections";
 import { getEnrollmentAccess } from "@/lib/enrollment";
 
 export async function generateMetadata({
@@ -19,12 +19,12 @@ export async function generateMetadata({
 
   if (!course) {
     return {
-      title: "Complete payment — BJS Prep",
+      title: "Complete payment — LegalPath Bangladesh",
     };
   }
 
   return {
-    title: `Complete payment — ${course.title} — BJS Prep`,
+    title: `Complete payment — ${course.title} — LegalPath Bangladesh`,
   };
 }
 
@@ -60,7 +60,14 @@ export default async function CoursePaymentPage({
   }
 
   if (access.reason === "pending") {
-    redirect(`/courses/${course.slug}/purchase-pending`);
+    const payment = await (await paymentsCol()).findOne({
+      userId: new ObjectId(session.userId),
+      courseId: course._id,
+      status: "pending",
+    });
+    if (payment) {
+      redirect(`/courses/${course.slug}/purchase-pending`);
+    }
   }
 
   if (course.price === 0) {
@@ -77,6 +84,7 @@ export default async function CoursePaymentPage({
           slug: course.slug,
           title: course.title,
           price: course.price,
+          discountPercent: course.discountPercent,
           currency: course.currency,
         }}
       />

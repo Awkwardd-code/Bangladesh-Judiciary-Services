@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
 
-import { MaterialsList } from "@/components/dashboard/materials-list";
+import { CourseCurriculum } from "@/components/courses/course-curriculum";
 import { requireSession } from "@/lib/auth-guard";
-import { coursesCol, materialsCol } from "@/lib/collections";
+import { coursesCol, examsCol } from "@/lib/collections";
 import { getEnrollmentAccess } from "@/lib/enrollment";
 
 export default async function CourseDetailPage({
@@ -29,18 +29,79 @@ export default async function CourseDetailPage({
     new ObjectId(session.userId),
     course._id,
   );
-  const hasAccess = access.hasAccess || course.price === 0;
-  const allMaterials = await (await materialsCol())
-    .find({ courseId: course._id })
-    .sort({ order: 1, createdAt: 1 })
-    .toArray();
-  const visibleMaterials = hasAccess
-    ? allMaterials
-    : allMaterials.filter((material) => material.isFreePreview);
+  const hasAccess =
+    access.hasAccess ||
+    (course.price === 0 && course.programKind !== "exam");
+  const publishedTests =
+    course.programKind === "exam"
+      ? await (
+          await examsCol()
+        )
+          .find({ courseId: course._id, status: "published" })
+          .sort({ order: 1, createdAt: 1 })
+          .toArray()
+      : [];
+  const segments = [...(course.segments ?? [])]
+    .sort((left, right) => left.order - right.order)
+    .map((segment) => ({
+      _id: segment._id.toString(),
+      title: segment.title,
+      description: segment.description ?? "",
+      order: segment.order,
+      isFree: segment.isFree,
+      price: segment.price ?? 0,
+      discountedPrice: segment.discountedPrice,
+      examIds: (segment.examIds ?? []).map((examId) => examId.toString()),
+      subSegments: [...(segment.subSegments ?? [])]
+        .sort((left, right) => left.order - right.order)
+        .map((subSegment) => {
+          const payload = { ...subSegment.payload };
+          const hasClassNote =
+            subSegment.kind === "note" && Boolean(payload.pdfUrl);
+          delete payload.pdfUrl;
+          delete payload.pdfPublicId;
+
+          return {
+            _id: subSegment._id.toString(),
+            title: subSegment.title,
+            description: subSegment.description ?? "",
+            order: subSegment.order,
+            kind: subSegment.kind,
+            isFree: subSegment.isFree,
+            hasClassNote,
+            examIds: (subSegment.examIds ?? []).map((examId) =>
+              examId.toString(),
+            ),
+            payload: {
+              ...payload,
+              scheduledAt:
+                payload.scheduledAt instanceof Date
+                  ? payload.scheduledAt.toISOString()
+                  : payload.scheduledAt,
+            },
+          };
+        }),
+    }));
+  const curriculumCourse = {
+    slug: course.slug,
+    segments,
+    tests: publishedTests.map((test) => ({
+      id: test._id.toString(),
+      title: test.title,
+      kind: test.kind,
+      totalQuestions: test.totalQuestions,
+      segmentId: test.segmentId.toString(),
+      subSegmentId: test.subSegmentId.toString(),
+    })),
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <header className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+          {course.category} ·{" "}
+          {course.programKind === "exam" ? "Model test batch" : "Course"}
+        </p>
         <h1 className="font-heading text-3xl font-bold text-primary">
           {course.title}
         </h1>
@@ -61,32 +122,21 @@ export default async function CourseDetailPage({
           </p>
           {access.reason === "none" ? (
             <Link
-              href={`/api/courses/${slug}/enroll`}
+              href={`/courses/${slug}#enroll`}
               className="mt-4 inline-flex h-10 cursor-pointer items-center rounded-md bg-primary px-4 text-sm text-cream"
             >
-              Enroll now — BDT {course.price}
+              {course.price > 0
+                ? `Enroll now — BDT ${course.price}`
+                : "Enroll now"}
             </Link>
           ) : null}
         </section>
       ) : null}
 
-      <MaterialsList
-        grouped={[
-          {
-            courseId: course._id.toString(),
-            courseTitle: course.title,
-            courseSlug: course.slug,
-            hasAccess,
-            materials: visibleMaterials.map((material) => ({
-              id: material._id.toString(),
-              title: material.title,
-              description: material.description,
-              kind: material.kind,
-              sizeBytes: material.sizeBytes ?? material.size,
-              isFreePreview: Boolean(material.isFreePreview),
-            })),
-          },
-        ]}
+      <CourseCurriculum
+        course={curriculumCourse}
+        isExamCourse={course.programKind === "exam"}
+        hasAccess={hasAccess}
       />
     </div>
   );

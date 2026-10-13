@@ -85,7 +85,7 @@ export function AppHeader({
     function updateScrolledState() {
       const nextScrolled = window.scrollY > 0;
       setScrolled((current) =>
-        current === nextScrolled ? current : nextScrolled,
+        current === nextScrolled ? current : nextScrolled
       );
     }
 
@@ -105,9 +105,9 @@ export function AppHeader({
     <header
       className={`
         sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between
-        border-b border-border bg-background/95 px-4 backdrop-blur lg:px-6
+        border-b border-border/80 bg-background/90 px-4 backdrop-blur-xl lg:px-8
         transition-[background-color,box-shadow] duration-300 ease-in-out
-        ${scrolled ? "shadow-md" : "shadow-none"}
+        ${scrolled ? "shadow-sm shadow-primary/5" : "shadow-none"}
       `}
     >
       <div className="flex min-w-0 items-center gap-3">
@@ -118,13 +118,13 @@ export function AppHeader({
           onClick={onToggleSidebar}
           className="
             inline-flex h-9 w-9 cursor-pointer items-center justify-center
-            rounded-md p-0 text-primary transition-colors hover:bg-primary/5
+            rounded-xl p-0 text-primary transition-colors hover:bg-primary/5
           "
         >
           <SidebarToggleIcon size={20} strokeWidth={1.75} />
         </Button>
         <span className="font-heading text-base font-bold text-primary lg:hidden">
-          {variant === "admin" ? "BJS Prep · Admin" : "BJS Prep"}
+          {variant === "admin" ? "LegalPath Bangladesh · Admin" : "LegalPath Bangladesh"}
         </span>
         <nav
           aria-label="Breadcrumb"
@@ -162,9 +162,7 @@ export function AppHeader({
             type="button"
             variant="ghost"
             aria-label="Toggle theme"
-            onClick={() =>
-              setTheme(currentTheme === "dark" ? "light" : "dark")
-            }
+            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
             className="
               h-9 w-9 cursor-pointer rounded-md p-0 text-primary
               transition-colors hover:bg-primary/5
@@ -280,14 +278,14 @@ function MenuLink({
 function getBreadcrumbs(
   pathname: string,
   breadcrumbs: Record<string, string[]>,
-  variant: AppHeaderProps["variant"],
+  variant: AppHeaderProps["variant"]
 ) {
   if (
     variant === "dashboard" &&
-    pathname.startsWith("/dashboard/mock-exams/") &&
-    pathname !== "/dashboard/mock-exams"
+    (pathname.startsWith("/dashboard/mock-exams/") ||
+      pathname.startsWith("/dashboard/exams/"))
   ) {
-    return ["Dashboard", "Mock Exams", "Take Test"];
+    return ["Dashboard", "Exams", "Take Test"];
   }
 
   if (variant === "admin" && pathname.startsWith("/admin/students/")) {

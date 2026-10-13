@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const paymentSubmitSchema = z.object({
   courseId: z.string().regex(/^[a-f\d]{24}$/i),
-  method: z.enum(["bkash", "nagad", "bank"]),
+  method: z.enum(["bkash", "nagad", "upay"]),
   senderNumber: z
     .string()
     .min(6)
@@ -23,7 +23,7 @@ export const paymentCreateSchema = z.object({
   courseId: z.string().regex(/^[a-f\d]{24}$/i),
   amount: z.number().positive(),
   currency: z.literal("BDT"),
-  method: z.enum(["bkash", "nagad", "bank"]),
+  method: z.enum(["bkash", "nagad", "upay"]),
   status: z.enum(["pending", "completed", "failed", "refunded"]),
   transactionId: z.string().trim().min(4).max(80).optional(),
   notes: z.string().max(500).trim().optional(),

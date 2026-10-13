@@ -28,17 +28,22 @@ export const GET = withGuard(
         .find({ courseId: course._id })
         .sort({ order: 1, createdAt: 1 })
         .toArray();
+      const freeCourse =
+        course.price === 0 && course.programKind !== "exam";
+      const hasAccess = access.hasAccess || freeCourse;
       const visibleMaterials =
-        access.hasAccess || course.price === 0
+        hasAccess
           ? allMaterials
-          : allMaterials.filter((material) => material.isFreePreview);
+          : course.programKind === "exam"
+            ? []
+            : allMaterials.filter((material) => material.isFreePreview);
       const materials = visibleMaterials.map((material) => {
         const safeMaterial = { ...material };
         delete safeMaterial.publicId;
         return safeMaterial;
       });
 
-      return ok({ materials, hasAccess: access.hasAccess || course.price === 0 });
+      return ok({ materials, hasAccess });
     } catch (error) {
       console.error("List student course materials error", error);
       return fail("Server error", 500);

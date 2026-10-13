@@ -11,7 +11,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 import { usersCol } from "@/lib/collections";
 
 export const metadata: Metadata = {
-  title: "Student — Admin — BJS Prep",
+  title: "Student — Admin — LegalPath Bangladesh",
   description: "Review a student profile and account activity.",
 };
 

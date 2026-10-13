@@ -39,7 +39,7 @@ type SubmittedAttempt = {
 
 type RunnerQuestionData = RunnerQuestion & {
   position: number;
-  source?: "preliminary_questions" | "written_questions";
+  source?: "preliminary_questions" | "written_questions" | "exam_questions";
   maxMarks?: number;
 };
 
@@ -76,6 +76,7 @@ type ExamRunnerProps = {
   exam: {
     id: string;
     kind: ExamKind;
+    unified?: boolean;
     title: string;
     durationMinutes: number;
     totalQuestions: number;
@@ -381,7 +382,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       const endpoint =
         exam.kind === "free"
           ? `/api/free-tests/${exam.id}/submit`
-          : `/api/exams/${exam.kind}/${exam.id}/submit`;
+          : `/api/exams/${exam.id}/submit`;
       const body =
         exam.kind === "written"
           ? { submissionId: attemptId, reason }
@@ -407,9 +408,17 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
           : typeof attemptResult?.totalScore === "number"
             ? attemptResult.totalScore
             : null;
+      const attemptTotalMarks = questionList.reduce(
+        (total, question) =>
+          total +
+          (exam.kind === "written"
+            ? question.maxMarks ?? question.marks
+            : question.marks),
+        0,
+      );
       const score =
-        rawScore !== null && examDetails.totalMarks > 0
-          ? Math.round((rawScore / examDetails.totalMarks) * 100)
+        rawScore !== null && attemptTotalMarks > 0
+          ? Math.round((rawScore / attemptTotalMarks) * 100)
           : null;
 
       setSubmittedAttempt({
@@ -617,7 +626,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       const endpoint =
         exam.kind === "free"
           ? `/api/free-tests/${exam.id}/start`
-          : `/api/exams/${exam.kind}/${exam.id}/start`;
+          : `/api/exams/${exam.id}/start`;
       const response = await fetch(endpoint, { method: "POST" });
       const payload = await response.json();
 
@@ -736,7 +745,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       const endpoint =
         exam.kind === "free"
           ? `/api/free-tests/${exam.id}/answer`
-          : `/api/exams/preliminary/${exam.id}/answer`;
+          : `/api/exams/${exam.id}/answer`;
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -804,7 +813,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
 
       const endpoint =
         exam.kind === "written"
-          ? `/api/exams/written/${exam.id}/answer`
+          ? `/api/exams/${exam.id}/answer`
           : `/api/free-tests/${exam.id}/answer`;
       const response = await fetch(endpoint, {
         method: "POST",
@@ -874,12 +883,11 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   }
 
   if (submitted && submittedAttempt) {
-    const resultHref =
-      exam.kind === "preliminary"
-        ? `/dashboard/mock-exams/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`
-        : exam.kind === "written"
-          ? `/dashboard/mock-exams/written/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`
-          : `/dashboard/free-tests/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`;
+    const resultHref = exam.unified
+      ? `/dashboard/exams/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`
+      : exam.kind === "free"
+        ? `/dashboard/free-tests/${exam.id}/result?attemptId=${encodeURIComponent(submittedAttempt.attemptId)}`
+        : `/dashboard/results`;
 
     return (
       <ExamThankYou
@@ -1060,6 +1068,9 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
             }
             kind={exam.kind}
             timeLeftSeconds={timeLeftSeconds}
+            negativeMarking={examDetails.negativeMarking}
+            answeredCount={answeredCount}
+            remainingCount={unansweredCount}
             phase={hasPhases ? currentPhase : null}
           />
           <div

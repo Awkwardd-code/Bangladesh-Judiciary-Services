@@ -42,11 +42,11 @@ export async function generateMetadata({
   const story = await findApprovedStory(id);
 
   if (!story) {
-    return { title: "Success Story — BJS Prep" };
+    return { title: "Success Story — LegalPath Bangladesh" };
   }
 
   return {
-    title: `${story.authorName} — Success Story — BJS Prep`,
+    title: `${story.authorName} — Success Story — LegalPath Bangladesh`,
     description: story.quote.slice(0, 150),
   };
 }

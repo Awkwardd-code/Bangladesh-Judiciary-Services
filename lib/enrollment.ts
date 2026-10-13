@@ -23,7 +23,7 @@ export async function getEnrollmentAccess(
   });
 
   if (!enrollment) {
-    if (course.price === 0) {
+    if (course.price === 0 && course.programKind !== "exam") {
       return { hasAccess: true, enrollment: null, reason: "free" };
     }
 
@@ -49,6 +49,22 @@ export async function autoEnrollFreeCourse(
   const existing = await collection.findOne({ userId, courseId });
 
   if (existing) {
+    if (existing.status === "rejected") {
+      const now = new Date();
+      await collection.updateOne(
+        { _id: existing._id, status: "rejected" },
+        {
+          $set: {
+            status: "approved",
+            isPaid: false,
+            grantedAt: now,
+            updatedAt: now,
+          },
+          $unset: { rejectedReason: "", paymentId: "" },
+        },
+      );
+      return (await collection.findOne({ _id: existing._id })) ?? existing;
+    }
     return existing;
   }
 

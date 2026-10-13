@@ -1,56 +1,99 @@
+import Link from "next/link";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  CreditCard,
+  UserRoundPlus,
+} from "lucide-react";
+
 const steps = [
   {
     number: "01",
-    title: "Browse Courses",
-    description: "Comprehensive fits to lead operation through courses.",
+    icon: BookOpen,
+    title: "Choose a program",
+    description:
+      "Find a course or model test batch that fits your preparation goal.",
   },
   {
     number: "02",
-    title: "Create Account",
-    description: "Create your account and your account.",
+    icon: UserRoundPlus,
+    title: "Create your account",
+    description:
+      "Sign up to enroll and keep your learning activity in one place.",
   },
   {
     number: "03",
-    title: "Enroll",
-    description: "Enroll and unite platform to university courses.",
+    icon: CreditCard,
+    title: "Complete enrollment",
+    description:
+      "Free offerings enroll directly; paid offerings ask for transaction details.",
   },
   {
     number: "04",
-    title: "Start Learning",
-    description: "Start learning and examine every lesson now.",
+    icon: CheckCircle2,
+    title: "Start learning",
+    description:
+      "For paid enrollments, access opens after the transaction is reviewed.",
   },
 ];
 
 export function HowToEnroll() {
   return (
-    <section className="bg-cream px-6 py-16 lg:py-20">
-      <div className="mx-auto max-w-6xl">
-        <header className="text-center">
-          <h2 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
-            How to enroll
+    <section className="bg-background px-5 py-16 sm:px-8 lg:py-20">
+      <div className="mx-auto max-w-7xl">
+        <header className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            Simple to get started
+          </p>
+          <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
+            Your next step, made clear
           </h2>
+          <p className="mt-3 text-sm leading-6 text-muted sm:text-base">
+            Go from choosing a learning path to accessing your enrolled course.
+          </p>
         </header>
 
-        <div className="relative mt-12">
+        <div className="relative mt-10">
           <div
             aria-hidden="true"
-            className="absolute left-0 right-0 top-6 hidden h-px bg-border lg:block"
+            className="absolute left-[12.5%] right-[12.5%] top-7 hidden h-px bg-border lg:block"
           />
-          <ol className="relative grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+          <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map((step) => (
-              <li key={step.number}>
-                <span className="font-heading text-4xl font-extrabold leading-none text-accent">
-                  {step.number}
-                </span>
-                <h3 className="mt-3 text-[15px] font-semibold text-primary">
+              <li
+                key={step.number}
+                className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-cream">
+                    <step.icon size={21} aria-hidden="true" />
+                  </span>
+                  <span className="font-heading text-sm font-bold tracking-[0.16em] text-accent">
+                    {step.number}
+                  </span>
+                </div>
+                <h3 className="mt-5 font-heading text-lg font-semibold text-primary">
                   {step.title}
                 </h3>
-                <p className="mt-1 max-w-xs text-[13px] leading-5 text-muted">
+                <p className="mt-2 text-sm leading-6 text-muted">
                   {step.description}
                 </p>
               </li>
             ))}
           </ol>
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/courses"
+            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-accent"
+          >
+            Explore available courses{" "}
+            <ArrowRight
+              size={16}
+              className="transition-transform group-hover:translate-x-1"
+            />
+          </Link>
         </div>
       </div>
     </section>

@@ -38,18 +38,32 @@ export function CoursesPageSkeleton() {
         </div>
       </section>
       <section className="bg-cream px-4 py-5 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center">
           <SkButton className="flex-1" width="w-full" height="h-10" />
-          <SkButton width="w-44" height="h-10" />
-          <SkButton width="w-44" height="h-10" />
-          <SkButton width="w-32" height="h-10" />
+          <SkButton width="w-full md:w-44" height="h-10" />
+          <SkButton width="w-full md:w-36" height="h-10" />
+          <SkButton width="w-full md:w-48" height="h-10" />
         </div>
       </section>
       <section className="bg-cream px-4 py-12 sm:px-6">
-        <div className="mx-auto grid w-full max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-          {Array.from({ length: 9 }, (_, index) => (
-            <CourseCardSkeleton key={index} />
-          ))}
+        <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <Card className="h-fit space-y-5 border-border p-5">
+            <SkTitle width="w-2/3" />
+            <SkButton width="w-full" height="h-10" />
+            <SkButton width="w-full" height="h-10" />
+            <SkButton width="w-full" height="h-10" />
+          </Card>
+          <div>
+            <div className="mb-4 flex justify-between">
+              <SkLine width="w-32" />
+              <SkButton width="w-48" height="h-10" />
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }, (_, index) => (
+                <CourseCardSkeleton key={index} />
+              ))}
+            </div>
+          </div>
         </div>
         <div className="mx-auto mt-8 flex max-w-6xl justify-center gap-2">
           {Array.from({ length: 5 }, (_, index) => (

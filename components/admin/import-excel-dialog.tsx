@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { createPortal } from "react-dom";
 
 import {
   downloadMCQTemplate,
@@ -39,6 +40,7 @@ type ImportIssue = {
 type ImportExcelDialogProps = {
   examId: string;
   kind: ImportKind;
+  unifiedExam?: boolean;
   onImported: (count: number) => void;
 };
 
@@ -47,6 +49,7 @@ type Step = "upload" | "preview" | "importing";
 export function ImportExcelDialog({
   examId,
   kind,
+  unifiedExam = false,
   onImported,
 }: ImportExcelDialogProps) {
   const [open, setOpen] = useState(false);
@@ -101,11 +104,15 @@ export function ImportExcelDialog({
 
     const formData = new FormData();
     formData.set("file", file);
-    const endpoint = kind === "mcq" ? "preliminary-exams" : "written-exams";
+    const endpoint = unifiedExam
+      ? `exams/${examId}/questions`
+      : `${kind === "mcq" ? "preliminary-exams" : "written-exams"}/${examId}/import`;
 
     try {
       const response = await fetch(
-        `/api/admin/${endpoint}/${examId}/import/parse`,
+        unifiedExam
+          ? `/api/admin/${endpoint}/import/parse`
+          : `/api/admin/${endpoint}/parse`,
         { method: "POST", body: formData }
       );
       const result = (await response.json()) as {
@@ -138,7 +145,9 @@ export function ImportExcelDialog({
 
     setStep("importing");
     setImportError(null);
-    const endpoint = kind === "mcq" ? "preliminary-exams" : "written-exams";
+    const endpoint = unifiedExam
+      ? `exams/${examId}/questions`
+      : `${kind === "mcq" ? "preliminary-exams" : "written-exams"}/${examId}/import`;
     const orderedRows = rows.map((row) => ({
       ...row,
       order: row.order ?? row.rowIndex - 1,
@@ -163,7 +172,9 @@ export function ImportExcelDialog({
 
     try {
       const response = await fetch(
-        `/api/admin/${endpoint}/${examId}/import/confirm`,
+        unifiedExam
+          ? `/api/admin/${endpoint}/import/confirm`
+          : `/api/admin/${endpoint}/confirm`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -217,22 +228,26 @@ export function ImportExcelDialog({
         Import from Excel
       </Button>
 
-      {open ? (
-        <div
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && step !== "importing") {
-              close();
-            }
-          }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/70 p-4"
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="import-excel-title"
-            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
-          >
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              role="presentation"
+              onMouseDown={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  step !== "importing"
+                ) {
+                  close();
+                }
+              }}
+              className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-primary-dark/70 p-4"
+            >
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="import-excel-title"
+                className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
+              >
             {(() => {
               const activeStep =
                 step === "upload" ? 0 : step === "preview" ? 1 : 2;
@@ -497,9 +512,11 @@ export function ImportExcelDialog({
                 </p>
               </div>
             ) : null}
-          </section>
-        </div>
-      ) : null}
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

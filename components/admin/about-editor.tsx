@@ -687,7 +687,7 @@ export function AboutEditor({ initialAbout, defaults }: AboutEditorProps) {
                         }
                       />
                     </Field>
-                    <Field label="BJS Prep" value={row.bjsPrep} maxLength={300}>
+                    <Field label="LegalPath Bangladesh" value={row.bjsPrep} maxLength={300}>
                       <Input
                         maxLength={300}
                         value={row.bjsPrep}

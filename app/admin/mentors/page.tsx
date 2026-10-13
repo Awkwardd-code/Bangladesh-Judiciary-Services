@@ -5,7 +5,7 @@ import { MentorsTable } from "@/components/admin/mentors-table";
 import { AdminMentorsSkeleton } from "@/components/skeletons/admin-mentors-skeleton";
 
 export const metadata: Metadata = {
-  title: "Mentors — Admin — BJS Prep",
+  title: "Mentors — Admin — LegalPath Bangladesh",
   description: "Manage faculty mentors displayed on the public site.",
 };
 

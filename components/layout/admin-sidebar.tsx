@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ClipboardCheck,
-  CreditCard,
-  ArrowLeft,
   BookOpen,
+  ClipboardCheck,
+  ClipboardList,
+  CreditCard,
   FileText,
+  GraduationCap,
+  Info,
   LayoutDashboard,
   Megaphone,
-  Trophy,
+  Sprout,
   Sparkles,
+  Trophy,
   Users,
 } from "lucide-react";
 
@@ -20,50 +23,54 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAdminShell } from "@/components/layout/admin-shell-provider";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Students", href: "/admin/students", icon: Users },
-  { label: "Courses", href: "/admin/courses", icon: BookOpen },
-  { label: "Enrollments", href: "/admin/enrollments", icon: ClipboardCheck },
-  { label: "Mentors", href: "/admin/mentors", icon: Users },
+const navGroups = [
   {
-    label: "Success Stories",
-    href: "/admin/success-stories",
-    icon: Sparkles,
-  },
-  { label: "Notices", href: "/admin/notices", icon: Megaphone },
-  {
-    label: "Model Tests",
-    href: "/admin/mock-exams",
-    icon: FileText,
+    heading: "Core",
+    items: [
+      { label: "Overview", href: "/admin", icon: LayoutDashboard },
+      { label: "Students", href: "/admin/students", icon: Users },
+      { label: "Leaderboard", href: "/admin/leaderboard", icon: Trophy },
+      { label: "Enrollments", href: "/admin/enrollments", icon: ClipboardList },
+    ],
   },
   {
-    label: "Leaderboard",
-    href: "/admin/leaderboard",
-    icon: Trophy,
+    heading: "Content",
+    items: [
+      { label: "Courses", href: "/admin/courses", icon: BookOpen },
+      {
+        label: "Exam Courses",
+        href: "/admin/exam-courses",
+        icon: ClipboardCheck,
+      },
+      { label: "Mentors", href: "/admin/mentors", icon: GraduationCap },
+      {
+        label: "Success Stories",
+        href: "/admin/success-stories",
+        icon: Sparkles,
+      },
+      { label: "Notices", href: "/admin/notices", icon: Megaphone },
+    ],
   },
   {
-    label: "Question Bank",
-    href: "/admin/question-bank",
-    icon: BookOpen,
+    heading: "Exams",
+    items: [
+      { label: "Exams", href: "/admin/exams", icon: FileText },
+      {
+        label: "Exam Review",
+        href: "/admin/exam-review",
+        icon: ClipboardCheck,
+      },
+    ],
   },
   {
-    label: "Free Model Tests",
-    href: "/admin/free-tests",
-    icon: FileText,
+    heading: "System",
+    items: [
+      { label: "Payments", href: "/admin/payments", icon: CreditCard },
+      { label: "About", href: "/admin/about", icon: Info },
+      { label: "Seed", href: "/admin/seed", icon: Sprout },
+    ],
   },
-  {
-    label: "Written Submissions",
-    href: "/admin/written-submissions",
-    icon: ClipboardCheck,
-  },
-  {
-    label: "Payments",
-    href: "/admin/payments",
-    icon: CreditCard,
-  },
-  { label: "About", href: "/admin/about", icon: BookOpen },
-];
+] as const;
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -73,11 +80,7 @@ export function AdminSidebar() {
     <Sheet open={open} onOpenChange={setOpen}>
       <aside
         className={cn(
-          `
-            fixed inset-y-0 left-0 z-40 hidden h-screen w-64 flex-col
-            overflow-hidden bg-primary text-cream transition-[width]
-            duration-300 ease-in-out lg:flex
-          `,
+          "fixed inset-y-0 left-0 z-40 hidden h-screen w-64 flex-col overflow-hidden bg-primary text-cream transition-[width] duration-300 ease-in-out lg:flex",
           collapsed ? "lg:w-16" : "lg:w-64"
         )}
       >
@@ -126,18 +129,22 @@ function SidebarContent({
         <Link
           href="/admin"
           onClick={onNavigate}
-          title="BJS Prep Admin"
+          title="LegalPath Bangladesh Admin"
           className={cn(
-            "font-heading font-bold",
-            collapsed ? "text-base" : mobile ? "pr-12 text-lg" : "text-lg"
+            "inline-flex items-center gap-2 whitespace-nowrap font-heading font-bold tracking-tight",
+            collapsed ? "text-base" : mobile ? "pr-12 text-base" : "text-base"
           )}
         >
           {collapsed ? (
-            "BJS"
+            "LP"
           ) : (
             <>
-              BJS Prep <span className="text-accent">·</span>{" "}
-              <span className="text-sm font-medium text-cream/70">Admin</span>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-xs font-extrabold text-primary-dark">
+                LP
+              </span>
+              <span className="shrink-0">LegalPath BD</span>
+              <span className="text-accent-on-dark">·</span>
+              <span className="text-xs font-medium text-cream/70">Admin</span>
             </>
           )}
         </Link>
@@ -145,50 +152,59 @@ function SidebarContent({
 
       {!collapsed ? (
         <div className="px-4 pb-4">
-          <Badge className="w-fit rounded-full border-accent text-xs text-accent">
+          <Badge className="w-fit rounded-full border-accent-on-dark text-xs text-accent-on-dark">
             Administrator
           </Badge>
         </div>
       ) : null}
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active =
-            item.href === "/admin"
-              ? pathname === "/admin"
-              : pathname.startsWith(item.href);
+        {navGroups.map((group) => (
+          <div key={group.heading} className="mb-4">
+            {!collapsed ? (
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-cream/50">
+                {group.heading}
+              </p>
+            ) : null}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-label={item.label}
-              title={collapsed ? item.label : undefined}
-              onClick={onNavigate}
-              className={cn(
-                "relative flex min-h-11 cursor-pointer items-center rounded-md py-2 text-sm transition-colors",
-                collapsed ? "justify-center px-2" : "gap-3 px-3",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                "focus-visible:ring-offset-2",
-                "focus-visible:ring-offset-primary",
-                active
-                  ? "bg-cream/10 font-medium text-cream"
-                  : "text-cream/80 hover:bg-cream/10 hover:text-cream"
-              )}
-            >
-              {active && (
-                <span className="absolute inset-y-1 left-0 w-1 rounded-r bg-accent" />
-              )}
-              <Icon size={18} strokeWidth={1.75} />
-              {collapsed ? (
-                <span className="sr-only">{item.label}</span>
-              ) : (
-                <span>{item.label}</span>
-              )}
-            </Link>
-          );
-        })}
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active =
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname.startsWith(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-label={item.label}
+                  title={collapsed ? item.label : undefined}
+                  onClick={onNavigate}
+                  className={cn(
+                    "relative flex min-h-11 cursor-pointer items-center rounded-md py-2 text-sm transition-colors",
+                    collapsed ? "justify-center px-2" : "gap-3 px-3",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    "focus-visible:ring-offset-2 focus-visible:ring-offset-primary",
+                    active
+                      ? "bg-cream/10 font-medium text-cream"
+                      : "text-cream/80 hover:bg-cream/10 hover:text-cream"
+                  )}
+                >
+                  {active ? (
+                    <span className="absolute inset-y-1 left-0 w-1 rounded-r bg-accent" />
+                  ) : null}
+                  <Icon size={18} strokeWidth={1.75} />
+                  {collapsed ? (
+                    <span className="sr-only">{item.label}</span>
+                  ) : (
+                    <span>{item.label}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="mt-auto border-t border-cream/10 p-4">
@@ -203,7 +219,7 @@ function SidebarContent({
             collapsed ? "justify-center px-2" : "px-3"
           )}
         >
-          <ArrowLeft size={18} />
+          <LayoutDashboard size={18} />
           {!collapsed ? "Back to dashboard" : null}
         </Link>
         {!collapsed ? (

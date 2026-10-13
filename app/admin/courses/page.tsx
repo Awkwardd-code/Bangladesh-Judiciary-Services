@@ -16,7 +16,7 @@ export default async function AdminCoursesPage() {
   }
 
   const list = await (await coursesCol())
-    .find({})
+    .find({ programKind: { $ne: "exam" } })
     .sort({ order: 1, createdAt: -1 })
     .toArray();
 
@@ -24,6 +24,7 @@ export default async function AdminCoursesPage() {
     <CoursesListClient
       initialCourses={list.map((course) => ({
         id: course._id.toString(),
+        programKind: course.programKind ?? "course",
         title: course.title,
         slug: course.slug,
         coverUrl: course.coverUrl ?? null,

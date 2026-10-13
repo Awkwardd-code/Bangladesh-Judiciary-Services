@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PaymentsTable } from "@/components/admin/payments-table";
 
 export const metadata: Metadata = {
-  title: "Payments — Admin — BJS Prep",
+  title: "Payments — Admin — LegalPath Bangladesh",
   description: "Track enrollments and revenue.",
 };
 
@@ -14,11 +14,7 @@ export default function PaymentsPage() {
         Payments
       </h1>
       <p className="mt-2 text-base text-muted">
-        Track enrollments and revenue.
-      </p>
-      <p className="mt-4 text-xs text-muted">
-        Payment gateway integration is coming soon. This page currently shows
-        manually recorded payments.
+        Review submitted mobile payment transactions and manage course access.
       </p>
       <PaymentsTable />
     </div>

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const to = params.get("to");
     if (["pending", "completed", "failed", "refunded"].includes(status ?? ""))
       filter.status = status;
-    if (["bkash", "nagad", "bank"].includes(method ?? ""))
+    if (["bkash", "nagad", "upay", "bank"].includes(method ?? ""))
       filter.method = method;
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

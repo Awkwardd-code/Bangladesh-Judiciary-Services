@@ -80,10 +80,11 @@ export async function POST(
         score += question.marks;
         correctCount += 1;
       } else {
-        score = Math.max(0, score - (exam?.negativeMarking ?? 0));
+        score -= exam?.negativeMarking ?? 0;
         wrongCount += 1;
       }
     }
+    score = Math.max(0, score);
 
     const submittedAt = new Date();
     const status = reason === "time-expired" ? "auto-submitted" : "submitted";

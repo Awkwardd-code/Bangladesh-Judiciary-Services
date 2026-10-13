@@ -137,8 +137,20 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const nextType = parsed.data.type ?? existing.type ?? "paid";
     const updateSet = {
       ...parsed.data,
+      type: nextType,
+      courseId: parsed.data.courseId
+        ? new ObjectId(parsed.data.courseId)
+        : parsed.data.courseId === null
+          ? null
+          : existing.courseId,
+      topicId: parsed.data.topicId
+        ? new ObjectId(parsed.data.topicId)
+        : parsed.data.topicId === null
+          ? null
+          : existing.topicId,
       questionsPerAttempt: nextQuestionsPerAttempt,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)

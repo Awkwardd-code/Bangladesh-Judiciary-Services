@@ -15,7 +15,7 @@ import { getActiveExam } from "@/lib/exam-lock";
 import { checkExamAccess } from "@/lib/exam-access";
 
 export const metadata: Metadata = {
-  title: "Take Preliminary Mock Exam — BJS Prep",
+  title: "Take Preliminary Mock Exam — LegalPath Bangladesh",
 };
 
 export default async function PreliminaryExamPage({
@@ -75,20 +75,17 @@ export default async function PreliminaryExamPage({
     );
   }
 
-  if (
-    !access.allowed &&
-    (access.reason === "not-yet-open" || access.reason === "closed")
-  ) {
+  if (!access.allowed && access.reason === "outside-window") {
     return (
       <BlockedExamState
         title={
-          access.reason === "not-yet-open"
+          access.opensAt && access.opensAt.getTime() > Date.now()
             ? "This exam is not open yet."
             : "This exam is no longer open."
         }
         description={
-          access.reason === "not-yet-open"
-            ? `Scheduled to open ${access.opensAt?.toLocaleString() ?? exam.scheduledAt?.toLocaleString() ?? "on a future date"}.`
+          access.opensAt && access.opensAt.getTime() > Date.now()
+            ? `Scheduled to open ${access.opensAt.toLocaleString() ?? exam.scheduledAt?.toLocaleString() ?? "on a future date"}.`
             : `Closed on ${access.closesAt?.toLocaleString() ?? exam.closesAt?.toLocaleString() ?? "a past date"}.`
         }
       />
@@ -158,7 +155,7 @@ export default async function PreliminaryExamPage({
         negativeMarking: exam.negativeMarking,
         hasWrittenQuestions: false,
       }}
-      questions={questions.map((question) => ({
+      questions={questions.map((question: (typeof questions)[number]) => ({
         id: question._id.toString(),
         position: question.order,
         source: "preliminary_questions" as const,
@@ -174,13 +171,15 @@ export default async function PreliminaryExamPage({
               startedAt: attempt.startedAt.toISOString(),
               expiresAt: attempt.expiresAt.toISOString(),
               shuffledOrder: attempt.shuffledOrder,
-              answers: attempt.answers.map((answer) => ({
-                questionId: answer.questionId.toString(),
-                selectedOptionIndex: answer.selectedOptionIndex,
-                answeredAt: answer.answeredAt
-                  ? answer.answeredAt.toISOString()
-                  : null,
-              })),
+              answers: attempt.answers.map(
+                (answer: (typeof attempt.answers)[number]) => ({
+                  questionId: answer.questionId.toString(),
+                  selectedOptionIndex: answer.selectedOptionIndex,
+                  answeredAt: answer.answeredAt
+                    ? answer.answeredAt.toISOString()
+                    : null,
+                }),
+              ),
             }
           : null
       }

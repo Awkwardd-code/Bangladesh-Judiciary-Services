@@ -5,8 +5,8 @@ import { LegalHero } from "@/components/sections/legal-hero";
 import { termsSections } from "@/lib/legal-content";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — BJS Prep",
-  description: "Terms of service for using the BJS Prep platform.",
+  title: "Terms of Service — LegalPath Bangladesh",
+  description: "Terms of service for using the LegalPath Bangladesh platform.",
 };
 
 export default function TermsPage() {

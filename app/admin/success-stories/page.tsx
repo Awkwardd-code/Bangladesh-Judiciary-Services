@@ -7,7 +7,7 @@ import { SuccessStoriesAdminTable } from "@/components/admin/success-stories-adm
 import { SuccessStoriesSummary } from "@/components/admin/success-stories-summary";
 
 export const metadata: Metadata = {
-  title: "Success Stories — Admin — BJS Prep",
+  title: "Success Stories — Admin — LegalPath Bangladesh",
 };
 
 export default function SuccessStoriesAdminPage() {

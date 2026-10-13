@@ -7,7 +7,7 @@ export function AboutHero({ about }: { about: AboutShape }) {
     <section className="bg-cream px-6 py-20 lg:py-24">
       <div className="mx-auto max-w-3xl px-6 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
-          {about.heroKicker || "Why BJS Prep"}
+          {about.heroKicker || "Why LegalPath Bangladesh"}
         </p>
         <h1 className="mt-4 max-w-3xl mx-auto font-heading text-4xl font-bold leading-tight text-primary lg:text-5xl">
           {about.heroTitle || "A smarter roadmap for judicial prep."}

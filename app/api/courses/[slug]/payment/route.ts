@@ -1,8 +1,6 @@
 import { ObjectId } from "mongodb";
-import { NextRequest } from "next/server";
 
 import { fail, ok } from "@/lib/api-response";
-import { requireSession } from "@/lib/auth-guard";
 import {
   coursesCol,
   enrollmentsCol,
@@ -76,11 +74,19 @@ export const POST = withGuard({ kind: "session" }, async (req, { params, session
       return fail("You already have access to this course.", 409);
     }
 
-    if (existingEnrollment?.status === "pending") {
-      return fail("You already have a pending enrollment.", 409);
+    const paymentCollection = await paymentsCol();
+    const pendingPayment = await paymentCollection.findOne({
+      userId,
+      courseId: course._id,
+      status: "pending",
+    });
+    if (pendingPayment) {
+      return fail("You already have a pending payment review.", 409);
+    }
+    if (existingEnrollment?.status === "revoked") {
+      return fail("Your access to this course has been revoked.", 403);
     }
 
-    const paymentCollection = await paymentsCol();
     const duplicate = await paymentCollection.findOne({
       transactionId: transactionId.trim(),
     });
@@ -90,16 +96,10 @@ export const POST = withGuard({ kind: "session" }, async (req, { params, session
     }
 
     const now = new Date();
-    const enrollment: Enrollment = {
-      _id: new ObjectId(),
-      courseId: course._id,
-      userId,
-      status: "pending",
-      isPaid: true,
-      grantedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const enrollmentId = existingEnrollment?._id ?? new ObjectId();
+    const payableAmount = Math.round(
+      course.price * (1 - (course.discountPercent ?? 0) / 100),
+    );
 
     const payment: Payment = {
       _id: new ObjectId(),
@@ -108,7 +108,7 @@ export const POST = withGuard({ kind: "session" }, async (req, { params, session
       userEmail: user.email,
       courseId: course._id,
       courseTitle: course.title,
-      amount: course.price,
+      amount: payableAmount,
       currency: "BDT",
       method,
       status: "pending",
@@ -119,21 +119,51 @@ export const POST = withGuard({ kind: "session" }, async (req, { params, session
       updatedAt: now,
     };
 
-    await enrollmentCollection.insertOne(enrollment);
     await paymentCollection.insertOne(payment);
-    await enrollmentCollection.updateOne(
-      { _id: enrollment._id },
-      {
-        $set: {
+    try {
+      if (existingEnrollment) {
+        const updatedEnrollment = await enrollmentCollection.updateOne(
+          { _id: enrollmentId, status: existingEnrollment.status },
+          {
+            $set: {
+              status: "pending",
+              isPaid: true,
+              paymentId: payment._id,
+              grantedAt: now,
+              updatedAt: now,
+            },
+            $unset: { rejectedReason: "" },
+          },
+        );
+        if (updatedEnrollment.modifiedCount !== 1) {
+          await paymentCollection.deleteOne({ _id: payment._id });
+          return fail(
+            "Enrollment status changed. Please refresh and try again.",
+            409,
+          );
+        }
+      } else {
+        const enrollment: Enrollment = {
+          _id: enrollmentId,
+          courseId: course._id,
+          userId,
+          status: "pending",
+          isPaid: true,
           paymentId: payment._id,
+          grantedAt: now,
+          createdAt: now,
           updatedAt: now,
-        },
-      },
-    );
+        };
+        await enrollmentCollection.insertOne(enrollment);
+      }
+    } catch (error) {
+      await paymentCollection.deleteOne({ _id: payment._id });
+      throw error;
+    }
 
     return ok(
       {
-        enrollmentId: enrollment._id.toString(),
+        enrollmentId: enrollmentId.toString(),
         paymentId: payment._id.toString(),
         message:
           "Payment submitted. We'll verify and activate your access within 24 hours.",

@@ -39,29 +39,35 @@ export function AttemptStatusChart({ data }: { data: AttemptStatusEntry[] }) {
               <XAxis
                 dataKey="status"
                 tickFormatter={formatStatus}
-                tick={{ fill: "#6E6960", fontSize: 11 }}
+                tick={{ fill: "var(--chart-label)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 allowDecimals={false}
-                tick={{ fill: "#6E6960", fontSize: 11 }}
+                tick={{ fill: "var(--chart-label)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 labelFormatter={(value) => formatStatus(String(value))}
                 contentStyle={{
-                  border: "1px solid #E8E1D5",
+                  border: "1px solid var(--chart-grid)",
                   borderRadius: 6,
                   fontSize: 12,
+                  backgroundColor: "var(--chart-tooltip)",
+                  color: "var(--chart-text)",
                 }}
               />
               <Bar dataKey="count" name="Attempts" radius={[4, 4, 0, 0]}>
                 {data.map((entry) => (
                   <Cell
                     key={entry.status}
-                    fill={entry.status === "submitted" ? "#B87333" : "#12213F"}
+                    fill={
+                      entry.status === "submitted"
+                        ? "var(--chart-accent)"
+                        : "var(--chart-primary)"
+                    }
                   />
                 ))}
               </Bar>

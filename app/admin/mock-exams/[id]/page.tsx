@@ -1,10 +1,4 @@
-import type { Metadata } from "next";
-
-import { ExamDetailClient } from "@/components/admin/exam-detail-client";
-
-export const metadata: Metadata = {
-  title: "Mock Exam — Admin — BJS Prep",
-};
+import { redirect } from "next/navigation";
 
 export default async function ExamDetailPage({
   params,
@@ -12,5 +6,5 @@ export default async function ExamDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ExamDetailClient examId={id} />;
+  redirect(`/admin/exams/${id}`);
 }

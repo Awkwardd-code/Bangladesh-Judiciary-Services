@@ -3,14 +3,14 @@ import { ObjectId } from "mongodb";
 import type { About, AboutShape } from "@/lib/types/about";
 
 export const defaultAboutSeed: AboutShape = {
-  heroKicker: "Why BJS Prep",
+  heroKicker: "Why LegalPath Bangladesh",
   heroTitle: "A smarter roadmap for Bangladesh Judicial Service aspirants.",
   heroSubtitle:
     "We combine structured guidance, realistic practice, and mentor-driven accountability so students can prepare with clarity instead of guesswork.",
   missionKicker: "Our mission",
   missionTitle: "To make high-quality judicial prep accessible, practical, and disciplined.",
   missionParagraphs: [
-    "BJS Prep was built to address the real pain points students face while preparing for the Bangladesh Judicial Service examination: fragmented resources, inconsistent guidance, and low-quality mock practice.",
+    "LegalPath Bangladesh was built to address the real pain points students face while preparing for the Bangladesh Judicial Service examination: fragmented resources, inconsistent guidance, and low-quality mock practice.",
     "We combine focused curriculum design, case-oriented learning, and realistic exam simulation to help aspirants study efficiently and with stronger confidence.",
   ],
   approachKicker: "How we work",

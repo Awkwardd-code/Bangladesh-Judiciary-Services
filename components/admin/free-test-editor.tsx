@@ -38,6 +38,7 @@ type FreeTestForm = {
   description: string;
   preliminaryDurationMinutes: number;
   writtenDurationMinutes: number;
+  negativeMarking: number;
   passMarkPercent: number;
   questionsPerAttempt: number;
   writtenQuestionsPerAttempt: number;
@@ -58,6 +59,7 @@ const emptyForm: FreeTestForm = {
   description: "",
   preliminaryDurationMinutes: 45,
   writtenDurationMinutes: 0,
+  negativeMarking: 0,
   passMarkPercent: 50,
   questionsPerAttempt: 0,
   writtenQuestionsPerAttempt: 0,
@@ -157,6 +159,7 @@ export function FreeTestEditor({
       description: freeTest.description,
       preliminaryDurationMinutes: freeTest.preliminaryDurationMinutes,
       writtenDurationMinutes: freeTest.writtenDurationMinutes,
+      negativeMarking: freeTest.negativeMarking,
       passMarkPercent: freeTest.passMarkPercent,
       questionsPerAttempt: freeTest.questionsPerAttempt,
       writtenQuestionsPerAttempt: freeTest.writtenQuestionsPerAttempt,
@@ -314,6 +317,7 @@ export function FreeTestEditor({
       description: freeTest.description,
       preliminaryDurationMinutes: freeTest.preliminaryDurationMinutes,
       writtenDurationMinutes: freeTest.writtenDurationMinutes,
+      negativeMarking: freeTest.negativeMarking,
       passMarkPercent: freeTest.passMarkPercent,
       questionsPerAttempt: freeTest.questionsPerAttempt,
       writtenQuestionsPerAttempt: freeTest.writtenQuestionsPerAttempt,
@@ -502,6 +506,7 @@ export function FreeTestEditor({
 
     const preliminaryDuration = Number(form.preliminaryDurationMinutes);
     const writtenDuration = Number(form.writtenDurationMinutes);
+    const negativeMarking = Number(form.negativeMarking);
     const passMark = Number(form.passMarkPercent);
     const perAttempt = Number(form.questionsPerAttempt);
     const writtenPerAttempt = Number(form.writtenQuestionsPerAttempt);
@@ -519,6 +524,15 @@ export function FreeTestEditor({
 
     if (!Number.isFinite(passMark) || passMark < 1 || passMark > 100) {
       setError("Pass mark must be between 1 and 100.");
+      return;
+    }
+
+    if (
+      !Number.isFinite(negativeMarking) ||
+      negativeMarking < 0 ||
+      negativeMarking > 2
+    ) {
+      setError("Negative marking must be between 0 and 2 marks per wrong answer.");
       return;
     }
 
@@ -601,6 +615,7 @@ export function FreeTestEditor({
             : undefined,
         preliminaryDurationMinutes: preliminaryDuration,
         writtenDurationMinutes: writtenDuration,
+        negativeMarking,
         passMarkPercent: passMark,
         questionsPerAttempt: perAttempt,
         writtenQuestionsPerAttempt: writtenPerAttempt,
@@ -829,7 +844,7 @@ export function FreeTestEditor({
                 type="text"
                 value={form.title}
                 onChange={(event) => updateField("title", event.target.value)}
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
               {fieldErrors.title ? (
                 <span className="mt-2 block text-xs text-red-600">
@@ -848,7 +863,7 @@ export function FreeTestEditor({
                   updateField("description", event.target.value)
                 }
                 rows={3}
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
               {fieldErrors.description ? (
                 <span className="mt-2 block text-xs text-red-600">
@@ -869,8 +884,29 @@ export function FreeTestEditor({
                 onChange={(event) =>
                   updateField("passMarkPercent", Number(event.target.value))
                 }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-foreground">
+                Negative marking per wrong MCQ
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={2}
+                step={0.25}
+                value={form.negativeMarking}
+                onChange={(event) =>
+                  updateField("negativeMarking", Number(event.target.value))
+                }
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+              />
+              <span className="mt-1 block text-xs text-muted">
+                Deducted for each incorrect multiple-choice answer; skipped
+                questions are not penalized.
+              </span>
             </label>
 
             <label className="block">
@@ -884,7 +920,7 @@ export function FreeTestEditor({
                 onChange={(event) =>
                   updateField("order", Number(event.target.value))
                 }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
             </label>
 
@@ -898,7 +934,7 @@ export function FreeTestEditor({
                 onChange={(event) =>
                   updateField("scheduledAt", event.target.value)
                 }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
             </label>
 
@@ -912,7 +948,7 @@ export function FreeTestEditor({
                 onChange={(event) =>
                   updateField("closesAt", event.target.value)
                 }
-                className="w-full rounded-xl border border-border bg-[#f3efe6] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
+                className="w-full rounded-xl border border-border bg-[#F7F5EF] px-3 py-3 text-base text-foreground outline-none transition focus:border-primary"
               />
             </label>
           </div>

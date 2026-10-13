@@ -16,16 +16,18 @@ export function HomeWhySkeleton() {
         <div className="flex justify-center">
           <SkHeading width="w-72" />
         </div>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 8 }, (_, index) => (
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, index) => (
             <Card
               key={index}
-              className="flex flex-col gap-3 border-border bg-card p-5"
+              className="flex items-start gap-4 border-border bg-card p-6"
             >
               <SkSquare size="w-8 h-8" />
-              <SkTitle width="w-32" />
-              <SkLine />
-              <SkLine width="w-3/4" />
+              <div className="min-w-0 flex-1 space-y-3">
+                <SkTitle width="w-32" />
+                <SkLine />
+                <SkLine width="w-3/4" />
+              </div>
             </Card>
           ))}
         </div>
@@ -36,8 +38,8 @@ export function HomeWhySkeleton() {
 
 export function HomeCoursesSkeleton() {
   return (
-    <section className="bg-cream px-6 py-16 lg:py-20">
-      <div className="mx-auto max-w-6xl">
+    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-20">
+      <div className="mx-auto max-w-7xl">
         <SkHeading width="w-56" />
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }, (_, index) => (

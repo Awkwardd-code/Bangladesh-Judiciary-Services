@@ -4,7 +4,7 @@ import { EnrollmentsFilter } from "@/components/admin/enrollments-filter";
 import { EnrollmentsTable } from "@/components/admin/enrollments-table";
 
 export const metadata: Metadata = {
-  title: "Enrollments — Admin — BJS Prep",
+  title: "Enrollments — Admin — LegalPath Bangladesh",
   description: "Approve paid course access and manage student enrollments.",
 };
 

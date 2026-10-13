@@ -39,7 +39,7 @@ export function SubjectAccuracyChart({ data }: { data: SubjectAccuracy[] }) {
                 type="number"
                 domain={[0, 100]}
                 tickFormatter={(value: number) => `${value}%`}
-                tick={{ fill: "#6E6960", fontSize: 11 }}
+                tick={{ fill: "var(--chart-label)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -47,24 +47,30 @@ export function SubjectAccuracyChart({ data }: { data: SubjectAccuracy[] }) {
                 type="category"
                 dataKey="subject"
                 width={110}
-                tick={{ fill: "#6E6960", fontSize: 11 }}
+                tick={{ fill: "var(--chart-label)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 formatter={(value) => [`${value}%`, "Accuracy"]}
                 contentStyle={{
-                  border: "1px solid #E8E1D5",
+                  border: "1px solid var(--chart-grid)",
                   borderRadius: 6,
                   fontSize: 12,
+                  backgroundColor: "var(--chart-tooltip)",
+                  color: "var(--chart-text)",
                 }}
               />
-              <Bar dataKey="accuracy" fill="#B87333" radius={[0, 4, 4, 0]}>
+              <Bar
+                dataKey="accuracy"
+                fill="var(--chart-accent)"
+                radius={[0, 4, 4, 0]}
+              >
                 <LabelList
                   dataKey="accuracy"
                   position="right"
                   formatter={(value: number | string) => `${value}%`}
-                  style={{ fill: "#14110C", fontSize: 11 }}
+                  style={{ fill: "var(--chart-text)", fontSize: 11 }}
                 />
               </Bar>
             </BarChart>

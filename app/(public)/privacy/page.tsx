@@ -5,8 +5,8 @@ import { LegalHero } from "@/components/sections/legal-hero";
 import { privacySections } from "@/lib/legal-content";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — BJS Prep",
-  description: "How BJS Prep collects, uses, and protects your information.",
+  title: "Privacy Policy — LegalPath Bangladesh",
+  description: "How LegalPath Bangladesh collects, uses, and protects your information.",
 };
 
 export default function PrivacyPage() {

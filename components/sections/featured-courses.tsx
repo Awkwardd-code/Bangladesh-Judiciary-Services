@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, FileText } from "lucide-react";
+import { ArrowRight, Clock, FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -28,21 +28,40 @@ export function FeaturedCourses({
   }
 
   return (
-    <section className="bg-cream px-6 py-16 lg:py-20">
-      <div className="mx-auto max-w-6xl">
-        <header>
-          <h2 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
-            Featured courses
-          </h2>
+    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-20">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              Learn at your pace
+            </p>
+            <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
+              Courses to move you forward
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted sm:text-base">
+              Build a strong foundation with structured lessons and practical
+              resources.
+            </p>
+          </div>
+          <Link
+            href="/courses"
+            className="group inline-flex min-h-10 w-fit items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-primary hover:border-primary/30 hover:bg-primary/5"
+          >
+            View all courses{" "}
+            <ArrowRight
+              size={15}
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
         </header>
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
             <Card
               key={course._id.toString()}
-              className="flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
+              className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
-              <div className="relative aspect-[16/9] bg-primary/10">
+              <div className="relative aspect-[16/10] overflow-hidden bg-primary/10">
                 {course.coverUrl ? (
                   <Image
                     src={course.coverUrl}
@@ -50,7 +69,7 @@ export function FeaturedCourses({
                     fill
                     unoptimized
                     sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-primary/40">
@@ -59,31 +78,44 @@ export function FeaturedCourses({
                 )}
               </div>
 
-              <div className="flex flex-1 flex-col p-5">
-                <h3 className="text-base font-semibold text-primary">
+              <div className="flex flex-1 flex-col p-5 sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <Badge className="border-accent/20 bg-accent/10 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                    {course.category}
+                  </Badge>
+                  <span className="text-xs font-medium text-muted">
+                    {course.price > 0 ? "Paid course" : "Free course"}
+                  </span>
+                </div>
+                <h3 className="font-heading text-lg font-semibold text-primary">
                   {course.title}
                 </h3>
-                <p className="mt-2 line-clamp-2 text-[13px] leading-5 text-muted">
+                <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted">
                   {course.description}
                 </p>
 
-                <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                  <Badge className="gap-1.5 border-border text-xs text-muted">
-                    <Clock aria-hidden="true" size={12} />
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-5">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+                    <Clock aria-hidden="true" size={14} />
                     {course.durationLabel}
-                  </Badge>
+                  </span>
                   <span className="font-heading text-lg font-bold text-primary">
-                    BDT {course.price.toLocaleString()}
+                    {course.price > 0
+                      ? `৳${course.price.toLocaleString()}`
+                      : "Free"}
                   </span>
                 </div>
 
                 {course.slug ? (
                   <Link
                     href={`/courses/${course.slug}`}
-                    className="mt-3 inline-flex min-h-9 cursor-pointer items-center gap-1 text-sm text-accent hover:underline"
+                    className="mt-4 inline-flex min-h-9 cursor-pointer items-center justify-between gap-1 text-sm font-semibold text-primary"
                   >
-                    View Course
-                    <span aria-hidden="true">&rarr;</span>
+                    View course{" "}
+                    <ArrowRight
+                      size={16}
+                      className="text-accent transition-transform group-hover:translate-x-1"
+                    />
                   </Link>
                 ) : (
                   <p className="mt-3 inline-flex min-h-9 items-center gap-1 text-sm text-accent">
@@ -94,15 +126,6 @@ export function FeaturedCourses({
               </div>
             </Card>
           ))}
-        </div>
-        <div className="mt-12 text-center">
-          <Link
-            href="/courses"
-            className="inline-flex min-h-10 cursor-pointer items-center gap-1 text-sm text-accent hover:underline"
-          >
-            Browse all courses
-            <span aria-hidden="true">&rarr;</span>
-          </Link>
         </div>
       </div>
     </section>

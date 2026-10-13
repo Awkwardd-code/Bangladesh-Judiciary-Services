@@ -1,0 +1,75 @@
+import { ObjectId } from "mongodb";
+import { NextRequest } from "next/server";
+
+import { fail, ok } from "@/lib/api-response";
+import { requireAdmin } from "@/lib/auth-guard";
+import { examsCol } from "@/lib/collections";
+import { parseMCQSheet } from "@/lib/excel";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
+
+const allowedTypes = new Set([
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "text/csv",
+  "application/octet-stream",
+]);
+const maxFileSize = 5 * 1024 * 1024;
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const session = await requireAdmin();
+    if (!session) {
+      return fail("Forbidden", 403);
+    }
+
+    const limit = rateLimit({
+      key: `exam-excel-parse:${getClientIp(request)}`,
+      limit: 10,
+      windowMs: 60_000,
+    });
+    if (!limit.allowed) {
+      return fail("Too many requests. Please try again later.", 429);
+    }
+
+    const { id } = await params;
+    if (!ObjectId.isValid(id)) {
+      return fail("Exam not found.", 404);
+    }
+
+    const exam = await (await examsCol()).findOne({ _id: new ObjectId(id) });
+    if (!exam) {
+      return fail("Exam not found.", 404);
+    }
+    if (exam.kind !== "preliminary") {
+      return fail("Excel MCQ import is only available for preliminary exams.", 400);
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
+      return fail("Choose a spreadsheet file to upload.", 400);
+    }
+    if (!allowedTypes.has(file.type)) {
+      return fail("Upload an XLSX, XLS, or CSV file.", 400);
+    }
+    if (file.size > maxFileSize) {
+      return fail("The spreadsheet must be 5 MB or smaller.", 400);
+    }
+
+    const parsed = parseMCQSheet(Buffer.from(await file.arrayBuffer()));
+    return ok({
+      ...parsed,
+      summary: {
+        total: parsed.rows.length + parsed.errors.length,
+        valid: parsed.rows.length,
+        invalid: parsed.errors.length,
+      },
+    });
+  } catch (error) {
+    console.error("Unified exam spreadsheet parse error", error);
+    return fail("Unable to read this spreadsheet.", 400);
+  }
+}

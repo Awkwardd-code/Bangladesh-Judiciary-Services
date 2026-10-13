@@ -73,9 +73,17 @@ export async function POST(req: NextRequest) {
 
     await ensureIndexes();
     const now = new Date();
+    const type = parsed.data.type ?? "paid";
     const exam = {
       _id: new ObjectId(),
       ...parsed.data,
+      type,
+      courseId: parsed.data.courseId
+        ? new ObjectId(parsed.data.courseId)
+        : undefined,
+      topicId: parsed.data.topicId
+        ? new ObjectId(parsed.data.topicId)
+        : undefined,
       questionsPerAttempt: parsed.data.questionsPerAttempt ?? 0,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)

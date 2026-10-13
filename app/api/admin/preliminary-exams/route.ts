@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { fail, ok } from "@/lib/api-response";
 import { requireAdmin } from "@/lib/auth-guard";
 import { preliminaryExamsCol } from "@/lib/collections";
+import type { PreliminaryExam } from "@/lib/types/exam";
 import { ensureIndexes } from "@/lib/indexes";
 import { buildPaginationMeta, parsePagination } from "@/lib/pagination";
 import { preliminaryExamCreateSchema } from "@/lib/validators/admin";
@@ -48,20 +49,33 @@ export async function POST(req: NextRequest) {
     if (!parsed.success)
       return fail(parsed.error.issues[0]?.message ?? "Invalid exam", 400);
     const now = new Date();
-    const exam = {
+    const type = parsed.data.type ?? "paid";
+    const exam: PreliminaryExam = {
       _id: new ObjectId(),
-      ...parsed.data,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      courseId: parsed.data.courseId
+        ? new ObjectId(parsed.data.courseId)
+        : undefined,
+      topicId: parsed.data.topicId
+        ? new ObjectId(parsed.data.topicId)
+        : undefined,
+      durationMinutes: parsed.data.durationMinutes,
       questionsPerAttempt: parsed.data.questionsPerAttempt ?? 0,
+      negativeMarking: parsed.data.negativeMarking,
+      totalQuestions: 0,
+      totalMarks: 0,
+      passMarkPercent: parsed.data.passMarkPercent,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)
         : undefined,
       closesAt: parsed.data.closesAt
         ? new Date(parsed.data.closesAt)
         : undefined,
-      status: "draft" as const,
-      totalQuestions: 0,
-      totalMarks: 0,
-      createdBy: new ObjectId(session.userId),
+      status: "draft",
+      type,
+      monthlyTag: parsed.data.monthlyTag,
+      weeklyTag: parsed.data.weeklyTag,
       createdAt: now,
       updatedAt: now,
     };

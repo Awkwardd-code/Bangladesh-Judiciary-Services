@@ -4,7 +4,7 @@ export function ModelTestsHero() {
   return (
     <section className="bg-primary-dark px-4 py-12 text-center text-cream sm:px-6 md:py-20 lg:py-20">
       <div className="mx-auto max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[.15em] text-accent">
+        <p className="text-xs font-semibold uppercase tracking-[.15em] text-accent-on-dark">
           Model Tests
         </p>
         <h1 className="mt-4 font-heading text-3xl font-bold sm:text-4xl md:text-5xl lg:text-5xl">
@@ -18,7 +18,7 @@ export function ModelTestsHero() {
           <Button
             href="/model-tests/trial"
             className="
-              w-full bg-accent text-primary-dark hover:bg-cream sm:w-auto
+              w-full bg-accent-soft text-primary-dark hover:bg-cream sm:w-auto
             "
           >
             Start a Trial Test <ArrowUpRight size={17} />

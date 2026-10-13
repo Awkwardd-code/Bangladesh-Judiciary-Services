@@ -6,6 +6,7 @@ export type SerializedFreeTest = {
   writtenDurationMinutes: number;
   writtenQuestionsPerAttempt: number;
   durationMinutes: number;
+  negativeMarking: number;
   passMarkPercent: number;
   questionsPerAttempt: number;
   totalQuestions: number;
@@ -71,6 +72,7 @@ export function serializeFreeTest(doc: any): SerializedFreeTest {
     ),
     writtenQuestionsPerAttempt: Number(doc?.writtenQuestionsPerAttempt ?? 0),
     durationMinutes,
+    negativeMarking: Number(doc?.negativeMarking ?? 0),
     passMarkPercent: Number(doc?.passMarkPercent ?? 50),
     questionsPerAttempt: Number(doc?.questionsPerAttempt ?? 0),
     totalQuestions: Number(doc?.totalQuestions ?? 0),

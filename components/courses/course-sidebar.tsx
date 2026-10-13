@@ -25,11 +25,15 @@ export function CourseSidebar({
   const [error, setError] = useState<string | null>(null);
   const discountedPrice =
     course.price * (1 - (course.discountPercent ?? 0) / 100);
-  const hasDiscount =
-    (course.discountPercent ?? 0) > 0 && course.price > 0;
+  const hasDiscount = (course.discountPercent ?? 0) > 0 && course.price > 0;
 
   async function handleEnroll() {
     if (loading) {
+      return;
+    }
+
+    if (course.price > 0) {
+      router.push(`/courses/${course.slug}/payment`);
       return;
     }
 
@@ -58,7 +62,7 @@ export function CourseSidebar({
 
           if (!accessResponse.ok) {
             throw new Error(
-              accessPayload?.error ?? "Unable to refresh course access.",
+              accessPayload?.error ?? "Unable to refresh course access."
             );
           }
 
@@ -76,7 +80,11 @@ export function CourseSidebar({
       const status = payload?.data?.status;
 
       if (status === "approved") {
-        router.push(`/dashboard/courses/${course.slug}`);
+        router.push(
+          course.programKind === "exam"
+            ? `/courses/${course.slug}`
+            : `/dashboard/courses/${course.slug}`
+        );
         return;
       }
 
@@ -90,7 +98,7 @@ export function CourseSidebar({
       setError(
         enrollError instanceof Error
           ? enrollError.message
-          : "Unable to enroll in this course.",
+          : "Unable to enroll in this course."
       );
     } finally {
       setLoading(false);
@@ -98,7 +106,7 @@ export function CourseSidebar({
   }
 
   return (
-    <aside className="lg:sticky lg:top-24">
+    <aside id="enroll" className="lg:sticky lg:top-24">
       <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           {hasDiscount ? (
@@ -137,47 +145,67 @@ export function CourseSidebar({
           {!isLoggedIn ? (
             <Button
               href={`/login?next=/courses/${course.slug}`}
-              className="h-12 w-full rounded-md"
+              className="h-12 w-full rounded-md bg-blue-600 text-white hover:bg-blue-700"
             >
               Login to enroll
             </Button>
           ) : access?.reason === "approved" ? (
             <Button
-              href={`/dashboard/courses/${course.slug}`}
-              className="h-12 w-full rounded-md"
+              href={
+                course.programKind === "exam"
+                  ? `/courses/${course.slug}`
+                  : `/dashboard/courses/${course.slug}`
+              }
+              className="h-12 w-full rounded-md bg-blue-600 text-white hover:bg-blue-700"
             >
-              Continue learning →
+              {course.programKind === "exam" ? "View tests →" : "Continue learning →"}
             </Button>
           ) : access?.reason === "pending" ? (
+            course.price > 0 ? (
+              <Button
+                href={`/courses/${course.slug}/payment`}
+                className="h-12 w-full rounded-md border border-border bg-muted/10 text-muted"
+              >
+                View payment status
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                disabled
+                className="h-12 w-full rounded-md border border-border bg-muted/10 text-muted"
+              >
+                Awaiting approval
+              </Button>
+            )
+          ) : access?.reason === "rejected" && course.price === 0 ? (
             <Button
               type="button"
-              disabled
-              className="h-12 w-full rounded-md border border-border bg-muted/10 text-muted"
+              onClick={() => void handleEnroll()}
+              disabled={loading}
+              className="h-12 w-full rounded-md bg-blue-600 text-white hover:bg-blue-700"
             >
-              Awaiting approval
-            </Button>
-          ) : access?.reason === "rejected" ? (
-            <Button
-              type="button"
-              disabled
-              className="h-12 w-full rounded-md border border-red-200 bg-red-50 text-red-700"
-            >
-              Access denied
+              {loading ? "Enrolling..." : "Enroll again"}
             </Button>
           ) : (
             <Button
               type="button"
               onClick={() => void handleEnroll()}
               disabled={loading}
-              className="h-12 w-full rounded-md"
+              className="h-12 w-full rounded-md bg-blue-600 text-white hover:bg-blue-700"
             >
               {loading ? (
                 <>
-                  <Loader2 aria-hidden="true" size={16} className="animate-spin" />
+                  <Loader2
+                    aria-hidden="true"
+                    size={16}
+                    className="animate-spin"
+                  />
                   Enrolling...
                 </>
               ) : (
-                "Enroll now"
+                course.programKind === "exam"
+                  ? "Enroll in exam course"
+                  : "Enroll now"
               )}
             </Button>
           )}
@@ -185,15 +213,20 @@ export function CourseSidebar({
 
         <p className="mt-4 text-center text-xs text-muted">
           {course.price > 0
-            ? "Payment is verified manually. You'll be notified by email once your enrollment is approved."
-            : "Free course — no payment required."}
+            ? "Payment is reviewed manually. Course access is activated after approval."
+            : course.programKind === "exam"
+              ? "Free exam course — no payment required."
+              : "Free course — no payment required."}
         </p>
 
         <ul className="mt-6 space-y-3 border-t border-border pt-5">
           <FeatureRow label="Full lifetime access" />
-          <FeatureRow label={`${course.totalClasses} live classes`} />
+          {course.programKind === "exam" ? (
+            <FeatureRow label="Preliminary and written tests" />
+          ) : (
+            <FeatureRow label={`${course.totalClasses} live classes`} />
+          )}
           <FeatureRow label={`${course.totalMockTests} model tests`} />
-          <FeatureRow label={`${course.totalMaterials} study materials`} />
           <FeatureRow label="Mentor support" />
         </ul>
       </div>

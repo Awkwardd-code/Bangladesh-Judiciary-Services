@@ -179,6 +179,7 @@ export const POST = withGuard(
         status: "in-progress",
         activeLock: true,
         shuffledOrder,
+        passMarkPercent: exam.passMarkPercent,
         createdAt: startedAt,
         updatedAt: startedAt,
       };

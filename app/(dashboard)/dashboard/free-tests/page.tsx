@@ -12,7 +12,7 @@ import { getFreeTestAccess } from "@/lib/free-test-quota";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Free Model Tests — BJS Prep",
+  title: "Free Model Tests — LegalPath Bangladesh",
 };
 
 export default async function StudentFreeTestsPage() {

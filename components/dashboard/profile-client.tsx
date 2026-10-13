@@ -39,11 +39,14 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
     phone: initialUser.phone ?? "",
   });
   const [editing, setEditing] = useState(false);
-  const [profileTouched, setProfileTouched] = useState({ name: false, phone: false });
+  const [profileTouched, setProfileTouched] = useState({
+    name: false,
+    phone: false,
+  });
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(initialUser.avatarUrl);
   const [avatarPublicId, setAvatarPublicId] = useState(
-    initialUser.avatarPublicId,
+    initialUser.avatarPublicId
   );
   const [avatarDirty, setAvatarDirty] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -55,7 +58,8 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
     confirmPassword: "",
   });
   const profileValid =
-    draft.name.trim().length >= 2 && draft.name.trim().length <= 80 &&
+    draft.name.trim().length >= 2 &&
+    draft.name.trim().length <= 80 &&
     draft.phone.trim().length <= 20;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -133,7 +137,7 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
       toast(result.data?.message ?? "Password updated.");
     } catch (error) {
       setPasswordError(
-        getErrorMessage(error, "Unable to update your password."),
+        getErrorMessage(error, "Unable to update your password.")
       );
     } finally {
       setPasswordSaving(false);
@@ -154,17 +158,24 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <header>
-        <h1 className="font-heading text-2xl font-bold text-primary lg:text-3xl">
+    <div className="mx-auto max-w-5xl space-y-6">
+      <header className="relative isolate overflow-hidden rounded-2xl border border-border/80 bg-card px-6 py-6 shadow-sm sm:px-8">
+        <div
+          aria-hidden="true"
+          className="absolute -right-16 -top-24 -z-10 size-64 rounded-full bg-accent/10 blur-3xl"
+        />
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+          Account settings
+        </p>
+        <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
           Profile
         </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-2 text-sm text-muted">
           Manage your account details and preferences.
         </p>
       </header>
 
-      <section className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm lg:p-8">
+      <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm lg:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <div className="flex flex-col items-center gap-3">
             <ImageUploader
@@ -211,7 +222,7 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
         </div>
       </section>
 
-      <section className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm lg:p-8">
+      <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm lg:p-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="font-heading text-lg font-bold text-primary">
             Personal information
@@ -267,13 +278,17 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
                     className="border-transparent bg-background font-medium text-foreground read-only:cursor-default"
                   />
                 )}
-                {editing && detail.key === "name" && profileTouched.name &&
+                {editing &&
+                detail.key === "name" &&
+                profileTouched.name &&
                 draft.name.trim().length < 2 ? (
                   <p className="mt-1 text-xs text-red-600">
                     Name must be at least 2 characters.
                   </p>
                 ) : null}
-                {editing && detail.key === "phone" && profileTouched.phone &&
+                {editing &&
+                detail.key === "phone" &&
+                profileTouched.phone &&
                 draft.phone.trim().length > 20 ? (
                   <p className="mt-1 text-xs text-red-600">
                     Phone must be 20 characters or fewer.
@@ -308,7 +323,7 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
         </form>
       </section>
 
-      <section className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm lg:p-8">
+      <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm lg:p-8">
         <h2 className="font-heading text-lg font-bold text-primary">
           Security
         </h2>
@@ -332,7 +347,7 @@ export function ProfileClient({ user: initialUser }: { user: ProfileUser }) {
         </div>
       </section>
 
-      <section className="mt-6 rounded-lg border border-red-200 bg-red-50/40 p-6 lg:p-8">
+      <section className="rounded-2xl border border-red-200 bg-red-50/40 p-6 lg:p-8">
         <h2 className="font-heading text-lg font-bold text-red-700">
           Danger zone
         </h2>
@@ -412,7 +427,7 @@ function PasswordDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="change-password-title"
-        className="relative z-10 w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-xl"
+        className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -482,7 +497,10 @@ function PasswordDialog({
             <p className="text-xs text-red-600">Passwords do not match.</p>
           ) : null}
           {error ? (
-            <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+            <p
+              role="alert"
+              className="rounded-md bg-red-50 p-3 text-sm text-red-600"
+            >
               {error}
             </p>
           ) : null}
@@ -548,7 +566,7 @@ function PasswordField({
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
-    new Date(value),
+    new Date(value)
   );
 }
 

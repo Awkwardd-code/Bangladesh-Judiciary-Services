@@ -4,8 +4,8 @@ import { NoticesHero } from "@/components/sections/notices-hero";
 import { NoticesList } from "@/components/sections/notices-list";
 
 export const metadata: Metadata = {
-  title: "Notices — BJS Prep",
-  description: "Latest announcements and updates from BJS Prep.",
+  title: "Notices — LegalPath Bangladesh",
+  description: "Latest announcements and updates from LegalPath Bangladesh.",
 };
 
 export default function NoticesPage() {

@@ -1,10 +1,9 @@
 import {
+  Award,
   BarChart3,
   BookOpen,
-  CheckCircle2,
-  Compass,
+  ClipboardCheck,
   FileText,
-  MessageSquare,
   Scale,
 } from "lucide-react";
 
@@ -12,77 +11,79 @@ import { Card } from "@/components/ui/card";
 
 const pillars = [
   {
-    icon: Compass,
-    title: "Guided Path",
-    description: "Learn how to navigate skills and guided path.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Clear Language",
-    description: "Clear language is simpler for legal topics.",
-  },
-  {
-    icon: Scale,
-    title: "Legal Logic",
-    description: "Reason through every provision, not just memorise it.",
+    icon: BookOpen,
+    title: "Structured learning",
+    description:
+      "Follow organized lessons that break complex legal subjects into manageable steps.",
   },
   {
     icon: FileText,
-    title: "Preparation",
-    description: "Current level exam aligned to structured practice tests.",
+    title: "Exam-focused resources",
+    description:
+      "Study with course materials and class notes prepared for your learning path.",
   },
   {
-    icon: BookOpen,
-    title: "Story Telling",
-    description: "Stories make law stay in the story and help retention.",
+    icon: Scale,
+    title: "Understand the law",
+    description:
+      "Build legal reasoning and subject knowledge instead of relying on memorization alone.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Practice with purpose",
+    description:
+      "Prepare with model test batches and exam practice aligned to your goals.",
+  },
+  {
+    icon: Award,
+    title: "Learn from feedback",
+    description:
+      "Review your results and identify the areas that deserve more attention.",
   },
   {
     icon: BarChart3,
-    title: "Data-Driven Focus",
-    description: "Data-driven focus with everything from Real-time focus.",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Exam Ready",
-    description: "Exam ready focus are Jucial Service exam.",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Exam Ready",
-    description: "Complete one exam-quality Jucial Service exam.",
+    title: "Track your progress",
+    description:
+      "Keep your courses, tests, and results together in one learning dashboard.",
   },
 ];
 
 export function WhyChooseUs() {
   return (
-    <section className="bg-cream px-6 py-16 lg:py-20">
-      <div className="mx-auto max-w-6xl">
-        <header className="text-center">
-          <h2 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
-            Why choose BJS Prep
+    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-20">
+      <div className="mx-auto max-w-7xl">
+        <header className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            Built around your goals
+          </p>
+          <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
+            Preparation that keeps you moving
           </h2>
+          <p className="mt-4 text-sm leading-6 text-muted sm:text-base">
+            Bring your study plan, practice, and progress together in one place.
+          </p>
         </header>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {pillars.map((pillar, index) => {
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {pillars.map((pillar) => {
             const Icon = pillar.icon;
 
             return (
               <Card
-                key={`${pillar.title}-${index}`}
-                className="relative flex flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+                key={pillar.title}
+                className="group relative flex gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lg sm:p-6"
               >
-                <span
-                  aria-hidden="true"
-                  className="absolute left-5 top-0 h-0.5 w-8 rounded-b bg-accent"
-                />
-                <Icon aria-hidden="true" size={20} className="text-primary" />
-                <h3 className="text-[15px] font-semibold text-primary">
-                  {pillar.title}
-                </h3>
-                <p className="line-clamp-2 text-[13px] leading-5 text-muted">
-                  {pillar.description}
-                </p>
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-cream">
+                  <Icon aria-hidden="true" size={20} />
+                </span>
+                <div>
+                  <h3 className="font-heading text-base font-semibold text-primary">
+                    {pillar.title}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-6 text-muted">
+                    {pillar.description}
+                  </p>
+                </div>
               </Card>
             );
           })}

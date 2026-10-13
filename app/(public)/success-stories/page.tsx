@@ -13,9 +13,9 @@ import type {
 } from "@/lib/types/success-story";
 
 export const metadata: Metadata = {
-  title: "Success Stories — BJS Prep",
+  title: "Success Stories — LegalPath Bangladesh",
   description:
-    "Read how BJS Prep students prepared for and cleared the Bangladesh Judicial Service exam.",
+    "Read how LegalPath Bangladesh students prepared for and cleared the Bangladesh Judicial Service exam.",
 };
 
 export const revalidate = 60;

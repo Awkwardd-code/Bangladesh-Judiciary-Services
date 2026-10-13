@@ -340,7 +340,7 @@ export function ExamClient({ exam, questions, attempt }: ExamProps) {
 
           <div className="mt-6 flex items-center justify-end gap-3">
             <Link
-              href="/dashboard/mock-exams"
+              href="/dashboard/exams"
               className="inline-flex h-11 items-center rounded-md border border-border px-4 text-sm text-foreground"
             >
               Cancel

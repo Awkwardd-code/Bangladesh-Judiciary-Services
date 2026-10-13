@@ -15,10 +15,12 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
     const params = new URL(req.url).searchParams;
     const { page, limit } = parsePagination(params);
     const category = params.get("category")?.trim();
+    const programKind = params.get("programKind");
 
     const filter: Record<string, unknown> = {
       isPublished: true,
       status: "published",
+      programKind: programKind === "exam" ? "exam" : { $ne: "exam" },
     };
 
     if (category) {
@@ -44,12 +46,17 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
               course._id,
             )
           : {
-              hasAccess: course.price === 0,
-              reason: course.price === 0 ? ("free" as const) : ("none" as const),
-            };
+                hasAccess:
+                  course.price === 0 && course.programKind !== "exam",
+                reason:
+                  course.price === 0 && course.programKind !== "exam"
+                    ? ("free" as const)
+                    : ("none" as const),
+              };
 
         return {
           id: course._id.toString(),
+          programKind: course.programKind ?? "course",
           title: course.title,
           slug: course.slug,
           description: course.description,

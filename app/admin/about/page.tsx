@@ -6,7 +6,7 @@ import { defaultAboutSeed } from "@/lib/seed/about-default";
 import type { About, AboutShape } from "@/lib/types/about";
 
 export const metadata: Metadata = {
-  title: "About — Admin — BJS Prep",
+  title: "About — Admin — LegalPath Bangladesh",
 };
 
 export const dynamic = "force-dynamic";

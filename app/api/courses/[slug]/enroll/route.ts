@@ -29,8 +29,12 @@ export async function POST(
 
     const course = await (await coursesCol()).findOne({ slug });
 
-    if (!course) {
+    if (!course || course.status !== "published" || !course.isPublished) {
       return fail("Course not found", 404);
+    }
+
+    if (course.price > 0) {
+      return fail("Paid courses require payment details before enrollment.", 400);
     }
 
     const userId = new ObjectId(session.userId);

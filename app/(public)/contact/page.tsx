@@ -5,8 +5,8 @@ import { ContactGrid } from "@/components/sections/contact-grid";
 import { ContactFaq } from "@/components/sections/contact-faq";
 
 export const metadata: Metadata = {
-  title: "Contact — BJS Prep",
-  description: "Get in touch with the BJS Prep team.",
+  title: "Contact — LegalPath Bangladesh",
+  description: "Get in touch with the LegalPath Bangladesh team.",
 };
 
 export default function ContactPage() {

@@ -8,6 +8,7 @@ const freeTestFields = {
   // NOTE: 0 means serve every written question in the pool.
   writtenQuestionsPerAttempt: z.number().int().min(0).max(500).default(0),
   durationMinutes: z.number().int().min(0).max(600).optional(),
+  negativeMarking: z.number().min(0).max(2).default(0),
   passMarkPercent: z.number().int().min(1).max(100).default(50),
   // NOTE: 0 means serve every preliminary question in the pool.
   questionsPerAttempt: z.number().int().min(0).max(500).default(0),
@@ -65,6 +66,7 @@ export const freeTestUpdateSchema = z
       freeTestFields.writtenDurationMinutes.removeDefault(),
     writtenQuestionsPerAttempt:
       freeTestFields.writtenQuestionsPerAttempt.removeDefault(),
+    negativeMarking: freeTestFields.negativeMarking.removeDefault(),
     passMarkPercent: freeTestFields.passMarkPercent.removeDefault(),
     questionsPerAttempt: freeTestFields.questionsPerAttempt.removeDefault(),
     order: freeTestFields.order.removeDefault(),

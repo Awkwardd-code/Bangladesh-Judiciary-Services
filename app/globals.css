@@ -3,15 +3,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f3ec;
-  --foreground: #14110c;
-  --primary: #12213f;
-  --primary-dark: #0a1428;
-  --accent: #b87333;
-  --muted: #6e6960;
+  --background: #f7f5ef;
+  --foreground: #20252d;
+  --primary: #14233b;
+  --primary-dark: #0d1729;
+  --accent: #8a641f;
+  --accent-soft: #b78a3b;
+  --accent-on-dark: #d5ad69;
+  --muted: #68717d;
   --card: #ffffff;
-  --border: #e8e1d5;
-  --cream: #f7f3ec;
+  --border: #e5e0d6;
+  --cream: #f7f5ef;
+  --chart-grid: #e5e0d6;
+  --chart-label: #68717d;
+  --chart-tooltip: #ffffff;
+  --chart-primary: #14233b;
+  --chart-accent: #8a641f;
+  --chart-text: #20252d;
 }
 
 @theme inline {
@@ -20,6 +28,8 @@
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-on-dark: var(--accent-on-dark);
   --color-card: var(--card);
   --color-cream: var(--cream);
   --color-muted: var(--muted);
@@ -140,11 +150,11 @@ button {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 4px;
-  background: rgba(110, 105, 96, 0.25);
+  background: color-mix(in srgb, var(--muted) 28%, transparent);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 105, 96, 0.45);
+  background: color-mix(in srgb, var(--muted) 48%, transparent);
 }
 
 .dark ::-webkit-scrollbar-thumb {
@@ -156,25 +166,41 @@ button {
 }
 
 .dark [data-theme-scope="authenticated"] {
-  --background: #0b1220;
-  --foreground: #f1efe9;
-  --primary: #1e3a6b;
-  --primary-dark: #0a1428;
-  --accent: #d08a47;
+  --background: #101827;
+  --foreground: #f2f0e9;
+  --primary: #263b5b;
+  --primary-dark: #0a111d;
+  --accent: #d5ad69;
+  --accent-soft: #d5ad69;
+  --accent-on-dark: #d5ad69;
   --muted: #9ca3af;
-  --card: #111a2e;
-  --border: #1f2a44;
+  --card: #151f30;
+  --border: #2b374a;
+  --chart-grid: #344154;
+  --chart-label: #aab3c0;
+  --chart-tooltip: #151f30;
+  --chart-primary: #d5ad69;
+  --chart-accent: #d5ad69;
+  --chart-text: #f2f0e9;
 }
 
 .dark {
-  --background: #0b1220;
-  --foreground: #f1efe9;
-  --primary: #1e3a6b;
-  --primary-dark: #0a1428;
-  --accent: #d08a47;
+  --background: #101827;
+  --foreground: #f2f0e9;
+  --primary: #263b5b;
+  --primary-dark: #0a111d;
+  --accent: #d5ad69;
+  --accent-soft: #d5ad69;
+  --accent-on-dark: #d5ad69;
   --muted: #9ca3af;
-  --card: #111a2e;
-  --border: #1f2a44;
+  --card: #151f30;
+  --border: #2b374a;
+  --chart-grid: #344154;
+  --chart-label: #aab3c0;
+  --chart-tooltip: #151f30;
+  --chart-primary: #d5ad69;
+  --chart-accent: #d5ad69;
+  --chart-text: #f2f0e9;
 }
 
 .book-loader {
@@ -182,7 +208,7 @@ button {
   width: 96px;
   height: 120px;
   perspective: 1200px;
-  filter: blur(1.25px) drop-shadow(0 8px 18px rgba(18, 33, 63, 0.12));
+  filter: blur(1.25px) drop-shadow(0 8px 18px rgba(20, 35, 59, 0.12));
   opacity: 0.78;
 }
 
@@ -196,7 +222,7 @@ button {
   inset: 0;
   border: 1px solid #536078;
   border-radius: 6px;
-  background: #29374e;
+  background: #263B5B;
 }
 
 .book-loader__pages {
@@ -207,8 +233,8 @@ button {
   width: 46%;
   transform-origin: left center;
   border-radius: 0 4px 4px 0;
-  background: #e8e5df;
-  box-shadow: inset -2px 0 4px rgba(18, 33, 63, 0.08);
+  background: #E5E0D6;
+  box-shadow: inset -2px 0 4px rgba(20, 35, 59, 0.08);
 }
 
 .book-loader__pages--1 {
@@ -234,7 +260,7 @@ button {
   animation: coverOpen 1.8s ease-in-out infinite;
   border: 1px solid #536078;
   border-radius: 0 6px 6px 0;
-  background: linear-gradient(135deg, #3b4a63 0%, #58657a 100%);
+  background: linear-gradient(135deg, #35445D 0%, #53627A 100%);
 }
 
 .book-loader__cover::after {
@@ -244,9 +270,9 @@ button {
   left: 7.5%;
   height: 1%;
   border-radius: 2px;
-  background: #a58a70;
+  background: #B78A3B;
   box-shadow:
-    0 5px 0 #a58a70,
+    0 5px 0 #B78A3B,
     0 10px 0 rgba(165, 138, 112, 0.45);
   content: "";
   opacity: 0.9;
@@ -261,7 +287,7 @@ button {
   width: 3.75%;
   transform: translateX(-50%);
   border-radius: 3px;
-  background: linear-gradient(to right, #29374e 0%, #45536a 50%, #29374e 100%);
+  background: linear-gradient(to right, #263B5B 0%, #40506A 50%, #263B5B 100%);
 }
 
 .shimmer-sweep {
@@ -270,9 +296,9 @@ button {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(18, 33, 63, 0.06) 25%,
-    rgba(18, 33, 63, 0.12) 50%,
-    rgba(18, 33, 63, 0.06) 75%,
+    rgba(20, 35, 59, 0.06) 25%,
+    rgba(20, 35, 59, 0.12) 50%,
+    rgba(20, 35, 59, 0.06) 75%,
     transparent 100%
   );
 }
@@ -399,6 +425,6 @@ button {
 
   .shimmer-sweep {
     transform: none;
-    background: rgba(18, 33, 63, 0.06);
+    background: rgba(20, 35, 59, 0.06);
   }
 }

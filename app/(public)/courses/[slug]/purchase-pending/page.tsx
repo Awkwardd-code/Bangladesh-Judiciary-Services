@@ -41,7 +41,9 @@ export default async function PurchasePendingPage({
     <PurchasePendingCard
       course={{
         title: course.title,
-        price: course.price,
+        price: Math.round(
+          course.price * (1 - (course.discountPercent ?? 0) / 100),
+        ),
       }}
     />
   );

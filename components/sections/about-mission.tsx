@@ -32,7 +32,7 @@ export function AboutMission({ about }: { about: AboutShape }) {
                 ))
               ) : (
                 <p className="max-w-prose text-base leading-7 text-muted lg:text-[16px]">
-                  BJS Prep was built to address the real pain points students face while preparing for the Bangladesh Judicial Service examination.
+                  LegalPath Bangladesh was built to address the real pain points students face while preparing for the Bangladesh Judicial Service examination.
                 </p>
               )}
             </div>

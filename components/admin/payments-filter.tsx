@@ -57,7 +57,8 @@ export function PaymentsFilter() {
         options={[
           { value: "bkash", label: "bKash" },
           { value: "nagad", label: "Nagad" },
-          { value: "bank", label: "Bank" },
+          { value: "upay", label: "Upay" },
+          { value: "bank", label: "Bank (legacy)" },
         ]}
       />
       <label className="flex h-10 items-center gap-2 text-xs text-muted">

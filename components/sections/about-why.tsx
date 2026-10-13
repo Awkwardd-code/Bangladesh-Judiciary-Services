@@ -30,7 +30,7 @@ export function AboutWhy({ about }: { about: AboutShape }) {
                 Scattered preparation
               </p>
               <p className="text-[13px] font-semibold uppercase tracking-[0.2em] text-primary">
-                BJS Prep
+                LegalPath Bangladesh
               </p>
             </div>
 
@@ -101,7 +101,7 @@ export function AboutWhy({ about }: { about: AboutShape }) {
 
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
             <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-primary">
-              BJS Prep
+              LegalPath Bangladesh
             </p>
             <ul className="mt-4 space-y-3">
               {prepRows.length > 0 ? (

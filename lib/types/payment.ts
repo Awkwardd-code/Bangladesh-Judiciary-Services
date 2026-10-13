@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import type { BaseDoc } from "./common";
 
 export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
-export type PaymentMethod = "bkash" | "nagad" | "bank";
+export type PaymentMethod = "bkash" | "nagad" | "upay";
 
 export type Payment = BaseDoc & {
   userId: ObjectId;

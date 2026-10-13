@@ -242,7 +242,7 @@ export function ShareYourStory() {
               }
               <Quote className="text-3xl text-accent" strokeWidth={1.5} />
               <p className="mt-2 text-[15px] leading-7 text-foreground">
-                &ldquo;BJS Prep helped me understand that the exam was about
+                &ldquo;LegalPath Bangladesh helped me understand that the exam was about
                 reasoning, not memorisation.&rdquo;
               </p>
               <div className="mt-4 flex items-center gap-3">

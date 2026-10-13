@@ -19,6 +19,7 @@ export type FreeTest = BaseDoc & {
   writtenQuestionsPerAttempt?: number;
   /** @deprecated Use phase-specific durations. */
   durationMinutes: number;
+  negativeMarking?: number;
   passMarkPercent: number;
   questionsPerAttempt: number;
   questions: FreeTestQuestionRef[];

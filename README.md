@@ -1,10 +1,10 @@
-# BJS Prep
+# LegalPath Bangladesh
 
-BJS Prep is a Next.js-based learning and preparation platform built for students preparing for Bangladesh Judicial Service exams and related academic progression. The product combines public marketing pages, course discovery, learner dashboards, admin management, mock exam workflows, payments, notices, and content publishing in one system.
+LegalPath Bangladesh is a Next.js-based learning and preparation platform built for students preparing for Bangladesh Judicial Service exams and related academic progression. The product combines public marketing pages, course discovery, learner dashboards, admin management, mock exam workflows, payments, notices, and content publishing in one system.
 
 ## Product overview
 
-BJS Prep is designed to help students:
+LegalPath Bangladesh is designed to help students:
 
 - discover courses and exam pathways
 - register and verify their accounts
@@ -85,7 +85,7 @@ The platform is structured around a public-facing website and an authenticated s
 - Tailwind CSS v4
 - shadcn/ui
 - MongoDB Atlas / MongoDB driver
-- Node.js 20+
+- Node.js 22.x (matches the version pinned in `.nvmrc` and `package.json`)
 - React 19
 - Cloudinary
 - Nodemailer
@@ -176,6 +176,13 @@ Copy `.env.example` to `.env.local` and fill in the values before running the ap
 | `CLOUDINARY_API_KEY` | Optional | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Optional | Cloudinary API secret |
 
+For production, configure these values in the hosting provider rather than
+committing them. Set `NEXT_PUBLIC_APP_URL` to the exact HTTPS origin users will
+visit. Use a production MongoDB URI with network access enabled for the hosting
+provider. `JWT_SECRET` must contain at least 32 characters. Email credentials
+are required for verification and password recovery; configure the Cloudinary
+variables for the upload and private-download features that use them.
+
 ## Local setup
 
 1. Clone the repository.
@@ -224,8 +231,9 @@ This validates that the app builds and runs in production mode.
 2. Import the project into Vercel.
 3. Add all environment variables in the Vercel dashboard.
 4. Set `NEXT_PUBLIC_APP_URL` to the live Vercel domain.
-5. Deploy the project.
-6. Confirm the health endpoint responds successfully:
+5. Use Node.js 22.x for local builds and deployment.
+6. Deploy the project.
+7. Confirm the health endpoint responds successfully:
 
 ```text
 /api/health
@@ -245,6 +253,10 @@ It returns JSON with:
 - `env`
 - `time`
 - `dbOk`
+
+The endpoint returns HTTP 200 only when the application can reach MongoDB; it
+returns HTTP 503 with `ok: false` and `dbOk: false` when the database is
+unavailable.
 
 ## Admin responsibilities
 

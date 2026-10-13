@@ -14,7 +14,7 @@ type TierEntry = {
   count: number;
 };
 
-const colors = ["#12213F", "#B87333"];
+const colors = ["var(--chart-primary)", "var(--chart-accent)"];
 
 export function TierDistributionChart({ data }: { data: TierEntry[] }) {
   const total = data.reduce((sum, entry) => sum + entry.count, 0);
@@ -42,9 +42,11 @@ export function TierDistributionChart({ data }: { data: TierEntry[] }) {
               </Pie>
               <Tooltip
                 contentStyle={{
-                  border: "1px solid #E8E1D5",
+                  border: "1px solid var(--chart-grid)",
                   borderRadius: 6,
                   fontSize: 12,
+                  backgroundColor: "var(--chart-tooltip)",
+                  color: "var(--chart-text)",
                 }}
               />
               <Legend

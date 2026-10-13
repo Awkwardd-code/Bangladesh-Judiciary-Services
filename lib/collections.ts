@@ -7,6 +7,9 @@ import type { SuccessStory } from "./types/success-story";
 import type { PasswordResetToken } from "./types/password-reset-token";
 import type { PendingRegistration } from "./types/pending-registration";
 import type {
+  Exam,
+  ExamAttempt,
+  ExamQuestion,
   PreliminaryAttempt,
   PreliminaryExam,
   PreliminaryQuestion,
@@ -41,6 +44,18 @@ export async function passwordResetTokensCol(): Promise<
   return (await getDb()).collection<PasswordResetToken>(
     "password_reset_tokens",
   );
+}
+
+export async function examsCol(): Promise<Collection<Exam>> {
+  return (await getDb()).collection<Exam>("exams");
+}
+
+export async function examQuestionsCol(): Promise<Collection<ExamQuestion>> {
+  return (await getDb()).collection<ExamQuestion>("exam_questions");
+}
+
+export async function examAttemptsCol(): Promise<Collection<ExamAttempt>> {
+  return (await getDb()).collection<ExamAttempt>("exam_attempts");
 }
 
 export async function preliminaryExamsCol(): Promise<

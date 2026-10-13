@@ -90,22 +90,24 @@ export default async function ExamResultsPage({
   const questionById = new Map(
     questions.map((question) => [question._id.toString(), question]),
   );
-  const resultQuestions = attempt.answers.flatMap((answer) => {
-    const question = questionById.get(answer.questionId.toString());
-    if (!question) return [];
+  const resultQuestions = attempt.answers.flatMap(
+    (answer: (typeof attempt.answers)[number]) => {
+      const question = questionById.get(answer.questionId.toString());
+      if (!question) return [];
 
-    return [
-      {
-        id: question._id.toString(),
-        questionText: question.questionText,
-        studentAnswer: answer.selectedOptionIndex,
-        correctAnswer: question.correctOptionIndex,
-        options: question.options,
-        explanation: question.explanation,
-        marks: question.marks,
-      },
-    ];
-  });
+      return [
+        {
+          id: question._id.toString(),
+          questionText: question.questionText,
+          studentAnswer: answer.selectedOptionIndex,
+          correctAnswer: question.correctOptionIndex,
+          options: question.options,
+          explanation: question.explanation,
+          marks: question.marks,
+        },
+      ];
+    },
+  );
 
   const result = {
     examTitle: exam.title,

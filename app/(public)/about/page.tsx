@@ -18,7 +18,7 @@ import type { PublicMentor } from "@/lib/types/mentor";
 import type { PublicSuccessStory } from "@/lib/types/success-story";
 
 export const metadata: Metadata = {
-  title: "About — BJS Prep",
+  title: "About — LegalPath Bangladesh",
   description:
     "Built to prepare serious candidates for the Bangladesh Judicial Service exam.",
 };

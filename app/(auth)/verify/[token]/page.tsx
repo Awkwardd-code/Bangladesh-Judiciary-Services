@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { VerifyCard } from "@/components/auth/verify-card";
 
 export const metadata: Metadata = {
-  title: "Verify Email — BJS Prep",
+  title: "Verify Email — LegalPath Bangladesh",
 };
 
 export default async function VerifyPage({

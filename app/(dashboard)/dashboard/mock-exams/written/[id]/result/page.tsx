@@ -19,11 +19,11 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return { title: "Result — BJS Prep" };
+  if (!ObjectId.isValid(id)) return { title: "Result — LegalPath Bangladesh" };
   const exam = await (await writtenExamsCol()).findOne({
     _id: new ObjectId(id),
   });
-  return { title: `Result — ${exam?.title ?? "Written exam"} — BJS Prep` };
+  return { title: `Result — ${exam?.title ?? "Written exam"} — LegalPath Bangladesh` };
 }
 
 export default async function WrittenResultPage({
@@ -88,27 +88,29 @@ export default async function WrittenResultPage({
     submission.selectedQuestionIds?.length
       ? submission.selectedQuestionIds
       : answers.map((answer) => answer.questionId);
-  const resultQuestions = orderedIds.flatMap((questionId, position) => {
-    const question = questionMap.get(questionId.toString());
-    if (!question) return [];
-    const answer = answersMap.get(questionId.toString());
-    const score = scoreMap.get(questionId.toString());
-    return [
-      {
-        position,
-        questionId: question._id.toString(),
-        questionText: question.questionText,
-        marks: question.maxMarks,
-        maxMarks: question.maxMarks,
-        subject: question.subject ?? "General",
-        pdfUrl: answer?.pdfUrl ?? null,
-        awardedMarks:
-          submission.status === "graded" ? score?.awardedMarks : undefined,
-        comment:
-          submission.status === "graded" ? score?.comment : undefined,
-      },
-    ];
-  });
+  const resultQuestions = orderedIds.flatMap(
+    (questionId: ObjectId, position: number) => {
+      const question = questionMap.get(questionId.toString());
+      if (!question) return [];
+      const answer = answersMap.get(questionId.toString());
+      const score = scoreMap.get(questionId.toString());
+      return [
+        {
+          position,
+          questionId: question._id.toString(),
+          questionText: question.questionText,
+          marks: question.maxMarks,
+          maxMarks: question.maxMarks,
+          subject: question.subject ?? "General",
+          pdfUrl: answer?.pdfUrl ?? null,
+          awardedMarks:
+            submission.status === "graded" ? score?.awardedMarks : undefined,
+          comment:
+            submission.status === "graded" ? score?.comment : undefined,
+        },
+      ];
+    },
+  );
 
   return (
     <ExamResultView

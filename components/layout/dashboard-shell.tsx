@@ -20,7 +20,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         `}
       >
         <DashboardHeader />
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="relative flex-1 bg-[radial-gradient(ellipse_at_top_left,rgba(184,115,51,0.07),transparent_32rem)] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
+          {children}
+        </main>
       </div>
       <Toaster />
     </div>

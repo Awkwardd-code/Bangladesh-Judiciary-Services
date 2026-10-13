@@ -14,37 +14,56 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { ExamPlanEditor } from "@/components/admin/exam-plan-editor";
 import { AdminExamDetailSkeleton } from "@/components/skeletons/admin-exam-detail-skeleton";
 import { ExamLifecycleBar } from "@/components/admin/exam-lifecycle-bar";
 import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
 import { ExamEditor } from "@/components/admin/exam-editor";
 import { ImportExcelDialog } from "@/components/admin/import-excel-dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { QuestionEditor } from "@/components/admin/question-editor";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toaster";
+import type { SerializedExamSegment } from "@/lib/types/exam";
 
-type Question = {
+export type AdminExamQuestion = {
   _id: string;
   order: number;
   questionText: string;
-  options: string[];
-  correctOptionIndex: number;
+  options?: string[];
+  correctOptionIndex?: number;
   marks: number;
+  maxMarks?: number;
   subject?: string;
   explanation?: string;
 };
-type Exam = {
+export type AdminExamDetail = {
   _id: string;
+  courseId: string;
+  segmentId: string;
+  subSegmentId: string;
+  kind: "preliminary" | "written";
   title: string;
+  description?: string;
   status: "draft" | "published" | "archived";
+  type?: "free" | "paid";
+  price?: number;
+  discountedPrice?: number;
+  validityMonths?: number;
+  discountTill?: string | Date;
+  purchaseMode?: "complete" | "specific";
   totalQuestions: number;
   totalMarks: number;
   questionsPerAttempt?: number;
   durationMinutes: number;
-  description?: string;
+  passMarkPercent?: number;
   negativeMarking?: number;
   scheduledAt?: string | Date;
   closesAt?: string | Date;
+  order?: number;
+  segments?: SerializedExamSegment[];
 };
 
 type Attempt = {
@@ -56,35 +75,91 @@ type Attempt = {
   user: { name: string; email: string } | null;
 };
 
-export function ExamDetailClient({ examId }: { examId: string }) {
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+function toLocalDateTime(value?: string | Date) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+}
+
+export function ExamDetailClient({
+  examId,
+  initialExam,
+  initialQuestions,
+}: {
+  examId: string;
+  initialExam: AdminExamDetail;
+  initialQuestions: AdminExamQuestion[];
+}) {
+  const [exam, setExam] = useState<AdminExamDetail | null>(initialExam);
+  const [questions, setQuestions] =
+    useState<AdminExamQuestion[]>(initialQuestions);
+  const [segments, setSegments] = useState<SerializedExamSegment[]>(
+    initialExam.segments ?? [],
+  );
   const [formOpen, setFormOpen] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
-    null
+    null,
   );
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "questions" | "settings" | "attempts"
+    "overview" | "plan" | "questions" | "settings" | "attempts"
   >("questions");
   const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [question, setQuestion] = useState({
-    questionText: "",
-    options: ["", "", "", ""],
-    correctOptionIndex: 0,
-    marks: "1",
-    subject: "",
-    explanation: "",
-  });
+  const [savingPlan, setSavingPlan] = useState(false);
+
+  const tabs = ["overview", "plan", "questions", "settings", "attempts"] as const;
+
+  const planQuestions = questions.map((question) => ({
+    id: question._id,
+    questionText: question.questionText,
+    kind:
+      question.options && question.options.length > 0
+        ? ("preliminary" as const)
+        : ("written" as const),
+    marks: question.marks ?? 1,
+    subject: question.subject,
+  }));
+
+  function updateExam<K extends keyof AdminExamDetail>(
+    key: K,
+    value: AdminExamDetail[K],
+  ) {
+    setExam((current) =>
+      current ? { ...current, [key]: value } : current,
+    );
+  }
 
   const load = useCallback(async () => {
-    const response = await fetch(`/api/admin/preliminary-exams/${examId}`);
+    const response = await fetch(`/api/admin/exams/${examId}`);
     const result = (await response.json()) as {
-      data?: { exam?: Exam; questions?: Question[] };
+      data?: {
+        exam?: AdminExamDetail;
+        questions?: AdminExamQuestion[];
+      };
     };
-    setExam(result.data?.exam ?? null);
+
+    const nextExam = result.data?.exam ?? null;
+    setExam(nextExam);
     setQuestions(result.data?.questions ?? []);
-  }, [examId]);
+    setSegments(nextExam?.segments ?? initialExam.segments ?? []);
+  }, [examId, initialExam.segments]);
+
+  useEffect(() => {
+    if (!exam) {
+      return;
+    }
+
+    setSegments(exam.segments ?? []);
+  }, [exam]);
 
   useEffect(() => {
     void load();
@@ -100,7 +175,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
     async function loadAttempts() {
       try {
         const response = await fetch(
-          `/api/admin/preliminary-exams/${examId}/attempts`
+          `/api/admin/exams/${examId}/attempts`
         );
         const result = (await response.json()) as {
           error?: string;
@@ -132,72 +207,104 @@ export function ExamDetailClient({ examId }: { examId: string }) {
     };
   }, [activeTab, examId]);
 
-  function openQuestionEditor(item?: Question) {
-    setEditingQuestionId(item?._id ?? null);
-    setQuestion(
-      item
-        ? {
-            questionText: item.questionText,
-            options: [...item.options],
-            correctOptionIndex: item.correctOptionIndex,
-            marks: String(item.marks),
-            subject: item.subject ?? "",
-            explanation: item.explanation ?? "",
-          }
-        : {
-            questionText: "",
-            options: ["", "", "", ""],
-            correctOptionIndex: 0,
-            marks: "1",
-            subject: "",
-            explanation: "",
-          }
-    );
-    setFormOpen(true);
-  }
-
-  async function saveQuestion() {
+  async function handleSaveOverview() {
+    if (!exam) {
+      return;
+    }
     setError("");
 
     try {
-      const questionId = editingQuestionId;
-      const response = await fetch(
-        questionId
-          ? `/api/admin/preliminary-exams/${examId}/questions/${questionId}`
-          : `/api/admin/preliminary-exams/${examId}/questions`,
-        {
-          method: questionId ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...question,
-            marks: Number(question.marks),
-            order:
-              questions.find((item) => item._id === questionId)?.order ??
-              Math.max(0, ...questions.map((item) => item.order)) + 1,
-          }),
-        }
-      );
-      const result = (await response.json()) as { error?: string };
+      const response = await fetch(`/api/admin/exams/${examId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: exam.title.trim(),
+          description: exam.description?.trim() ?? "",
+          kind: exam.kind,
+          type: exam.type ?? "paid",
+          price: Number(exam.price ?? 0),
+          discountedPrice: exam.discountedPrice,
+          validityMonths: Number(exam.validityMonths ?? 12),
+          discountTill: exam.discountTill
+            ? new Date(exam.discountTill).toISOString()
+            : undefined,
+          purchaseMode: exam.purchaseMode ?? "complete",
+          durationMinutes: Number(exam.durationMinutes),
+          passMarkPercent: Number(exam.passMarkPercent ?? 50),
+          negativeMarking: Number(exam.negativeMarking ?? 0),
+          scheduledAt: exam.scheduledAt
+            ? new Date(exam.scheduledAt).toISOString()
+            : undefined,
+          closesAt: exam.closesAt
+            ? new Date(exam.closesAt).toISOString()
+            : undefined,
+          order: Number(exam.order ?? 0),
+        }),
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        data?: { exam?: AdminExamDetail };
+      };
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Unable to save question.");
+        throw new Error(result.error ?? "Unable to save exam overview.");
       }
 
-      setFormOpen(false);
       await load();
+      toast("Overview saved.", "success");
     } catch (caughtError) {
-      setError(
+      const message =
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to save question."
-      );
+          : "Unable to save exam overview.";
+      setError(message);
+      toast(message, "error");
     }
+  }
+
+  async function handleSavePlan() {
+    setSavingPlan(true);
+
+    try {
+      const response = await fetch(`/api/admin/exams/${examId}/segments`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ segments }),
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        data?: { segments?: SerializedExamSegment[] };
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to save exam plan.");
+      }
+
+      const nextSegments = result.data?.segments ?? segments;
+      setSegments(nextSegments);
+      await load();
+      toast("Plan saved.");
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to save exam plan.";
+      setError(message);
+      toast(message, "error");
+    } finally {
+      setSavingPlan(false);
+    }
+  }
+
+  function openQuestionEditor(item?: AdminExamQuestion) {
+    setEditingQuestionId(item?._id ?? null);
+    setFormOpen(true);
   }
 
   async function removeQuestion(id: string) {
     if (window.confirm("Delete this question?")) {
       const response = await fetch(
-        `/api/admin/preliminary-exams/${examId}/questions/${id}`,
+        `/api/admin/exams/${examId}/questions/${id}`,
         { method: "DELETE" }
       );
       const result = (await response.json()) as { error?: string };
@@ -211,7 +318,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
     }
   }
 
-  async function moveQuestion(item: Question, direction: -1 | 1) {
+  async function moveQuestion(item: AdminExamQuestion, direction: -1 | 1) {
     const index = questions.findIndex(
       (questionItem) => questionItem._id === item._id
     );
@@ -231,7 +338,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
 
     for (const change of changes) {
       const response = await fetch(
-        `/api/admin/preliminary-exams/${examId}/questions/${change.question._id}`,
+        `/api/admin/exams/${examId}/questions/${change.question._id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -255,7 +362,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
         : exam?.status === "archived"
           ? "published"
           : "published";
-    const response = await fetch(`/api/admin/preliminary-exams/${examId}`, {
+    const response = await fetch(`/api/admin/exams/${examId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus }),
@@ -273,8 +380,8 @@ export function ExamDetailClient({ examId }: { examId: string }) {
   if (!exam) return <AdminExamDetailSkeleton />;
   return (
     <div className="mx-auto max-w-5xl">
-      <Link href="/admin/mock-exams" className="text-sm text-accent">
-        ← Mock exams
+      <Link href="/admin/exams" className="text-sm text-accent">
+        ← Exams
       </Link>
       <div className="sticky top-0 z-30 mt-4 flex flex-col gap-3 border-b border-border bg-background/95 py-4 backdrop-blur sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -289,7 +396,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/exam/preliminary/${examId}`}
+            href={`/exam/${examId}`}
             target="_blank"
             className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-4 py-2 text-sm text-foreground"
           >
@@ -304,11 +411,17 @@ export function ExamDetailClient({ examId }: { examId: string }) {
             <Plus size={16} />
             Add question
           </button>
-          <ImportExcelDialog
-            examId={examId}
-            kind="mcq"
-            onImported={() => void load()}
-          />
+          {exam.kind === "preliminary" ? (
+            <ImportExcelDialog
+              examId={examId}
+              kind="mcq"
+              unifiedExam
+              onImported={(count) => {
+                void load();
+                toast(`${count} questions imported.`, "success");
+              }}
+            />
+          ) : null}
           <button
             type="button"
             onClick={() => void changeStatus()}
@@ -348,12 +461,12 @@ export function ExamDetailClient({ examId }: { examId: string }) {
           status={exam.status}
           totalQuestions={questions.length}
           requiredQuestions={exam.questionsPerAttempt ?? 1}
-          hasCourse={false}
+          hasCourse
         />
         <ExamReadinessCard
           totalQuestions={questions.length}
           requiredQuestions={exam.questionsPerAttempt ?? 1}
-          hasCourse={false}
+          hasCourse
         />
         {error ? (
           <p
@@ -364,7 +477,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
           </p>
         ) : null}
         <div className="flex gap-2 border-b border-border">
-          {(["questions", "settings", "attempts"] as const).map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               type="button"
@@ -375,11 +488,273 @@ export function ExamDetailClient({ examId }: { examId: string }) {
                   : "border-transparent text-muted hover:text-primary"
               }`}
             >
-              {tab}
+              {{
+                overview: "Overview",
+                plan: "Plan",
+                questions: "Questions",
+                settings: "Settings",
+                attempts: "Attempts",
+              }[tab]}
             </button>
           ))}
         </div>
-        {activeTab === "settings" ? (
+        {activeTab === "overview" ? (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleSaveOverview();
+            }}
+            className="space-y-5"
+          >
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="space-y-2 text-sm font-medium text-primary sm:col-span-2">
+                <span>Title</span>
+                <Input
+                  className="cursor-pointer"
+                  value={exam.title}
+                  onChange={(event) =>
+                    updateExam("title", event.target.value)
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary sm:col-span-2">
+                <span>Description</span>
+                <Textarea
+                  className="cursor-pointer"
+                  rows={3}
+                  value={exam.description ?? ""}
+                  onChange={(event) =>
+                    updateExam("description", event.target.value)
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Kind</span>
+                <Select
+                  className="w-full cursor-pointer"
+                  value={exam.kind}
+                  onChange={(event) =>
+                    updateExam(
+                      "kind",
+                      event.target.value === "written"
+                        ? "written"
+                        : "preliminary",
+                    )
+                  }
+                >
+                  <option value="preliminary">Preliminary</option>
+                  <option value="written">Written</option>
+                </Select>
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Type</span>
+                <Select
+                  className="w-full cursor-pointer"
+                  value={exam.type ?? "paid"}
+                  onChange={(event) =>
+                    updateExam(
+                      "type",
+                      event.target.value === "free" ? "free" : "paid",
+                    )
+                  }
+                >
+                  <option value="free">Free</option>
+                  <option value="paid">Paid</option>
+                </Select>
+              </label>
+
+              {exam.type === "paid" || !exam.type ? (
+                <>
+                  <label className="space-y-2 text-sm font-medium text-primary">
+                    <span>Price</span>
+                    <Input
+                      className="cursor-pointer"
+                      type="number"
+                      min={0}
+                      value={exam.price ?? 0}
+                      onChange={(event) =>
+                        updateExam("price", Number(event.target.value) || 0)
+                      }
+                    />
+                  </label>
+
+                  <label className="space-y-2 text-sm font-medium text-primary">
+                    <span>Discounted price</span>
+                    <Input
+                      className="cursor-pointer"
+                      type="number"
+                      min={0}
+                      value={exam.discountedPrice ?? ""}
+                      onChange={(event) =>
+                        updateExam(
+                          "discountedPrice",
+                          event.target.value === ""
+                            ? undefined
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
+                  </label>
+                </>
+              ) : null}
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Validity months</span>
+                <Input
+                  className="cursor-pointer"
+                  type="number"
+                  min={1}
+                  value={exam.validityMonths ?? 12}
+                  onChange={(event) =>
+                    updateExam(
+                      "validityMonths",
+                      Number(event.target.value) || 1,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Purchase mode</span>
+                <Select
+                  className="w-full cursor-pointer"
+                  value={exam.purchaseMode ?? "complete"}
+                  onChange={(event) =>
+                    updateExam(
+                      "purchaseMode",
+                      event.target.value === "specific"
+                        ? "specific"
+                        : "complete",
+                    )
+                  }
+                >
+                  <option value="complete">Complete Series</option>
+                  <option value="specific">Specific Test</option>
+                </Select>
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Duration (minutes)</span>
+                <Input
+                  className="cursor-pointer"
+                  type="number"
+                  min={1}
+                  value={exam.durationMinutes}
+                  onChange={(event) =>
+                    updateExam(
+                      "durationMinutes",
+                      Number(event.target.value) || 0,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Pass mark</span>
+                <Input
+                  className="cursor-pointer"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={exam.passMarkPercent ?? 50}
+                  onChange={(event) =>
+                    updateExam(
+                      "passMarkPercent",
+                      Number(event.target.value) || 0,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Negative marking</span>
+                <Input
+                  className="cursor-pointer"
+                  type="number"
+                  min={0}
+                  max={2}
+                  step={0.25}
+                  value={exam.negativeMarking ?? 0}
+                  onChange={(event) =>
+                    updateExam(
+                      "negativeMarking",
+                      Number(event.target.value) || 0,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Discount till</span>
+                <Input
+                  className="cursor-pointer"
+                  type="datetime-local"
+                  value={toLocalDateTime(exam.discountTill)}
+                  onChange={(event) =>
+                    updateExam(
+                      "discountTill",
+                      event.target.value || undefined,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Scheduled at</span>
+                <Input
+                  className="cursor-pointer"
+                  type="datetime-local"
+                  value={toLocalDateTime(exam.scheduledAt ?? undefined)}
+                  onChange={(event) =>
+                    updateExam(
+                      "scheduledAt",
+                      event.target.value || undefined,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Closes at</span>
+                <Input
+                  className="cursor-pointer"
+                  type="datetime-local"
+                  value={toLocalDateTime(exam.closesAt ?? undefined)}
+                  onChange={(event) =>
+                    updateExam("closesAt", event.target.value || undefined)
+                  }
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-primary">
+                <span>Order</span>
+                <Input
+                  className="cursor-pointer"
+                  type="number"
+                  value={exam.order ?? 0}
+                  onChange={(event) =>
+                    updateExam("order", Number(event.target.value) || 0)
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit">Save overview</Button>
+            </div>
+          </form>
+        ) : activeTab === "plan" ? (
+          <ExamPlanEditor
+            segments={segments}
+            questions={planQuestions}
+            onChange={(next) => setSegments(next)}
+            onSave={handleSavePlan}
+            saving={savingPlan}
+          />
+        ) : activeTab === "settings" ? (
           <ExamEditor exam={exam} onSaved={() => void load()} />
         ) : activeTab === "attempts" ? (
           attempts.length === 0 ? (
@@ -419,7 +794,17 @@ export function ExamDetailClient({ examId }: { examId: string }) {
                         {attempt.score} / {attempt.maxScore}
                       </td>
                       <td className="px-4 py-3 capitalize text-muted">
-                        {attempt.status.replaceAll("-", " ")}
+                        {exam.kind === "written" &&
+                        attempt.status !== "in-progress" ? (
+                          <Link
+                            href={`/admin/exam-review/${attempt.id}`}
+                            className="text-accent underline"
+                          >
+                            {attempt.status.replaceAll("-", " ")} · Review
+                          </Link>
+                        ) : (
+                          attempt.status.replaceAll("-", " ")
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -476,7 +861,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
                   </div>
                 </div>
                 <ol className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {item.options.map((option, index) => (
+                  {(item.options ?? []).map((option, index) => (
                     <li
                       key={option}
                       className={
@@ -502,94 +887,17 @@ export function ExamDetailClient({ examId }: { examId: string }) {
           </div>
         )}
       </div>
-      {formOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/70 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-border bg-card p-6">
-            <h2 className="font-heading text-xl font-bold text-primary">
-              {editingQuestionId ? "Edit question" : "Add question"}
-            </h2>
-            <div className="mt-5 space-y-3">
-              <Textarea
-                rows={4}
-                placeholder="Question text"
-                value={question.questionText}
-                onChange={(event) =>
-                  setQuestion({ ...question, questionText: event.target.value })
-                }
-              />
-              {question.options.map((option, index) => (
-                <Input
-                  key={index}
-                  placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                  value={option}
-                  onChange={(event) => {
-                    const options = [...question.options];
-                    options[index] = event.target.value;
-                    setQuestion({ ...question, options });
-                  }}
-                />
-              ))}
-              <label className="text-sm text-muted">
-                Correct option
-                <Select
-                  value={String(question.correctOptionIndex)}
-                  onChange={(event) =>
-                    setQuestion({
-                      ...question,
-                      correctOptionIndex: Number(event.target.value),
-                    })
-                  }
-                >
-                  <option value="0">A</option>
-                  <option value="1">B</option>
-                  <option value="2">C</option>
-                  <option value="3">D</option>
-                </Select>
-              </label>
-              <Input
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={question.marks}
-                onChange={(event) =>
-                  setQuestion({ ...question, marks: event.target.value })
-                }
-              />
-              <Input
-                placeholder="Subject"
-                value={question.subject}
-                onChange={(event) =>
-                  setQuestion({ ...question, subject: event.target.value })
-                }
-              />
-              <Textarea
-                rows={3}
-                placeholder="Explanation"
-                value={question.explanation}
-                onChange={(event) =>
-                  setQuestion({ ...question, explanation: event.target.value })
-                }
-              />
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setFormOpen(false)}
-                className="cursor-pointer px-4 text-sm text-muted"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveQuestion()}
-                className="cursor-pointer rounded-md bg-primary px-4 py-2 text-sm text-cream"
-              >
-                Save question
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <QuestionEditor
+        open={formOpen}
+        kind={exam.kind}
+        examId={examId}
+        question={
+          questions.find((item) => item._id === editingQuestionId) ?? null
+        }
+        nextOrder={Math.max(0, ...questions.map((item) => item.order)) + 1}
+        onSave={() => void load()}
+        onClose={() => setFormOpen(false)}
+      />
     </div>
   );
 }

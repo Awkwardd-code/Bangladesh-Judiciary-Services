@@ -52,7 +52,7 @@ export function AttemptActivityChart({
                     month: "short",
                   })
                 }
-                tick={{ fill: "#6E6960", fontSize: 11 }}
+                tick={{ fill: "var(--chart-label)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 minTickGap={24}
@@ -60,16 +60,18 @@ export function AttemptActivityChart({
               <YAxis
                 yAxisId="attempts"
                 allowDecimals={false}
-                tick={{ fill: "#6E6960", fontSize: 11 }}
+                tick={{ fill: "var(--chart-label)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis yAxisId="score" domain={[0, 100]} hide />
               <Tooltip
                 contentStyle={{
-                  border: "1px solid #E8E1D5",
+                  border: "1px solid var(--chart-grid)",
                   borderRadius: 6,
                   fontSize: 12,
+                  backgroundColor: "var(--chart-tooltip)",
+                  color: "var(--chart-text)",
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
@@ -78,7 +80,7 @@ export function AttemptActivityChart({
                 type="monotone"
                 dataKey="attempts"
                 name="Attempts"
-                stroke="#B87333"
+                stroke="var(--chart-accent)"
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />
@@ -87,7 +89,7 @@ export function AttemptActivityChart({
                 type="monotone"
                 dataKey="averageScore"
                 name="Average score (%)"
-                stroke="#12213F"
+                stroke="var(--chart-primary)"
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}

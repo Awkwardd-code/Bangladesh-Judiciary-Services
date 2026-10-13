@@ -12,6 +12,9 @@ export async function ensureIndexes(): Promise<void> {
   const users = db.collection("users");
   const pendingRegistrations = db.collection("pending_registrations");
   const passwordResetTokens = db.collection("password_reset_tokens");
+  const exams = db.collection("exams");
+  const examQuestions = db.collection("exam_questions");
+  const examAttempts = db.collection("exam_attempts");
   const preliminaryExams = db.collection("preliminary_exams");
   const preliminaryQuestions = db.collection("preliminary_questions");
   const preliminaryAttempts = db.collection("preliminary_attempts");
@@ -60,6 +63,20 @@ export async function ensureIndexes(): Promise<void> {
     { expiresAt: 1 },
     { expireAfterSeconds: 0 }
   );
+
+  await exams.createIndex({ status: 1, scheduledAt: -1 });
+  await exams.createIndex({ courseId: 1, segmentId: 1, subSegmentId: 1 });
+  await exams.createIndex({ kind: 1, status: 1 });
+
+  await examQuestions.createIndex({ examId: 1, order: 1 }, { unique: true });
+
+  await examAttempts.createIndex({ userId: 1, createdAt: -1 });
+  await examAttempts.createIndex({ examId: 1, userId: 1 });
+  await examAttempts.createIndex(
+    { userId: 1 },
+    { unique: true, partialFilterExpression: { activeLock: true } },
+  );
+  await examAttempts.createIndex({ status: 1, submittedAt: -1 });
 
   await preliminaryExams.createIndex({ status: 1, scheduledAt: -1 });
 

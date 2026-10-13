@@ -25,7 +25,7 @@ export function CourseMentors({ mentors }: { mentors: CourseMentor[] }) {
           >
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-primary/10">
               <Image
-                src={mentor.photoUrl ?? "/mentor.jpg"}
+                src={mentor.photoUrl ?? "/mentor.jpeg"}
                 alt={mentor.name}
                 fill
                 unoptimized

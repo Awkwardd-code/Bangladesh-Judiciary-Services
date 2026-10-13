@@ -9,7 +9,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Leaderboard — Admin — BJS Prep",
+  title: "Leaderboard — Admin — LegalPath Bangladesh",
 };
 
 export default async function LeaderboardPage() {

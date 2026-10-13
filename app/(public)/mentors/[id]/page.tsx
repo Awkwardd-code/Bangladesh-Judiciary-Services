@@ -26,14 +26,14 @@ export async function generateMetadata({ params }: MentorPageProps): Promise<Met
   const mentor = await findPublishedMentor(id);
 
   if (!mentor) {
-    return { title: "Mentor — BJS Prep" };
+    return { title: "Mentor — LegalPath Bangladesh" };
   }
 
   const description =
     mentor.bio.length > 160 ? `${mentor.bio.slice(0, 157)}...` : mentor.bio;
 
   return {
-    title: `${mentor.name} — BJS Prep`,
+    title: `${mentor.name} — LegalPath Bangladesh`,
     description,
   };
 }

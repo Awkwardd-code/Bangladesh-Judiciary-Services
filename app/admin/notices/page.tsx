@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { NoticesTable } from "@/components/admin/notices-table";
 
 export const metadata: Metadata = {
-  title: "Notices — Admin — BJS Prep",
+  title: "Notices — Admin — LegalPath Bangladesh",
   description: "Publish announcements to students.",
 };
 

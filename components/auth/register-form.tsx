@@ -274,7 +274,7 @@ export function RegisterForm() {
                 Create account
               </p>
               <h2 className="mt-2 font-heading text-2xl font-bold text-primary">
-                Start your BJS Prep journey.
+                Start your LegalPath Bangladesh journey.
               </h2>
             </div>
 

@@ -12,12 +12,12 @@ const aboutLinks = [
   ["Contact", "/contact"],
 ];
 
-const courseLinks = [
+const programLinks = [
+  ["BJS Programs", "/programs/BJS"],
+  ["BAR Programs", "/programs/BAR"],
+  ["LL.B Academy", "/programs/LLB"],
   ["All Courses", "/courses"],
-  ["Model Tests", "/model-tests"],
-  ["Preliminary Batch", "/courses?category=preliminary"],
-  ["Written Batch", "/courses?category=written"],
-  ["Foundation", "/courses?category=foundation"],
+  ["Model Tests", "/exam-courses"],
 ];
 
 const legalLinks = [
@@ -56,7 +56,7 @@ export function SiteFooter() {
               href="/"
               className="cursor-pointer font-heading text-xl font-bold text-cream transition-colors duration-150"
             >
-              BJS Prep
+              LegalPath Bangladesh
             </Link>
             <p className="mt-2 text-[13px] text-cream/60">
               Preparation for the Bangladesh Judicial Service exam.
@@ -95,8 +95,8 @@ export function SiteFooter() {
           <div className="lg:col-span-4">
             <p className="max-w-sm text-sm leading-7 text-cream/70">
               Structured, mentor-led courses and model tests for the Bangladesh
-              Judicial Service exam. Built for serious candidates preparing
-              from campus to court.
+              Judicial Service exam. Built for serious candidates preparing from
+              campus to court.
             </p>
 
             <div className="mt-6">
@@ -109,22 +109,38 @@ export function SiteFooter() {
                   href="mailto:support@bjsprep.com"
                   className="inline-flex cursor-pointer items-center gap-2 text-sm text-cream/70 transition-colors duration-150 hover:text-cream"
                 >
-                  <Mail aria-hidden="true" size={14} className="text-accent" />
+                  <Mail
+                    aria-hidden="true"
+                    size={14}
+                    className="text-accent-on-dark"
+                  />
                   support@bjsprep.com
                 </Link>
                 <Link
                   href="tel:+8801234567890"
                   className="inline-flex cursor-pointer items-center gap-2 text-sm text-cream/70 transition-colors duration-150 hover:text-cream"
                 >
-                  <Phone aria-hidden="true" size={14} className="text-accent" />
+                  <Phone
+                    aria-hidden="true"
+                    size={14}
+                    className="text-accent-on-dark"
+                  />
                   +880 1234 567890
                 </Link>
               </div>
             </div>
           </div>
 
-          <FooterColumn title="About" links={aboutLinks} className="lg:col-span-2" />
-          <FooterColumn title="Courses" links={courseLinks} className="lg:col-span-3" />
+          <FooterColumn
+            title="About"
+            links={aboutLinks}
+            className="lg:col-span-2"
+          />
+          <FooterColumn
+            title="Programs"
+            links={programLinks}
+            className="lg:col-span-3"
+          />
 
           <div className="lg:col-span-3">
             <FooterColumn title="Legal" links={legalLinks} />
@@ -169,7 +185,7 @@ export function SiteFooter() {
               />
               <button
                 type="submit"
-                className="h-10 cursor-pointer rounded-md bg-accent px-5 text-sm font-medium text-primary-dark transition-colors duration-150 hover:bg-accent/90"
+                className="h-10 cursor-pointer rounded-md bg-accent-soft px-5 text-sm font-medium text-primary-dark transition-colors duration-150 hover:bg-accent-soft/90"
               >
                 Subscribe
               </button>
@@ -182,9 +198,12 @@ export function SiteFooter() {
 
         <div className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
           <p className="text-xs text-cream/50">
-            © 2026 BJS Prep. All rights reserved.
+            © 2026 LegalPath Bangladesh. All rights reserved.
           </p>
-          <span aria-hidden="true" className="hidden text-accent md:block">
+          <span
+            aria-hidden="true"
+            className="hidden text-accent-on-dark md:block"
+          >
             ·
           </span>
           <nav aria-label="Legal links" className="flex items-center gap-4">

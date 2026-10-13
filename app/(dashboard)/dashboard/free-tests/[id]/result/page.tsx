@@ -20,9 +20,9 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return { title: "Result — BJS Prep" };
+  if (!ObjectId.isValid(id)) return { title: "Result — LegalPath Bangladesh" };
   const test = await (await freeTestsCol()).findOne({ _id: new ObjectId(id) });
-  return { title: `Result — ${test?.title ?? "Free test"} — BJS Prep` };
+  return { title: `Result — ${test?.title ?? "Free test"} — LegalPath Bangladesh` };
 }
 
 export default async function FreeTestResultPage({

@@ -10,7 +10,7 @@ export const termsSections: LegalSection[] = [
   {
     heading: "Introduction",
     paragraphs: [
-      "These Terms of Service govern your use of the BJS Prep platform, including its courses, model tests, materials, and related services.",
+      "These Terms of Service govern your use of the LegalPath Bangladesh platform, including its courses, model tests, materials, and related services.",
       "By creating an account or using the platform, you agree to follow these terms and any additional rules shown for a particular service.",
     ],
   },

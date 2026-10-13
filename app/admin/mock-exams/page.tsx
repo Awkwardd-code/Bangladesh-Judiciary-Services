@@ -5,7 +5,7 @@ import { WrittenExamsList } from "@/components/admin/written-exams-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const metadata: Metadata = {
-  title: "Model Tests — Admin — BJS Prep",
+  title: "Model Tests — Admin — LegalPath Bangladesh",
   description: "Create and manage preliminary model tests.",
 };
 

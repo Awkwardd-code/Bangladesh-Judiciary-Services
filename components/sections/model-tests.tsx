@@ -7,7 +7,7 @@ export function ModelTests() {
     <section className="bg-primary-dark py-12 text-cream md:py-20 lg:py-24">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:gap-16">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.15em] text-accent">
+          <p className="text-xs font-semibold uppercase tracking-[.15em] text-accent-on-dark">
             Model tests
           </p>
           <h2 className="mt-3 max-w-md font-heading text-3xl font-bold lg:text-[40px]">
@@ -20,8 +20,8 @@ export function ModelTests() {
           <Button
             href="/model-tests"
             className="
-              mt-8 w-full border border-accent bg-transparent text-accent
-              hover:bg-accent hover:text-primary-dark sm:w-auto
+              mt-8 w-full border border-accent-on-dark bg-transparent text-accent-on-dark
+              hover:bg-accent-soft hover:text-primary-dark sm:w-auto
             "
           >
             Try a Model Test

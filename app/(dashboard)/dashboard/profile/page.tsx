@@ -7,8 +7,8 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { usersCol } from "@/lib/collections";
 
 export const metadata: Metadata = {
-  title: "Profile — BJS Prep",
-  description: "Manage your BJS Prep account details and preferences.",
+  title: "Profile — LegalPath Bangladesh",
+  description: "Manage your LegalPath Bangladesh account details and preferences.",
 };
 
 export default async function ProfilePage() {

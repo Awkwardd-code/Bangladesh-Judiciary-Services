@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { WrittenSubmissionsList } from "@/components/admin/written-submissions-list";
 
 export const metadata: Metadata = {
-  title: "Written Submissions — Admin — BJS Prep",
+  title: "Written Submissions — Admin — LegalPath Bangladesh",
 };
 
 export default function WrittenSubmissionsPage() {

@@ -34,7 +34,10 @@ export const GET = withGuard(
         new ObjectId(session!.userId),
         material.courseId,
       );
-      if (!access.hasAccess && !material.isFreePreview) {
+      if (
+        !access.hasAccess &&
+        (course.programKind === "exam" || !material.isFreePreview)
+      ) {
         return fail("You do not have access to this material.", 403);
       }
 

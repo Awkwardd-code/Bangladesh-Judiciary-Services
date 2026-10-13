@@ -13,7 +13,7 @@ export function FinalCta() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/register"
-            className="inline-flex h-12 cursor-pointer items-center justify-center rounded-full bg-accent px-8 font-medium text-primary-dark hover:bg-accent/90"
+            className="inline-flex h-12 cursor-pointer items-center justify-center rounded-full bg-accent-soft px-8 font-medium text-primary-dark hover:bg-accent-soft/90"
           >
             Create Account
           </Link>
