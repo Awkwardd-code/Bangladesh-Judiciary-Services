@@ -9,7 +9,6 @@ type ExamPaperHeaderProps = {
   sessionYear: string;
   kind: "preliminary" | "written" | "free";
   timeLeftSeconds: number;
-  negativeMarking?: number;
   answeredCount: number;
   remainingCount: number;
   phase?: "preliminary" | "written" | null;
@@ -31,7 +30,6 @@ export function ExamPaperHeader({
   sessionYear,
   kind,
   timeLeftSeconds,
-  negativeMarking = 0,
   answeredCount,
   remainingCount,
   phase,
@@ -106,7 +104,11 @@ export function ExamPaperHeader({
             aria-live="polite"
             aria-atomic="true"
           >
-            <Check aria-hidden="true" size={17} className="shrink-0 text-emerald-600" />
+            <Check
+              aria-hidden="true"
+              size={17}
+              className="shrink-0 text-emerald-600"
+            />
             <div>
               <p className="text-xs text-muted">Answered</p>
               <p className="mt-1 font-mono text-base font-semibold text-primary">
@@ -144,11 +146,6 @@ export function ExamPaperHeader({
                 <span className="block text-xs capitalize text-muted">
                   {kind} exam
                 </span>
-                {negativeMarking > 0 && phase !== "written" ? (
-                  <span className="mt-1 block text-[10px] text-red-600">
-                    −{negativeMarking} per wrong answer
-                  </span>
-                ) : null}
               </div>
             </div>
           </div>

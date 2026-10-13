@@ -145,15 +145,30 @@ export async function POST(
       return fail("Question not found in this attempt.", 404);
     }
     if (answer.selectedOptionIndex !== null) {
-      return fail("This answer is already locked.", 409);
+      if (answer.selectedOptionIndex === parsed.data.selectedOptionIndex) {
+        return ok({ locked: true });
+      }
+
+      return fail("This answer is already locked.", 409, {
+        selectedOptionIndex: answer.selectedOptionIndex,
+      });
     }
 
     const now = new Date();
-    await attempts.updateOne(
+    const result = await attempts.updateOne(
       {
         _id: attemptId,
-        "answers.questionId": questionId,
-        "answers.selectedOptionIndex": null,
+        examId,
+        userId,
+        activeLock: true,
+        status: "in-progress",
+        expiresAt: { $gt: now },
+        answers: {
+          $elemMatch: {
+            questionId,
+            selectedOptionIndex: null,
+          },
+        },
       },
       {
         $set: {
@@ -163,6 +178,42 @@ export async function POST(
         },
       },
     );
+
+    if (result.modifiedCount !== 1) {
+      const latestAttempt = await attempts.findOne({
+        _id: attemptId,
+        examId,
+        userId,
+      });
+      const latestAnswer = latestAttempt?.answers.find((item) =>
+        item.questionId.equals(questionId)
+      );
+
+      if (
+        latestAttempt?.activeLock &&
+        latestAttempt.status === "in-progress" &&
+        latestAnswer?.selectedOptionIndex === parsed.data.selectedOptionIndex
+      ) {
+        return ok({ locked: true });
+      }
+
+      if (
+        latestAttempt?.activeLock &&
+        latestAttempt.status === "in-progress" &&
+        latestAnswer &&
+        latestAnswer.selectedOptionIndex !== null
+      ) {
+        return fail("This answer is already locked.", 409, {
+          selectedOptionIndex: latestAnswer.selectedOptionIndex,
+        });
+      }
+
+      if (latestAttempt && latestAttempt.expiresAt.getTime() <= now.getTime()) {
+        return fail("This exam attempt has expired.", 410);
+      }
+
+      return fail("This exam attempt is no longer active.", 409);
+    }
 
     return ok({ locked: true });
   } catch (error) {

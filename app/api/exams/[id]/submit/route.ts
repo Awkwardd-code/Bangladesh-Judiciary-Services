@@ -7,14 +7,20 @@ import { examAttemptsCol, examQuestionsCol, examsCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
 
 const submitSchema = z.object({
-  attemptId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-  submissionId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  attemptId: z
+    .string()
+    .regex(/^[a-f\d]{24}$/i)
+    .optional(),
+  submissionId: z
+    .string()
+    .regex(/^[a-f\d]{24}$/i)
+    .optional(),
   reason: z.enum(["manual", "tab-change", "visibility-hidden", "time-expired"]),
 });
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await requireSession();
@@ -28,14 +34,17 @@ export async function POST(
     }
 
     const parsed = submitSchema.safeParse(await request.json());
-    if (!parsed.success || (!parsed.data.attemptId && !parsed.data.submissionId)) {
+    if (
+      !parsed.success ||
+      (!parsed.data.attemptId && !parsed.data.submissionId)
+    ) {
       return fail("Invalid exam submission.", 400);
     }
 
     await ensureIndexes();
     const examId = new ObjectId(id);
     const attemptId = new ObjectId(
-      parsed.data.attemptId ?? parsed.data.submissionId!,
+      parsed.data.attemptId ?? parsed.data.submissionId!
     );
     const userId = new ObjectId(session.userId);
     const exam = await (await examsCol()).findOne({ _id: examId });
@@ -48,11 +57,44 @@ export async function POST(
       _id: attemptId,
       examId,
       userId,
-      activeLock: true,
-      status: "in-progress",
     });
     if (!attempt) {
       return fail("Exam attempt not found.", 404);
+    }
+    if (!attempt.activeLock || attempt.status !== "in-progress") {
+      if (
+        attempt.status === "submitted" ||
+        attempt.status === "auto-submitted" ||
+        attempt.status === "graded"
+      ) {
+        return ok({
+          ...(exam.kind === "written"
+            ? {
+                submission: {
+                  id: attemptId.toString(),
+                  totalScore: attempt.score,
+                  maxScore: exam.totalMarks,
+                  submittedAt: attempt.submittedAt?.toISOString() ?? null,
+                  status: attempt.status,
+                },
+              }
+            : {
+                attempt: {
+                  id: attemptId.toString(),
+                  score: attempt.score,
+                  correctCount: attempt.correctCount,
+                  wrongCount: attempt.wrongCount,
+                  skippedCount: attempt.skippedCount,
+                  submittedAt: attempt.submittedAt?.toISOString() ?? null,
+                  autoSubmitReason:
+                    attempt.autoSubmitReason ?? parsed.data.reason,
+                  status: attempt.status,
+                },
+              }),
+        });
+      }
+
+      return fail("This exam attempt is no longer active.", 409);
     }
 
     let score = 0;
@@ -62,11 +104,13 @@ export async function POST(
 
     if (exam.kind === "preliminary") {
       const questionIds = attempt.answers.map((answer) => answer.questionId);
-      const questions = await (await examQuestionsCol())
+      const questions = await (
+        await examQuestionsCol()
+      )
         .find({ examId, _id: { $in: questionIds } })
         .toArray();
       const questionById = new Map(
-        questions.map((question) => [question._id.toString(), question]),
+        questions.map((question) => [question._id.toString(), question])
       );
 
       for (const answer of attempt.answers) {
@@ -112,7 +156,7 @@ export async function POST(
           activeLock: false,
           updatedAt: submittedAt,
         },
-      },
+      }
     );
     if (update.modifiedCount !== 1) {
       return fail("This attempt has already been submitted.", 409);

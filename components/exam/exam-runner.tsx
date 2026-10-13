@@ -279,6 +279,8 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   const [readRules, setReadRules] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [confirmationCount, setConfirmationCount] = useState(0);
+  const answerSaveLockRef = useRef(new Set<string>());
+  const answerSavePromisesRef = useRef(new Set<Promise<boolean>>());
   const submitLockRef = useRef(false);
   const submitHandlerRef = useRef<
     (
@@ -379,6 +381,15 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     setAutoSubmitReason(reason);
 
     try {
+      const answerSaveResults = await Promise.all([
+        ...answerSavePromisesRef.current,
+      ]);
+      if (answerSaveResults.some((saved) => !saved)) {
+        throw new Error(
+          "An answer could not be saved. Please check your answers and submit again."
+        );
+      }
+
       const endpoint =
         exam.kind === "free"
           ? `/api/free-tests/${exam.id}/submit`
@@ -412,9 +423,9 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
         (total, question) =>
           total +
           (exam.kind === "written"
-            ? question.maxMarks ?? question.marks
+            ? (question.maxMarks ?? question.marks)
             : question.marks),
-        0,
+        0
       );
       const score =
         rawScore !== null && attemptTotalMarks > 0
@@ -729,10 +740,15 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   }
 
   async function handleOptionClick(questionId: string, optionIndex: number) {
-    if (!attemptId || locked.has(questionId)) {
+    if (
+      !attemptId ||
+      locked.has(questionId) ||
+      answerSaveLockRef.current.has(questionId)
+    ) {
       return;
     }
 
+    answerSaveLockRef.current.add(questionId);
     const previousValue = answers[questionId] ?? null;
     const nextAnswers = { ...answers, [questionId]: optionIndex };
     const nextLocked = new Set(locked);
@@ -741,42 +757,72 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     setAnswers(nextAnswers);
     setLocked(nextLocked);
 
-    try {
-      const endpoint =
-        exam.kind === "free"
-          ? `/api/free-tests/${exam.id}/answer`
-          : `/api/exams/${exam.id}/answer`;
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          attemptId,
-          questionId,
-          selectedOptionIndex: optionIndex,
-        }),
-      });
-      const payload = await response.json();
+    const savePromise = (async () => {
+      try {
+        const endpoint =
+          exam.kind === "free"
+            ? `/api/free-tests/${exam.id}/answer`
+            : `/api/exams/${exam.id}/answer`;
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            attemptId,
+            questionId,
+            selectedOptionIndex: optionIndex,
+          }),
+        });
+        const payload = await response.json();
 
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Answer could not be saved.");
+        if (!response.ok) {
+          if (
+            response.status === 409 &&
+            Number.isInteger(payload?.selectedOptionIndex)
+          ) {
+            setAnswers((current) => ({
+              ...current,
+              [questionId]: payload.selectedOptionIndex,
+            }));
+            setLocked((current) => new Set(current).add(questionId));
+            toast(
+              "This answer was already locked. Your saved answer was restored.",
+              "error"
+            );
+            return true;
+          }
+
+          throw new Error(payload?.error ?? "Answer could not be saved.");
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Exam answer error", error);
+        setAnswers((current) => ({
+          ...current,
+          [questionId]: previousValue,
+        }));
+        setLocked((current) => {
+          const next = new Set(current);
+          next.delete(questionId);
+          return next;
+        });
+        toast(
+          error instanceof Error ? error.message : "Answer could not be saved.",
+          "error"
+        );
+        return false;
+      } finally {
+        answerSaveLockRef.current.delete(questionId);
       }
-    } catch (error) {
-      console.error("Exam answer error", error);
-      setAnswers((current) => ({
-        ...current,
-        [questionId]: previousValue,
-      }));
-      setLocked((current) => {
-        const next = new Set(current);
-        next.delete(questionId);
-        return next;
-      });
-      toast(
-        error instanceof Error ? error.message : "Answer could not be saved.",
-        "error"
-      );
+    })();
+    answerSavePromisesRef.current.add(savePromise);
+
+    try {
+      await savePromise;
+    } finally {
+      answerSavePromisesRef.current.delete(savePromise);
     }
   }
 
@@ -1068,7 +1114,6 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
             }
             kind={exam.kind}
             timeLeftSeconds={timeLeftSeconds}
-            negativeMarking={examDetails.negativeMarking}
             answeredCount={answeredCount}
             remainingCount={unansweredCount}
             phase={hasPhases ? currentPhase : null}
