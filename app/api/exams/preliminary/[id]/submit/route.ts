@@ -84,8 +84,6 @@ export async function POST(
         wrongCount += 1;
       }
     }
-    score = Math.max(0, score);
-
     const submittedAt = new Date();
     const status = reason === "time-expired" ? "auto-submitted" : "submitted";
 

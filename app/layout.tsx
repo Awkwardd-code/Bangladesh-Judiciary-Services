@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   },
   description:
     "Structured, mentor-led preparation for the Bangladesh Judicial Service exam.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
     title: "LegalPath Bangladesh",
     description:

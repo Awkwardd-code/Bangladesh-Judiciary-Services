@@ -2,6 +2,7 @@ import { BaseDoc } from "./common";
 
 export type UserRole = "student" | "admin";
 export type UserTier = "UNIVERSITY" | "OTHER";
+export type UserGender = "male" | "female";
 
 export type User = BaseDoc & {
   name: string;
@@ -17,6 +18,7 @@ export type User = BaseDoc & {
   university?: string;
   studentId?: string;
   phone?: string;
+  gender?: UserGender;
   verified: boolean;
   approved: boolean;
   avatarUrl?: string;

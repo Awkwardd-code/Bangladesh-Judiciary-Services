@@ -10,6 +10,7 @@ import { usersCol } from "@/lib/collections";
 import { env } from "@/lib/env";
 import { ensureIndexes } from "@/lib/indexes";
 import { hashPassword } from "@/lib/password";
+import { getDefaultAvatarUrl, isDefaultAvatarUrl } from "@/lib/profile-avatar";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { withGuard } from "@/lib/route-guard";
 
@@ -92,7 +93,7 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
       typeof payload.email === "string" ? payload.email.toLowerCase() : "";
     const name = typeof payload.name === "string" ? payload.name.trim() : "";
     const picture =
-      typeof payload.picture === "string" ? payload.picture : null;
+      typeof payload.picture === "string" ? payload.picture.trim() || null : null;
 
     if (
       payload.nonce !== storedState.nonce ||
@@ -117,9 +118,14 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
 
     if (user) {
       const now = new Date();
+      const currentAvatarUrl = user.avatarUrl?.trim() || null;
+      const avatarUrl =
+        picture && (!currentAvatarUrl || isDefaultAvatarUrl(currentAvatarUrl))
+          ? picture
+          : currentAvatarUrl ?? getDefaultAvatarUrl(user.gender);
       const profileUpdates = {
         ...(name && !user.name.trim() ? { name } : {}),
-        ...(picture && !user.avatarUrl?.trim() ? { avatarUrl: picture } : {}),
+        ...(avatarUrl !== currentAvatarUrl ? { avatarUrl } : {}),
       };
 
       await users.updateOne(
@@ -139,9 +145,7 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
         googleId,
         verified: true,
         name: user.name.trim() ? user.name : name || user.name,
-        avatarUrl: user.avatarUrl?.trim()
-          ? user.avatarUrl
-          : (picture ?? undefined),
+        avatarUrl,
         lastLoginAt: now,
       };
     } else {
@@ -160,7 +164,7 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
         tier: "OTHER",
         sessionVersion: 1,
         disabled: false,
-        avatarUrl: picture ?? undefined,
+        avatarUrl: picture ?? getDefaultAvatarUrl(null),
         verified: true,
         approved: true,
         createdAt: now,
@@ -178,7 +182,7 @@ export const GET = withGuard({ kind: "public" }, async (req) => {
         tier: "OTHER",
         sessionVersion: 1,
         disabled: false,
-        avatarUrl: picture ?? undefined,
+        avatarUrl: picture ?? getDefaultAvatarUrl(null),
         verified: true,
         approved: true,
         createdAt: now,

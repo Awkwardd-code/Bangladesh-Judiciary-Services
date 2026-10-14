@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title">
+  <title id="title">Fictional demo student illustration two</title>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#f6e2c4"/><stop offset="1" stop-color="#e6c4aa"/></linearGradient></defs>
+  <rect width="640" height="480" fill="url(#bg)"/><circle cx="116" cy="112" r="70" fill="#fff" opacity=".32"/><path d="M92 480c25-105 104-158 228-158s203 53 228 158" fill="#344c6b"/><path d="M248 330l72 90 72-90-31-42h-82z" fill="#e8b891"/><ellipse cx="320" cy="200" rx="100" ry="122" fill="#70422f"/><path d="M221 192c-7-94 42-150 103-150 72 0 111 54 99 157-22-40-54-60-102-69-24 26-58 47-100 62z" fill="#1d2022"/><path d="M276 213h15m61 0h15" stroke="#272221" stroke-width="9" stroke-linecap="round"/><path d="M297 267q23 18 46 0" fill="none" stroke="#56352d" stroke-width="7" stroke-linecap="round"/><path d="M275 321h90l-45 63z" fill="#f3eee3"/>
+</svg>

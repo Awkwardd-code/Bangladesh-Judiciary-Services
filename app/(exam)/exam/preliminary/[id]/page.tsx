@@ -103,12 +103,12 @@ export default async function PreliminaryExamPage({
 
   if (active && active.examId.toString() !== examId.toString()) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center px-6 py-16">
-        <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-8 text-center shadow-sm">
+      <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
+        <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center shadow-sm sm:p-8">
           <div className="mb-4 flex justify-center text-amber-600">
             <AlertTriangle className="h-10 w-10" />
           </div>
-          <h1 className="font-heading text-2xl font-semibold text-primary">
+          <h1 className="font-heading text-xl font-semibold text-primary sm:text-2xl">
             You have an active exam in progress.
           </h1>
           <p className="mt-3 text-sm text-muted">
@@ -120,7 +120,7 @@ export default async function PreliminaryExamPage({
                 ? `/exam/preliminary/${active.examId}`
                 : `/exam/written/${active.examId}`
             }
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-primary px-5 text-sm text-cream hover:bg-primary-dark"
+            className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm text-cream hover:bg-primary-dark sm:w-auto"
           >
             Resume exam
           </Link>
@@ -199,17 +199,17 @@ function BlockedExamState({
   action?: string;
 }) {
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center px-6 py-16">
-      <div className="w-full rounded-lg border border-border bg-card p-8 text-center">
+    <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className="w-full rounded-2xl border border-border bg-card p-5 text-center shadow-sm sm:p-8">
         <AlertTriangle className="mx-auto text-accent" size={40} />
-        <h1 className="mt-4 font-heading text-2xl font-semibold text-primary">
+        <h1 className="mt-4 font-heading text-xl font-semibold text-primary sm:text-2xl">
           {title}
         </h1>
         <p className="mt-3 text-sm text-muted">{description}</p>
         {href && action ? (
           <Link
             href={href}
-            className="mt-6 inline-flex min-h-10 cursor-pointer items-center rounded-md bg-primary px-4 text-sm text-cream"
+            className="mt-6 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-sm text-cream sm:w-auto"
           >
             {action}
           </Link>

@@ -5,6 +5,7 @@ import { useAdminShell } from "@/components/layout/admin-shell-provider";
 
 const BREADCRUMBS: Record<string, string[]> = {
   "/admin": ["Admin"],
+  "/admin/profile": ["Admin", "Profile"],
   "/admin/students": ["Admin", "Students"],
   "/admin/notices": ["Admin", "Notices"],
   "/admin/mock-exams": ["Admin", "Mock Exams"],

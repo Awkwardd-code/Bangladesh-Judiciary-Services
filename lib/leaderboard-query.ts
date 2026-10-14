@@ -3,6 +3,9 @@ import "server-only";
 import { ObjectId } from "mongodb";
 
 import {
+  examAttemptsCol,
+  examQuestionsCol,
+  examsCol,
   freeTestAttemptsCol,
   freeTestsCol,
   preliminaryAttemptsCol,
@@ -14,6 +17,7 @@ import {
   writtenSubmissionsCol,
 } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { getDefaultAvatarUrl } from "@/lib/profile-avatar";
 export type LeaderboardKind = "preliminary" | "written" | "free";
 
 export type LeaderboardRow = {
@@ -21,11 +25,13 @@ export type LeaderboardRow = {
   userId: string;
   userName: string;
   userEmail: string;
+  userAvatarUrl: string;
   userRoll?: string | null;
   attemptId: string;
   examId: string;
   examTitle: string;
   examKind: LeaderboardKind;
+  source: "legacy" | "unified";
   score: number;
   totalMarks: number;
   correctCount: number;
@@ -71,6 +77,7 @@ type AttemptRecord = {
 type SourceRecord = {
   kind: LeaderboardKind;
   attempt: AttemptRecord;
+  source: "legacy" | "unified";
 };
 
 const SOURCE_LIMIT = 500;
@@ -92,10 +99,12 @@ function accuracyPercent(
 
 async function loadAttempts(
   kind: LeaderboardKind,
-  examId?: ObjectId
+  examId?: ObjectId,
+  userIds?: ObjectId[]
 ): Promise<SourceRecord[]> {
   const filter = {
     status: { $in: SUBMITTED_STATUSES },
+    ...(userIds ? { userId: { $in: userIds } } : {}),
     ...(kind === "free"
       ? examId
         ? { freeTestId: examId }
@@ -141,7 +150,65 @@ async function loadAttempts(
     ])
     .toArray();
 
-  return attempts.map((attempt) => ({ kind, attempt }));
+  return attempts.map((attempt) => ({ kind, attempt, source: "legacy" }));
+}
+
+async function loadUnifiedAttempts(
+  kind: LeaderboardKind,
+  examId?: ObjectId,
+  userIds?: ObjectId[]
+): Promise<SourceRecord[]> {
+  if (kind === "free") {
+    return [];
+  }
+
+  const exams = await (
+    await examsCol()
+  )
+    .find(
+      { kind, ...(examId ? { _id: examId } : {}) },
+      { projection: { _id: 1 } }
+    )
+    .toArray();
+  const examIds = exams.map((exam) => exam._id);
+
+  if (examIds.length === 0) {
+    return [];
+  }
+
+  const attempts = await (
+    await examAttemptsCol()
+  )
+    .aggregate<AttemptRecord>([
+      {
+        $match: {
+          examId: { $in: examIds },
+          status: { $in: SUBMITTED_STATUSES },
+          ...(userIds ? { userId: { $in: userIds } } : {}),
+        },
+      },
+      { $sort: { score: -1, submittedAt: 1, _id: 1 } },
+      { $limit: SOURCE_LIMIT },
+      {
+        $project: {
+          userId: 1,
+          examId: 1,
+          score: 1,
+          maxScore: 1,
+          correctCount: 1,
+          wrongCount: 1,
+          skippedCount: 1,
+          submittedAt: 1,
+          status: 1,
+          autoSubmitReason: 1,
+          answers: 1,
+          passMarkPercent: 1,
+        },
+      },
+    ])
+    .toArray();
+
+  return attempts.map((attempt) => ({ kind, attempt, source: "unified" }));
 }
 
 export async function listLeaderboard(
@@ -158,11 +225,40 @@ export async function listLeaderboard(
     throw new Error("Invalid exam ID.");
   }
 
+  const search = filters.search?.trim();
+  let matchedUserIds: ObjectId[] | undefined;
+
+  if (search) {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const matchingUsers = await (
+      await usersCol()
+    )
+      .find(
+        {
+          $or: [
+            { name: { $regex: escapedSearch, $options: "i" } },
+            { email: { $regex: escapedSearch, $options: "i" } },
+            { roll: { $regex: escapedSearch, $options: "i" } },
+          ],
+        },
+        { projection: { _id: 1 } }
+      )
+      .toArray();
+    matchedUserIds = matchingUsers.map((user) => user._id);
+
+    if (matchedUserIds.length === 0) {
+      return [];
+    }
+  }
+
   const kinds: LeaderboardKind[] = filters.examKind
     ? [filters.examKind]
     : ["preliminary", "written", "free"];
   const sources = await Promise.all(
-    kinds.map((kind) => loadAttempts(kind, examId))
+    kinds.flatMap((kind) => [
+      loadAttempts(kind, examId, matchedUserIds),
+      loadUnifiedAttempts(kind, examId, matchedUserIds),
+    ])
   );
   const records = sources.flat();
   const userIds = [
@@ -170,14 +266,18 @@ export async function listLeaderboard(
   ].map((id) => new ObjectId(id));
   const examIds = [
     ...new Set(
-      records.flatMap(({ kind, attempt }) => {
-        const id = kind === "free" ? attempt.freeTestId : attempt.examId;
+      records.flatMap(({ kind, attempt, source }) => {
+        const id =
+          source === "legacy" && kind === "free"
+            ? attempt.freeTestId
+            : attempt.examId;
         return id ? [id.toString()] : [];
       })
     ),
   ].map((id) => new ObjectId(id));
 
-  const [users, preliminaryExams, writtenExams, freeTests] = await Promise.all([
+  const [users, preliminaryExams, writtenExams, freeTests, unifiedExams] =
+    await Promise.all([
     userIds.length
       ? (await usersCol()).find({ _id: { $in: userIds } }).toArray()
       : [],
@@ -190,6 +290,9 @@ export async function listLeaderboard(
     examIds.length
       ? (await freeTestsCol()).find({ _id: { $in: examIds } }).toArray()
       : [],
+    examIds.length
+      ? (await examsCol()).find({ _id: { $in: examIds } }).toArray()
+      : [],
   ]);
   const userById = new Map(users.map((user) => [user._id.toString(), user]));
   const preliminaryById = new Map(
@@ -201,6 +304,9 @@ export async function listLeaderboard(
   const freeById = new Map(
     freeTests.map((exam) => [exam._id.toString(), exam])
   );
+  const unifiedById = new Map(
+    unifiedExams.map((exam) => [exam._id.toString(), exam])
+  );
   const preliminaryQuestionIds = records.flatMap(({ kind, attempt }) =>
     kind === "preliminary"
       ? (attempt.answers ?? []).map((answer) => answer.questionId)
@@ -208,6 +314,11 @@ export async function listLeaderboard(
   );
   const freeQuestionIds = records.flatMap(({ kind, attempt }) =>
     kind === "free"
+      ? (attempt.answers ?? []).map((answer) => answer.questionId)
+      : []
+  );
+  const unifiedQuestionIds = records.flatMap(({ source, attempt }) =>
+    source === "unified"
       ? (attempt.answers ?? []).map((answer) => answer.questionId)
       : []
   );
@@ -229,6 +340,16 @@ export async function listLeaderboard(
             .toArray()
         : [],
     ]);
+  const unifiedQuestions = unifiedQuestionIds.length
+    ? await (
+        await examQuestionsCol()
+      )
+        .find({ _id: { $in: unifiedQuestionIds } })
+        .toArray()
+    : [];
+  const unifiedQuestionById = new Map(
+    unifiedQuestions.map((question) => [question._id.toString(), question])
+  );
   const preliminaryQuestionById = new Map(
     preliminaryQuestions.map((question) => [question._id.toString(), question])
   );
@@ -246,10 +367,13 @@ export async function listLeaderboard(
       maxMarks: question.maxMarks,
     });
   });
-  const search = filters.search?.trim().toLocaleLowerCase();
+  const normalizedSearch = search?.toLocaleLowerCase();
 
-  const rows = records.flatMap(({ kind, attempt }) => {
-    const id = kind === "free" ? attempt.freeTestId : attempt.examId;
+  const rows = records.flatMap(({ kind, attempt, source }) => {
+    const id =
+      source === "legacy" && kind === "free"
+        ? attempt.freeTestId
+        : attempt.examId;
 
     if (!id) {
       return [];
@@ -259,24 +383,38 @@ export async function listLeaderboard(
     const preliminaryExam = preliminaryById.get(id.toString());
     const writtenExam = writtenById.get(id.toString());
     const freeTest = freeById.get(id.toString());
-    const exam =
-      kind === "preliminary"
+    const unifiedExam =
+      source === "unified" ? unifiedById.get(id.toString()) : undefined;
+    const exam = unifiedExam ??
+      (kind === "preliminary"
         ? preliminaryExam
         : kind === "written"
           ? writtenExam
-          : freeTest;
+          : freeTest);
     const userName = user?.name ?? "Unknown student";
     const userEmail = user?.email ?? "";
 
     if (
-      search &&
-      !`${userName} ${userEmail}`.toLocaleLowerCase().includes(search)
+      normalizedSearch &&
+      !`${userName} ${userEmail} ${user?.roll ?? ""}`
+        .toLocaleLowerCase()
+        .includes(normalizedSearch)
     ) {
       return [];
     }
 
     const answers = attempt.answers ?? [];
     const questionTotal = answers.reduce((sum, answer) => {
+      if (source === "unified") {
+        const question = unifiedQuestionById.get(answer.questionId.toString());
+        return (
+          sum +
+          (kind === "written"
+            ? (question?.maxMarks ?? question?.marks ?? 0)
+            : (question?.marks ?? 0))
+        );
+      }
+
       if (kind === "preliminary") {
         return (
           sum +
@@ -310,7 +448,15 @@ export async function listLeaderboard(
       return sum;
     }, 0);
     const totalMarks =
-      kind === "written"
+      source === "unified" && kind === "written"
+        ? attempt.maxScore ||
+          answers.reduce((sum, answer) => {
+            const question = unifiedQuestionById.get(
+              answer.questionId.toString()
+            );
+            return sum + (question?.maxMarks ?? question?.marks ?? 0);
+          }, 0)
+        : kind === "written"
         ? attempt.maxScore || writtenExam?.totalMarks || 0
         : questionTotal || exam?.totalMarks || 0;
     const correctCount = attempt.correctCount ?? 0;
@@ -325,13 +471,18 @@ export async function listLeaderboard(
         userId: attempt.userId.toString(),
         userName,
         userEmail,
+        userAvatarUrl:
+          user?.avatarUrl?.trim() || getDefaultAvatarUrl(user?.gender),
         userRoll: user?.roll ?? null,
         attemptId: attempt._id.toString(),
         examId: id.toString(),
         examTitle: exam?.title ?? "Unavailable exam",
         examKind: kind,
+        source,
         score:
-          kind === "written" ? (attempt.totalScore ?? 0) : (attempt.score ?? 0),
+          source === "legacy" && kind === "written"
+            ? (attempt.totalScore ?? 0)
+            : (attempt.score ?? 0),
         totalMarks,
         correctCount,
         wrongCount,
@@ -345,7 +496,10 @@ export async function listLeaderboard(
         autoSubmitReason: attempt.autoSubmitReason ?? null,
         passMarkPercent:
           kind === "free"
-            ? (attempt.passMarkPercent ?? freeTest?.passMarkPercent ?? null)
+            ? (attempt.passMarkPercent ??
+              unifiedExam?.passMarkPercent ??
+              freeTest?.passMarkPercent ??
+              null)
             : null,
       } satisfies LeaderboardRow,
     ];
@@ -389,7 +543,8 @@ export async function listLeaderboardExamOptions(): Promise<
 > {
   await ensureIndexes();
 
-  const [preliminaryExams, writtenExams, freeTests] = await Promise.all([
+  const [preliminaryExams, writtenExams, freeTests, unifiedExams] =
+    await Promise.all([
     (await preliminaryExamsCol())
       .find({ status: "published" }, { projection: { title: 1 } })
       .sort({ title: 1 })
@@ -400,6 +555,13 @@ export async function listLeaderboardExamOptions(): Promise<
       .toArray(),
     (await freeTestsCol())
       .find({ status: "published" }, { projection: { title: 1 } })
+      .sort({ title: 1 })
+      .toArray(),
+    (await examsCol())
+      .find(
+        { status: "published" },
+        { projection: { title: 1, kind: 1 } }
+      )
       .sort({ title: 1 })
       .toArray(),
   ]);
@@ -419,6 +581,11 @@ export async function listLeaderboardExamOptions(): Promise<
       id: exam._id.toString(),
       title: exam.title,
       kind: "free" as const,
+    })),
+    ...unifiedExams.map((exam) => ({
+      id: exam._id.toString(),
+      title: exam.title,
+      kind: exam.kind,
     })),
   ];
 }

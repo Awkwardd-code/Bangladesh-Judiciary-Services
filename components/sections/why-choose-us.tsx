@@ -50,11 +50,13 @@ const pillars = [
 
 export function WhyChooseUs() {
   return (
-    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-20">
+    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-24">
       <div className="mx-auto max-w-7xl">
         <header className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            <span className="h-px w-6 bg-accent/70" aria-hidden="true" />
             Built around your goals
+            <span className="h-px w-6 bg-accent/70" aria-hidden="true" />
           </p>
           <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
             Preparation that keeps you moving
@@ -64,16 +66,16 @@ export function WhyChooseUs() {
           </p>
         </header>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:mt-12 lg:grid-cols-3">
           {pillars.map((pillar) => {
             const Icon = pillar.icon;
 
             return (
               <Card
                 key={pillar.title}
-                className="group relative flex gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lg sm:p-6"
+                className="group relative flex min-h-36 gap-4 overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lg sm:p-6"
               >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-cream">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent transition-colors group-hover:bg-primary group-hover:text-cream">
                   <Icon aria-hidden="true" size={20} />
                 </span>
                 <div>

@@ -4,6 +4,7 @@ import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type FilterSelectProps = {
+  id?: string;
   value: string;
   onValueChange: (value: string) => void;
   options: { value: string; label: string }[];
@@ -13,6 +14,7 @@ type FilterSelectProps = {
 };
 
 export function FilterSelect({
+  id,
   value,
   onValueChange,
   options,
@@ -22,6 +24,7 @@ export function FilterSelect({
 }: FilterSelectProps) {
   return (
     <Select
+      id={id}
       value={value}
       onChange={(event) => onValueChange(event.target.value)}
       aria-label={ariaLabel ?? placeholder ?? "Filter"}

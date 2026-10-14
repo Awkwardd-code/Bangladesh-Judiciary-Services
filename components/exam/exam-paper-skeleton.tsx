@@ -10,9 +10,9 @@ export function ExamPaperSkeleton({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <Card className="overflow-visible rounded-lg border-border bg-card shadow-sm">
-          <div className="p-6 lg:p-8">
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
+        <Card className="min-w-0 overflow-hidden rounded-2xl border-border bg-card shadow-sm">
+          <div className="p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col items-center">
               <SkLine width="w-64" height="h-8" />
               <SkLine className="mt-2" width="w-48" height="h-4" />
@@ -45,12 +45,12 @@ export function ExamPaperSkeleton({
           </div>
 
           {withTimer ? (
-            <div className="sticky top-0 z-30 border-y border-border bg-card px-6 py-3 shadow-sm lg:px-8">
+            <div className="sticky top-0 z-30 border-y border-border bg-card px-3 py-3 shadow-sm sm:px-6 lg:px-8">
               <SkLine width="w-full" height="h-10" />
             </div>
           ) : null}
 
-          <div className="space-y-8 px-6 py-8 lg:px-8">
+          <div className="space-y-4 px-3 py-5 sm:space-y-6 sm:px-6 sm:py-7 lg:space-y-8 lg:px-8">
             {Array.from({ length: 4 }, (_, questionIndex) => (
               <div key={questionIndex} className="space-y-5">
                 <div className="flex items-center gap-3">
@@ -84,7 +84,7 @@ export function ExamPaperSkeleton({
           </div>
 
           {withFooter ? (
-            <div className="mt-2 flex justify-end border-t border-dashed border-border px-6 py-6 lg:px-8">
+            <div             className="mt-2 flex justify-end border-t border-dashed border-border px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
               <SkLine width="w-40" height="h-12" className="rounded-md" />
             </div>
           ) : null}

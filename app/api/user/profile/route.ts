@@ -7,12 +7,27 @@ import { requireSession } from "@/lib/auth-guard";
 import { usersCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import {
+  getDefaultAvatarUrl,
+  isDefaultAvatarUrl,
+} from "@/lib/profile-avatar";
 
 const profileSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
     phone: z.string().trim().max(20).optional(),
-    avatarUrl: z.string().url().nullable().optional(),
+    gender: z.enum(["male", "female"]).optional(),
+    avatarUrl: z
+      .union([
+        z.string().url(),
+        z.enum([
+          "/avatars/default.svg",
+          "/avatars/male.svg",
+          "/avatars/female.svg",
+        ]),
+      ])
+      .nullable()
+      .optional(),
     avatarPublicId: z.string().trim().min(1).nullable().optional(),
   })
   .strict();
@@ -49,6 +64,7 @@ export async function GET() {
         university: user.university ?? null,
         studentId: user.studentId ?? null,
         phone: user.phone ?? null,
+        gender: user.gender ?? null,
         avatarUrl: user.avatarUrl ?? null,
         avatarPublicId: user.avatarPublicId ?? null,
         verified: user.verified,
@@ -118,12 +134,20 @@ export async function PATCH(req: NextRequest) {
       updateSet.phone = parsed.data.phone;
     }
 
+    if (parsed.data.gender !== undefined) {
+      updateSet.gender = parsed.data.gender;
+
+      if (!user.avatarUrl?.trim() || isDefaultAvatarUrl(user.avatarUrl)) {
+        updateSet.avatarUrl = getDefaultAvatarUrl(parsed.data.gender);
+      }
+    }
+
     if (parsed.data.avatarUrl === null) {
       await userCollection.updateOne(
         { _id: user._id },
         {
           $unset: { avatarUrl: "", avatarPublicId: "" },
-          $set: { updatedAt: new Date() },
+          $set: updateSet,
         },
       );
     } else {
@@ -160,6 +184,7 @@ export async function PATCH(req: NextRequest) {
         isAdmin: updatedUser.isAdmin,
         tier: updatedUser.tier,
         phone: updatedUser.phone ?? null,
+        gender: updatedUser.gender ?? null,
         roll: updatedUser.roll ?? null,
         university: updatedUser.university ?? null,
         studentId: updatedUser.studentId ?? null,

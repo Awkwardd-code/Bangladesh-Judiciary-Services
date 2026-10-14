@@ -11,13 +11,15 @@ const BREADCRUMBS: Record<string, string[]> = {
 };
 
 export function DashboardHeader() {
-  const { setOpen, toggleCollapsed } = useDashboardShell();
+  const { open, setOpen, collapsed, toggleCollapsed } = useDashboardShell();
 
   return (
     <AppHeader
       variant="dashboard"
       breadcrumbs={BREADCRUMBS}
       profileHref="/dashboard/profile"
+      sidebarCollapsed={collapsed}
+      mobileNavigationOpen={open}
       onToggleSidebar={() => {
         if (window.innerWidth < 1024) {
           setOpen((open) => !open);

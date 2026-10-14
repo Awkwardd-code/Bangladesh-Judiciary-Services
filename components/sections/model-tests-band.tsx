@@ -18,7 +18,7 @@ export type PublicExamBatch = {
 
 export function ModelTestsBand({ batches }: { batches: PublicExamBatch[] }) {
   return (
-    <section className="relative overflow-hidden bg-primary-dark px-4 py-16 text-cream sm:px-6 lg:py-20">
+    <section className="relative overflow-hidden bg-primary-dark px-5 py-16 text-cream sm:px-6 lg:py-24">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-accent/5 blur-3xl"
@@ -28,14 +28,14 @@ export function ModelTestsBand({ batches }: { batches: PublicExamBatch[] }) {
         className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl"
       />
 
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-7xl">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
               <span aria-hidden="true" className="h-px w-6 bg-accent/60" />
               Model Tests
             </p>
-            <h2 className="mt-4 font-heading text-3xl font-bold leading-tight sm:text-4xl">
+            <h2 className="mt-4 font-heading text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
               Find your next
               <span className="text-accent"> exam batch.</span>
             </h2>
@@ -46,7 +46,7 @@ export function ModelTestsBand({ batches }: { batches: PublicExamBatch[] }) {
           </div>
           <Link
             href="/exam-courses"
-            className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-accent-on-dark px-5 text-sm font-semibold text-accent-on-dark transition-colors hover:bg-accent-soft hover:text-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="group inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-accent-on-dark px-5 text-sm font-semibold text-accent-on-dark transition-colors hover:bg-accent-soft hover:text-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:w-fit"
           >
             Browse all model tests
             <ArrowRight
@@ -57,12 +57,12 @@ export function ModelTestsBand({ batches }: { batches: PublicExamBatch[] }) {
         </div>
 
         {batches.length > 0 ? (
-          <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-9 grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {batches.map((batch) => (
               <Link
                 key={batch.id}
                 href={`/courses/${batch.slug}`}
-                className="group overflow-hidden rounded-xl border border-cream/10 bg-card text-primary shadow-lg transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-cream/10 bg-card text-primary shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-primary/5">
                   <Image
@@ -77,8 +77,8 @@ export function ModelTestsBand({ batches }: { batches: PublicExamBatch[] }) {
                     {getCategoryMeta(batch.category).shortLabel} model tests
                   </span>
                 </div>
-                <div className="flex h-full flex-col p-5">
-                  <h3 className="line-clamp-2 font-heading text-lg font-semibold">
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="line-clamp-2 font-heading text-lg font-semibold leading-snug">
                     {batch.title}
                   </h3>
                   <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">

@@ -62,9 +62,9 @@ export default async function UnifiedExamPage({
 
   if (activeExam && !activeExam.examId.equals(examId)) {
     return (
-      <main className="mx-auto flex min-h-[60vh] max-w-xl items-center px-6 py-16">
-        <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
-          <h1 className="font-heading text-2xl font-semibold text-primary">
+      <main className="mx-auto flex min-h-[60vh] max-w-xl items-center px-4 py-10 sm:px-6 sm:py-16">
+        <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center shadow-sm sm:p-8">
+          <h1 className="font-heading text-xl font-semibold text-primary sm:text-2xl">
             Another exam is in progress.
           </h1>
           <p className="mt-3 text-sm text-muted">
@@ -73,7 +73,7 @@ export default async function UnifiedExamPage({
           {resumeHref ? (
             <Link
               href={resumeHref}
-              className="mt-6 inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-5 text-sm text-cream"
+              className="mt-6 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm text-cream sm:w-auto"
             >
               Resume exam
             </Link>
@@ -98,15 +98,15 @@ export default async function UnifiedExamPage({
                 : "Enroll in the linked course to access this exam.";
 
     return (
-      <main className="mx-auto flex min-h-[60vh] max-w-xl items-center px-6 py-16">
-        <div className="w-full rounded-xl border border-border bg-card p-8 text-center">
-          <h1 className="font-heading text-2xl font-semibold text-primary">
+      <main className="mx-auto flex min-h-[60vh] max-w-xl items-center px-4 py-10 sm:px-6 sm:py-16">
+        <div className="w-full rounded-2xl border border-border bg-card p-5 text-center shadow-sm sm:p-8">
+          <h1 className="font-heading text-xl font-semibold text-primary sm:text-2xl">
             Exam unavailable
           </h1>
           <p className="mt-3 text-sm text-muted">{message}</p>
           <Link
             href={`/courses/${course.slug}`}
-            className="mt-6 inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-5 text-sm text-cream"
+            className="mt-6 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm text-cream sm:w-auto"
           >
             View course
           </Link>

@@ -6,6 +6,10 @@ import { ObjectId } from "mongodb";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  SampleStoryBadge,
+  SampleStoryNotice,
+} from "@/components/public/sample-story-notice";
 import { successStoriesCol } from "@/lib/collections";
 import type {
   PublicSuccessStory,
@@ -75,6 +79,13 @@ export default async function SuccessStoryPage({ params }: StoryPageProps) {
 
   return (
     <main>
+      {story.isSample ? (
+        <div className="bg-cream px-6 pt-8">
+          <div className="mx-auto max-w-4xl">
+            <SampleStoryNotice />
+          </div>
+        </div>
+      ) : null}
       <section className="bg-cream px-6 py-16 lg:py-20">
         <div className="mx-auto grid max-w-4xl gap-10 lg:grid-cols-3">
           <div className="relative mx-auto aspect-[4/5] w-full max-w-xs overflow-hidden rounded-md bg-primary/5 shadow-md lg:mx-0">
@@ -96,12 +107,13 @@ export default async function SuccessStoryPage({ params }: StoryPageProps) {
 
           <div className="lg:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-              SUCCESS STORY
+              {story.isSample ? "FICTIONAL DEMO STORY" : "SUCCESS STORY"}
             </p>
             <h1 className="mt-3 font-heading text-3xl font-bold text-primary lg:text-4xl">
               {story.authorName}
             </h1>
             <div className="mt-4 flex flex-wrap gap-2">
+              {story.isSample ? <SampleStoryBadge /> : null}
               <Badge className="border-border text-muted">
                 {story.authorUniversity}
               </Badge>
@@ -177,7 +189,6 @@ export default async function SuccessStoryPage({ params }: StoryPageProps) {
           </div>
         </section>
       ) : null}
-
     </main>
   );
 }

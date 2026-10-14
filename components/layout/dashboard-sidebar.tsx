@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -8,7 +9,6 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
-  User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -21,7 +21,6 @@ const links = [
   { label: "My Learning", href: "/dashboard/courses", icon: BookOpen },
   { label: "Take a Test", href: "/dashboard/exams", icon: FileText },
   { label: "Results", href: "/dashboard/results", icon: BarChart3 },
-  { label: "Profile", href: "/dashboard/profile", icon: User },
 ] as const;
 
 export function DashboardSidebar() {
@@ -101,9 +100,13 @@ function SidebarLinks({
             collapsed ? "text-base" : mobile ? "pr-12 text-base" : "text-base"
           )}
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft font-heading text-sm font-extrabold text-primary-dark shadow-sm shadow-accent/20">
-            LP
-          </span>
+          <Image
+            src="/legalpath-mark.svg"
+            alt=""
+            width={36}
+            height={36}
+            className="size-9 shrink-0"
+          />
           {!collapsed ? (
             <span className="shrink-0">LegalPath BD</span>
           ) : null}
@@ -127,6 +130,7 @@ function SidebarLinks({
               key={href}
               href={href}
               aria-label={label}
+              aria-current={active ? "page" : undefined}
               title={collapsed ? label : undefined}
               onClick={onNavigate}
               className={cn(

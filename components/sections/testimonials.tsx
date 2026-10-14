@@ -1,7 +1,15 @@
 import { Card } from "@/components/ui/card";
+import {
+  SampleStoryBadge,
+  SampleStoryNotice,
+} from "@/components/public/sample-story-notice";
 import type { PublicSuccessStory } from "@/lib/types/success-story";
 
-export function Testimonials({ stories = [] }: { stories?: PublicSuccessStory[] }) {
+export function Testimonials({
+  stories = [],
+}: {
+  stories?: PublicSuccessStory[];
+}) {
   if (stories.length === 0) {
     return null;
   }
@@ -18,12 +26,23 @@ export function Testimonials({ stories = [] }: { stories?: PublicSuccessStory[] 
           </p>
         </header>
 
+        {stories.some((story) => story.isSample) ? (
+          <div className="mx-auto mt-8 max-w-3xl">
+            <SampleStoryNotice />
+          </div>
+        ) : null}
+
         <div className="-mx-6 mt-12 flex snap-x snap-mandatory gap-6 overflow-x-auto px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {stories.map((story) => (
             <Card
               key={story._id.toString()}
               className="min-w-[320px] max-w-[380px] shrink-0 snap-start p-6"
             >
+              {story.isSample ? (
+                <div className="mb-3">
+                  <SampleStoryBadge />
+                </div>
+              ) : null}
               <span
                 aria-hidden="true"
                 className="select-none font-heading text-4xl leading-none text-accent"

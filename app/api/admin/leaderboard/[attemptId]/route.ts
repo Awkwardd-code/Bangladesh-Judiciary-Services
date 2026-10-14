@@ -7,6 +7,9 @@ import { requireAdmin } from "@/lib/auth-guard";
 import {
   freeTestAttemptsCol,
   freeTestsCol,
+  examAttemptsCol,
+  examQuestionsCol,
+  examsCol,
   preliminaryAttemptsCol,
   preliminaryExamsCol,
   preliminaryQuestionsCol,
@@ -18,6 +21,7 @@ import {
 import { ensureIndexes } from "@/lib/indexes";
 
 const kindSchema = z.enum(["preliminary", "written", "free"]);
+const sourceSchema = z.enum(["legacy", "unified"]);
 
 type ReviewQuestion = {
   position: number;
@@ -56,8 +60,11 @@ export async function GET(
     const parsedKind = kindSchema.safeParse(
       new URL(request.url).searchParams.get("kind")
     );
+    const parsedSource = sourceSchema.safeParse(
+      new URL(request.url).searchParams.get("source") ?? "legacy"
+    );
 
-    if (!parsedKind.success) {
+    if (!parsedKind.success || !parsedSource.success) {
       return fail("Invalid exam kind.", 400);
     }
 
@@ -65,6 +72,111 @@ export async function GET(
 
     const id = new ObjectId(attemptId);
     const kind = parsedKind.data;
+    const source = parsedSource.data;
+
+    if (source === "unified") {
+      if (kind === "free") {
+        return fail("Invalid exam source.", 400);
+      }
+
+      const attempt = await (await examAttemptsCol()).findOne({
+        _id: id,
+        status: { $in: ["submitted", "auto-submitted", "expired", "graded"] },
+      });
+
+      if (!attempt) {
+        return fail("Attempt not found.", 404);
+      }
+
+      const [user, exam, sourceQuestions] = await Promise.all([
+        (await usersCol()).findOne({ _id: attempt.userId }),
+        (await examsCol()).findOne({ _id: attempt.examId, kind }),
+        (await examQuestionsCol())
+          .find({
+            _id: { $in: attempt.answers.map((answer) => answer.questionId) },
+            examId: attempt.examId,
+          })
+          .toArray(),
+      ]);
+      const questionById = new Map(
+        sourceQuestions.map((question) => [question._id.toString(), question])
+      );
+      const scoreById = new Map(
+        (attempt.perQuestionScores ?? []).map((score) => [
+          score.questionId.toString(),
+          score,
+        ])
+      );
+      const questions: ReviewQuestion[] = attempt.answers.flatMap(
+        (answer, position) => {
+          const question = questionById.get(answer.questionId.toString());
+
+          if (!question) {
+            return [];
+          }
+
+          const score = scoreById.get(question._id.toString());
+          const marks =
+            kind === "written"
+              ? (question.maxMarks ?? question.marks ?? 0)
+              : question.marks;
+
+          return [
+            {
+              position,
+              questionId: question._id.toString(),
+              questionText: question.questionText,
+              ...(kind === "preliminary"
+                ? {
+                    options: question.options ?? [],
+                    correctOptionIndex: question.correctOptionIndex,
+                    selectedOptionIndex: answer.selectedOptionIndex,
+                    isCorrect:
+                      answer.selectedOptionIndex !== null &&
+                      answer.selectedOptionIndex ===
+                        question.correctOptionIndex,
+                    skipped: answer.selectedOptionIndex === null,
+                    explanation: question.explanation,
+                  }
+                : {
+                    pdfUrl: answer.pdfUrl ?? null,
+                    ...(attempt.status === "graded"
+                      ? {
+                          awardedMarks: score?.awardedMarks,
+                          comment: score?.comment,
+                        }
+                      : {}),
+                  }),
+              marks,
+              subject: question.subject,
+            },
+          ];
+        }
+      );
+      const totalMarks = questions.reduce(
+        (sum, question) => sum + question.marks,
+        0
+      );
+
+      return ok({
+        attempt: {
+          id: attempt._id.toString(),
+          score: attempt.score,
+          totalMarks,
+          correctCount: attempt.correctCount,
+          wrongCount: attempt.wrongCount,
+          skippedCount: attempt.skippedCount,
+          status: attempt.status,
+          submittedAt: attempt.submittedAt?.toISOString() ?? null,
+          passMarkPercent: attempt.passMarkPercent,
+        },
+        user: user
+          ? { id: user._id.toString(), name: user.name, email: user.email }
+          : null,
+        exam: exam ? { id: exam._id.toString(), title: exam.title } : null,
+        questions,
+      });
+    }
 
     if (kind === "preliminary") {
       const attempt = await (

@@ -5,7 +5,9 @@ export function SuccessStoriesHero({
 }: {
   stories?: PublicSuccessStory[];
 }) {
-  const selectionYears = stories
+  const verifiedStories = stories.filter((story) => !story.isSample);
+  const sampleCount = stories.filter((story) => story.isSample).length;
+  const selectionYears = verifiedStories
     .map((story) => story.yearOfSelection)
     .filter((year): year is number => typeof year === "number");
   const yearsOfStories =
@@ -20,18 +22,35 @@ export function SuccessStoriesHero({
           SUCCESS STORIES
         </p>
         <h1 className="mt-4 font-heading text-4xl font-bold leading-tight text-primary lg:text-5xl">
-          From preparation to the bench.
+          {verifiedStories.length > 0
+            ? "From preparation to the bench."
+            : "Explore sample journeys."}
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted">
-          Every story here began with the same exam you&apos;re preparing for.
-          Read how they made it.
+          {verifiedStories.length > 0
+            ? "Read verified student experiences from people who prepared for the same exam you are working toward."
+            : "Use these fictional examples to see how learner stories are presented."}
         </p>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-6">
-          <StatPill value={stories.length} label="students featured" />
-          <StatPill value={stories.length} label="judicial selections" />
-          <StatPill value={yearsOfStories} label="years of stories" />
-        </div>
+        {verifiedStories.length > 0 ? (
+          <div className="mt-8 flex flex-wrap justify-center gap-6">
+            <StatPill value={verifiedStories.length} label="verified stories" />
+            <StatPill
+              value={
+                verifiedStories.filter((story) => story.yearOfSelection).length
+              }
+              label="verified selections"
+            />
+            <StatPill value={yearsOfStories} label="years represented" />
+          </div>
+        ) : null}
+        {sampleCount > 0 ? (
+          <p className="mx-auto mt-8 inline-flex rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950">
+            {sampleCount} fictional demo{" "}
+            {sampleCount === 1 ? "story" : "stories"} · not real student
+            outcomes
+          </p>
+        ) : null}
       </div>
     </section>
   );

@@ -62,11 +62,11 @@ export function Hero({ stats, about }: HeroProps = {}) {
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_35%,rgba(255,255,255,0.07),transparent_35%)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,rgba(4,35,30,0.45),transparent_52%),radial-gradient(circle_at_70%_35%,rgba(255,255,255,0.09),transparent_35%)]"
       />
 
-      <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-        <div className="grid items-center gap-8 sm:grid-cols-[1.15fr_0.85fr] sm:gap-6 md:gap-10 lg:gap-12">
+      <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10 lg:py-16">
+        <div className="grid items-center gap-9 sm:grid-cols-[1.1fr_0.9fr] md:gap-12 lg:gap-16">
           <div className="flex flex-col">
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-cream/15 bg-cream/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-on-dark">
               <span
@@ -77,20 +77,16 @@ export function Hero({ stats, about }: HeroProps = {}) {
             </p>
 
             <h1
-              className="
-                mt-4 max-w-3xl font-heading text-3xl font-extrabold
-                leading-[1.06] tracking-tight text-cream sm:text-4xl
-                lg:text-[56px] xl:text-[62px]
-              "
+              className="mt-5 max-w-3xl font-heading text-4xl font-extrabold leading-[1.04] tracking-tight text-cream sm:text-5xl lg:text-[60px] xl:text-[68px]"
             >
               {title}
             </h1>
 
-            <p className="mt-4 max-w-xl text-sm leading-6 text-cream/70 sm:text-lg sm:leading-7">
+            <p className="mt-5 max-w-xl text-base leading-7 text-cream/75 sm:text-lg sm:leading-8">
               {subtitle}
             </p>
 
-            <ul className="mt-4 hidden flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-cream/65 sm:flex sm:text-[13px]">
+            <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-medium text-cream/70 sm:text-[13px]">
               {HIGHLIGHTS.map((item) => (
                 <li key={item} className="inline-flex items-center gap-1.5">
                   <Check size={13} className="text-accent" aria-hidden="true" />
@@ -99,12 +95,12 @@ export function Hero({ stats, about }: HeroProps = {}) {
               ))}
             </ul>
 
-            <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/courses"
                 className="
                   group inline-flex w-full cursor-pointer items-center
-                  justify-center gap-2 rounded-full bg-accent-soft px-6 py-3.5
+                  justify-center gap-2 rounded-xl bg-accent-soft px-6 py-3.5
                   text-sm font-bold text-primary-dark transition-all
                   duration-200 hover:-translate-y-0.5 hover:bg-accent-soft/90
                   hover:shadow-lg hover:shadow-accent/20 focus-visible:outline-none
@@ -124,7 +120,7 @@ export function Hero({ stats, about }: HeroProps = {}) {
                 href="/exam-courses"
                 className="
                   group inline-flex w-full cursor-pointer items-center
-                  justify-center gap-2 rounded-full border border-cream/20
+                  justify-center gap-2 rounded-xl border border-cream/20
                   bg-cream/[0.04] px-6 py-3.5 text-sm font-semibold text-cream
                   transition-all duration-200 hover:border-cream/40
                   hover:bg-cream/10 focus-visible:outline-none
@@ -143,14 +139,14 @@ export function Hero({ stats, about }: HeroProps = {}) {
             </div>
 
             {statItems.length > 0 && (
-              <dl className="mt-6 grid max-w-xl grid-cols-3 divide-x divide-cream/15 rounded-xl border border-cream/10 bg-cream/[0.04] py-3">
+              <dl className="mt-7 grid max-w-xl grid-cols-3 divide-x divide-cream/15 rounded-2xl border border-cream/10 bg-cream/[0.05] py-3.5 backdrop-blur-sm">
                 {statItems.map(({ icon: Icon, label, value }) => (
                   <div
                     key={label}
                     className="flex flex-col items-center gap-1 px-2 sm:items-start sm:px-5"
                   >
                     <dt className="sr-only">{label}</dt>
-                    <dd className="flex items-center gap-2 font-heading text-lg font-bold text-cream sm:text-xl">
+                    <dd className="flex items-center gap-2 font-heading text-xl font-bold text-cream sm:text-2xl">
                       <Icon
                         size={17}
                         strokeWidth={2}
@@ -171,20 +167,20 @@ export function Hero({ stats, about }: HeroProps = {}) {
 
           <div
             className="
-              mx-auto w-full sm:max-w-[320px]
-              md:ml-auto md:max-w-[380px] lg:max-w-[420px]
+              mx-auto w-full sm:max-w-[380px]
+              md:ml-auto md:max-w-[430px] lg:max-w-[480px]
             "
           >
             <div className="relative px-2 pb-2">
               <div
                 aria-hidden="true"
                 className="
-                  absolute inset-x-0 bottom-0 top-6 rounded-[1.75rem]
-                  border border-cream/10 bg-gradient-to-br from-cream/10
+                  absolute inset-x-0 bottom-0 top-7 rounded-[2rem]
+                  border border-cream/15 bg-gradient-to-br from-cream/10
                   to-transparent
                 "
               />
-              <div className="relative aspect-[2.2/1] w-full overflow-hidden rounded-[1.5rem] bg-primary-dark shadow-2xl shadow-black/25 ring-1 ring-cream/15 sm:aspect-[1.16/1]">
+              <div className="relative aspect-[1.12/1] w-full overflow-hidden rounded-[1.65rem] bg-primary-dark shadow-2xl shadow-black/30 ring-1 ring-cream/15">
                 <Image
                   src="/mentor.jpeg"
                   alt="Mentor in formal attire"

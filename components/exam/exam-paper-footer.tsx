@@ -22,17 +22,22 @@ export function ExamPaperFooter({
   const isPhaseTransition = Boolean(onPhaseSubmit);
 
   return (
-    <footer className="mt-8 border-t border-dashed border-border px-6 py-6 lg:px-8">
-      <div className="flex justify-end">
+    <footer className="mt-6 border-t border-border bg-background/60 px-4 py-4 sm:mt-8 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto flex max-w-5xl flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-center text-xs leading-5 text-muted sm:text-left">
+          {isPhaseTransition
+            ? "Your preliminary answers will be submitted before the next phase."
+            : "Review your answers before submitting."}
+        </p>
         <button
           type="button"
           onClick={isPhaseTransition ? onPhaseSubmit : onSubmit}
           disabled={submitting || phaseSubmitting}
           className="
-            inline-flex h-12 cursor-pointer items-center justify-center gap-2
-            rounded-md bg-primary px-6 text-sm font-semibold text-cream
+            inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2
+            rounded-xl bg-primary px-5 text-sm font-semibold text-cream shadow-sm
             hover:bg-primary-dark disabled:cursor-not-allowed
-            disabled:opacity-60 sm:px-8
+            disabled:opacity-60 sm:w-auto sm:px-8
           "
         >
           {submitting || phaseSubmitting ? (

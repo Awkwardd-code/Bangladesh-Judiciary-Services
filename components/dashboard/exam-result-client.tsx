@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -25,13 +27,27 @@ export type ExamResultPayload = {
 export function ExamResultClient({ result }: { result: ExamResultPayload }) {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <Card className="border-border bg-card p-6">
+      <nav aria-label="Result actions" className="flex flex-wrap gap-3">
+        <Link
+          href="/dashboard/exams"
+          className="inline-flex min-h-10 items-center rounded-full border border-border px-4 text-sm font-medium text-primary hover:border-primary/40 hover:bg-primary/5"
+        >
+          Back to exams
+        </Link>
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-cream hover:bg-primary-dark"
+        >
+          Dashboard
+        </Link>
+      </nav>
+      <Card className="border-border bg-card p-4 sm:p-6">
         <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.12em] text-muted">
               Result
             </p>
-            <h1 className="mt-2 font-heading text-3xl font-semibold text-primary">
+            <h1 className="mt-2 break-words font-heading text-2xl font-semibold text-primary sm:text-3xl">
               {result.examTitle}
             </h1>
           </div>
@@ -91,13 +107,13 @@ export function ExamResultClient({ result }: { result: ExamResultPayload }) {
           return (
             <Card
               key={question.id}
-              className="border-border bg-card p-6"
+              className="border-border bg-card p-4 sm:p-6"
             >
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-heading text-lg font-semibold text-primary">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <p className="min-w-0 break-words font-heading text-lg font-semibold text-primary">
                   Q{index + 1}. {question.questionText}
                 </p>
-                <Badge className="border-border bg-muted/5 text-muted">
+                <Badge className="shrink-0 border-border bg-muted/5 text-muted">
                   {question.marks} mark(s)
                 </Badge>
               </div>
@@ -154,6 +170,20 @@ export function ExamResultClient({ result }: { result: ExamResultPayload }) {
           );
         })}
       </div>
+      <nav aria-label="Result actions" className="flex flex-wrap gap-3 pb-6">
+        <Link
+          href="/dashboard/exams"
+          className="inline-flex min-h-10 items-center rounded-full border border-border px-4 text-sm font-medium text-primary hover:border-primary/40 hover:bg-primary/5"
+        >
+          Back to exams
+        </Link>
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-cream hover:bg-primary-dark"
+        >
+          Dashboard
+        </Link>
+      </nav>
     </div>
   );
 }

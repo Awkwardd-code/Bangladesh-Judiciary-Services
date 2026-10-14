@@ -11,15 +11,15 @@ type MentorAndCtaProps = {
 
 export function MentorAndCta({ mentor }: MentorAndCtaProps) {
   return (
-    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-20">
-      <div className="mx-auto grid max-w-7xl items-stretch gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="relative isolate flex flex-col justify-between gap-6 overflow-hidden rounded-2xl border-border bg-card p-6 shadow-sm sm:p-8">
+    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-24">
+      <div className="mx-auto grid max-w-7xl items-stretch gap-4 sm:gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+        <Card className="relative isolate flex flex-col justify-between gap-6 overflow-hidden rounded-2xl border-border/80 bg-card p-5 shadow-sm sm:p-8">
           <div
             aria-hidden="true"
             className="absolute -right-20 -top-24 -z-10 size-64 rounded-full bg-accent/10 blur-3xl"
           />
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <div className="relative h-40 w-32 shrink-0 overflow-hidden rounded-2xl bg-primary/10 shadow-md sm:h-44 sm:w-36">
+            <div className="relative mx-auto h-40 w-32 shrink-0 overflow-hidden rounded-2xl bg-primary/10 shadow-md sm:mx-0 sm:h-44 sm:w-36">
               <Image
                 src={mentor?.photoUrl || "/mentor.jpeg"}
                 alt={
@@ -89,14 +89,14 @@ export function MentorAndCta({ mentor }: MentorAndCtaProps) {
           </Link>
         </Card>
 
-        <Card className="relative isolate flex flex-col justify-between overflow-hidden rounded-2xl border-0 bg-primary p-6 text-cream shadow-lg sm:p-8">
+        <Card className="relative isolate flex flex-col justify-between overflow-hidden rounded-2xl border-0 bg-primary p-5 text-cream shadow-lg sm:p-8">
           <div
             aria-hidden="true"
             className="absolute -bottom-24 -right-20 -z-10 size-72 rounded-full bg-accent/20 blur-3xl"
           />
           <div>
             <span className="flex size-12 items-center justify-center rounded-xl border border-cream/15 bg-cream/10 text-accent">
-              <UserRound size={22} />
+              <UserRound size={22} aria-hidden="true" />
             </span>
             <h2 className="mt-6 font-heading text-2xl font-bold text-cream lg:text-3xl">
               Take the next step in your preparation
@@ -109,7 +109,7 @@ export function MentorAndCta({ mentor }: MentorAndCtaProps) {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/courses"
-              className="group inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-accent-soft px-5 text-sm font-bold text-primary-dark hover:bg-accent-soft/90"
+              className="group inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-soft px-5 text-sm font-bold text-primary-dark hover:bg-accent-soft/90 sm:w-fit"
             >
               Explore courses{" "}
               <ArrowRight
@@ -119,7 +119,7 @@ export function MentorAndCta({ mentor }: MentorAndCtaProps) {
             </Link>
             <Link
               href="/exam-courses"
-              className="inline-flex h-11 cursor-pointer items-center rounded-full border border-cream/20 px-5 text-sm font-semibold text-cream hover:bg-cream/10"
+              className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-cream/20 px-5 text-sm font-semibold text-cream hover:bg-cream/10 sm:w-fit"
             >
               Model tests
             </Link>

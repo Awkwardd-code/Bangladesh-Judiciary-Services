@@ -42,34 +42,44 @@ export function QuestionCard({
   const inputId = `written-answer-${question.id}`;
 
   return (
-    <Card className="relative rounded-none border-0 bg-transparent p-0 shadow-none">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="font-heading text-lg font-semibold text-primary">
-          Q{index + 1}
-        </h2>
+    <Card className="relative min-w-0 rounded-2xl border-border bg-card p-4 shadow-sm sm:p-6">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-cream sm:h-10 sm:w-10">
+            {index + 1}
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-heading text-base font-semibold text-primary sm:text-lg">
+              Question {index + 1}
+            </h2>
+            <p className="mt-0.5 truncate text-xs text-muted">
+              {question.subject}
+            </p>
+          </div>
+        </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="rounded-full border border-border px-2 py-1 text-xs text-muted">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+          <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[10px] font-medium text-muted sm:text-xs">
             {question.marks} mark{question.marks === 1 ? "" : "s"}
           </span>
 
           {isMCQ && isLocked ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-800">
-              <Lock className="h-3.5 w-3.5" />
-              Locked
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-800 sm:text-xs">
+              <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">Locked</span>
             </span>
           ) : null}
 
           {!isMCQ && uploadedPdf ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-800">
-              <Lock className="h-3.5 w-3.5" />
-              PDF uploaded
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-800 sm:text-xs">
+              <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">PDF uploaded</span>
             </span>
           ) : null}
         </div>
       </div>
 
-      <p className="mt-4 text-[15px] leading-7 text-foreground">
+      <p className="mt-5 break-words text-sm leading-7 text-foreground sm:text-[15px]">
         {question.questionText}
       </p>
 
@@ -82,10 +92,10 @@ export function QuestionCard({
               <button
                 key={`${question.id}-${optionIndex}`}
                 type="button"
-                aria-label={`Select option ${optionIndex + 1}`}
+                aria-label={`Select option ${optionIndex + 1}: ${option}`}
                 disabled={isLocked}
                 onClick={() => onOptionClick(question.id, optionIndex)}
-                className={`flex w-full cursor-pointer items-start gap-3 rounded-md border p-4 text-left text-sm transition-colors disabled:cursor-not-allowed ${
+                className={`flex min-h-12 w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left text-sm transition-colors disabled:cursor-not-allowed sm:p-4 ${
                   selected
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-border bg-card text-foreground hover:bg-muted/5"
@@ -100,7 +110,7 @@ export function QuestionCard({
                 >
                   {String.fromCharCode(65 + optionIndex)}
                 </span>
-                <span className="flex-1">{option}</span>
+                <span className="min-w-0 flex-1 break-words leading-6">{option}</span>
               </button>
             );
           })}
@@ -141,7 +151,7 @@ export function QuestionCard({
               </a>
             </div>
           ) : (
-            <div className="rounded-md border-2 border-dashed border-border p-4 transition-colors hover:border-accent">
+            <div className="rounded-xl border-2 border-dashed border-border bg-background/70 p-3 transition-colors hover:border-accent sm:p-4">
               <input
                 id={inputId}
                 type="file"

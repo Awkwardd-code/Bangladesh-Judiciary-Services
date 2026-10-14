@@ -17,11 +17,11 @@ export function CourseDetailTabs({
 }) {
   return (
     <Tabs defaultValue="description" className="min-w-0">
-      <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
-        <TabsTrigger value="description">Description</TabsTrigger>
-        <TabsTrigger value="curriculum">Course Content</TabsTrigger>
-        <TabsTrigger value="instructor">Instructor</TabsTrigger>
-        <TabsTrigger value="routine">Routine</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1 sm:grid-cols-4">
+        <TabsTrigger value="description">Overview</TabsTrigger>
+        <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+        <TabsTrigger value="instructor">Mentors</TabsTrigger>
+        <TabsTrigger value="routine">Schedule</TabsTrigger>
       </TabsList>
       <div className="mt-5">
         <TabsContent value="description">{description}</TabsContent>

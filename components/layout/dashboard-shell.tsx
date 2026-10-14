@@ -20,7 +20,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         `}
       >
         <DashboardHeader />
-        <main className="relative flex-1 bg-[radial-gradient(ellipse_at_top_left,rgba(184,115,51,0.07),transparent_32rem)] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
+        <main className="relative min-w-0 flex-1 bg-[radial-gradient(ellipse_at_top_left,rgba(184,115,51,0.07),transparent_32rem)] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
           {children}
         </main>
       </div>

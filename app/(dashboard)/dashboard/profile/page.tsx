@@ -7,8 +7,8 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { usersCol } from "@/lib/collections";
 
 export const metadata: Metadata = {
-  title: "Profile — LegalPath Bangladesh",
-  description: "Manage your LegalPath Bangladesh account details and preferences.",
+  title: "Account & Security — LegalPath Bangladesh",
+  description: "Manage your LegalPath Bangladesh account details and security.",
 };
 
 export default async function ProfilePage() {
@@ -40,6 +40,7 @@ export default async function ProfilePage() {
         university: user.university ?? null,
         studentId: user.studentId ?? null,
         phone: user.phone ?? null,
+        gender: user.gender ?? null,
         avatarUrl: user.avatarUrl ?? null,
         avatarPublicId: user.avatarPublicId ?? null,
         verified: user.verified,

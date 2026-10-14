@@ -40,7 +40,7 @@ export default async function ResultsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-1">
+    <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
       <ResultsHeader />
       <ResultsStats
         testsTaken={recentAttempts.length}

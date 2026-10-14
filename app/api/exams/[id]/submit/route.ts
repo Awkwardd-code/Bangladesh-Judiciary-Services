@@ -128,7 +128,6 @@ export async function POST(
           wrongCount += 1;
         }
       }
-      score = Math.max(0, score);
     } else {
       skippedCount = attempt.answers.filter((answer) => !answer.pdfUrl).length;
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
@@ -12,9 +13,9 @@ import {
   Info,
   LayoutDashboard,
   Megaphone,
-  Sprout,
   Sparkles,
   Trophy,
+  User,
   Users,
 } from "lucide-react";
 
@@ -67,7 +68,7 @@ const navGroups = [
     items: [
       { label: "Payments", href: "/admin/payments", icon: CreditCard },
       { label: "About", href: "/admin/about", icon: Info },
-      { label: "Seed", href: "/admin/seed", icon: Sprout },
+      { label: "Profile", href: "/admin/profile", icon: User },
     ],
   },
 ] as const;
@@ -135,18 +136,22 @@ function SidebarContent({
             collapsed ? "text-base" : mobile ? "pr-12 text-base" : "text-base"
           )}
         >
-          {collapsed ? (
-            "LP"
-          ) : (
-            <>
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-xs font-extrabold text-primary-dark">
-                LP
-              </span>
+          <>
+              <Image
+                src="/legalpath-mark.svg"
+                alt=""
+                width={32}
+                height={32}
+                className="size-8 shrink-0"
+              />
+              {!collapsed ? (
+                <>
               <span className="shrink-0">LegalPath BD</span>
               <span className="text-accent-on-dark">·</span>
               <span className="text-xs font-medium text-cream/70">Admin</span>
-            </>
-          )}
+                </>
+              ) : null}
+          </>
         </Link>
       </div>
 

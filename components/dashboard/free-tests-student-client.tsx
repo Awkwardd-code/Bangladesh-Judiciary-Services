@@ -71,7 +71,7 @@ export function FreeTestsStudentClient({
         : "border-emerald-200 bg-emerald-100 text-emerald-700";
 
   return (
-    <div className="space-y-6 p-6">
+    <main className="mx-auto w-full max-w-7xl space-y-6">
       <div className="space-y-2">
         <h1 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
           Free Model Tests
@@ -133,7 +133,15 @@ export function FreeTestsStudentClient({
           </span>
         </div>
 
-        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-primary/10">
+        <div
+          className="mt-5 h-2 w-full overflow-hidden rounded-full bg-primary/10"
+          role="progressbar"
+          aria-label="Free test attempts used"
+          aria-valuemin={0}
+          aria-valuemax={Math.max(0, limit)}
+          aria-valuenow={Math.min(Math.max(0, used), Math.max(0, limit))}
+          aria-valuetext={`${used} of ${limit} attempts used`}
+        >
           <div
             className="h-full rounded-full bg-primary"
             style={{ width: `${Math.min(100, progress)}%` }}
@@ -147,7 +155,7 @@ export function FreeTestsStudentClient({
             <Lock className="h-12 w-12" />
           </div>
           <h2 className="font-heading text-2xl font-semibold text-primary">
-            You&apos;ve used all 10 free attempts.
+            You&apos;ve used all {limit} free attempts.
           </h2>
           <p className="mt-3 text-sm text-muted">
             Enroll in a paid course to continue practicing with unlimited model
@@ -210,7 +218,7 @@ export function FreeTestsStudentClient({
             return (
               <div
                 key={freeTest.id}
-                className="flex flex-col gap-3 rounded-xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
+                className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-emerald-700">
@@ -317,6 +325,6 @@ export function FreeTestsStudentClient({
           })}
         </div>
       )}
-    </div>
+    </main>
   );
 }

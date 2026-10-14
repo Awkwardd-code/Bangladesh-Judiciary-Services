@@ -17,6 +17,8 @@ export type SuccessStory = BaseDoc & {
   yearOfSelection?: number;
   status: SuccessStoryStatus;
   isFeatured: boolean;
+  isSample?: boolean;
+  sampleKey?: string;
   order: number;
   reviewedBy?: ObjectId;
   reviewedAt?: Date;

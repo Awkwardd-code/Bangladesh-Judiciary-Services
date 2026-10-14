@@ -75,7 +75,7 @@ export function ExamResultView({
       </Link>
 
       <header>
-        <h1 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
+        <h1 className="break-words font-heading text-2xl font-bold text-primary sm:text-3xl lg:text-4xl">
           {exam.title}
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
@@ -113,6 +113,7 @@ export function ExamResultView({
             </Badge>
           ) : null}
           <p className="mt-2 text-sm text-muted">
+            {isAwaitingReview ? "Provisional score: " : ""}
             {attempt.score} / {exam.totalMarks} marks
           </p>
         </Card>

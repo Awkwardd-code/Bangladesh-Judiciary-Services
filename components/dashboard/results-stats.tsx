@@ -1,7 +1,5 @@
 import { Award, BarChart3, ClipboardCheck } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
-
 export function ResultsStats({
   testsTaken,
   averageScore,
@@ -16,44 +14,48 @@ export function ResultsStats({
       icon: ClipboardCheck,
       label: "Tests taken",
       value: String(testsTaken),
-      detail: "Across all test types",
+      detail: "All assessment types",
+      tone: "bg-sky-50 text-sky-700",
     },
     {
       icon: BarChart3,
       label: "Average score",
       value: `${averageScore}%`,
-      detail: "Graded and scored attempts",
+      detail: "Across scored attempts",
+      tone: "bg-amber-50 text-amber-700",
     },
     {
       icon: Award,
       label: "Best score",
       value: `${bestScore}%`,
-      detail: "Highest attempt score",
+      detail: "Your personal best",
+      tone: "bg-emerald-50 text-emerald-700",
     },
   ];
 
   return (
-    <section className="mt-8 grid gap-5 lg:grid-cols-3">
-      {stats.map(({ icon: Icon, label, value, detail }) => (
-        <Card
+    <section
+      aria-label="Results summary"
+      className="grid gap-3 sm:grid-cols-3 sm:gap-4"
+    >
+      {stats.map(({ icon: Icon, label, value, detail, tone }) => (
+        <article
           key={label}
-          className="group relative overflow-hidden rounded-2xl border-border/80 bg-card p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6"
+          className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card p-4 shadow-sm sm:p-5"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-                {label}
-              </p>
-              <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-primary">
-                {value}
-              </p>
-              <p className="mt-1 text-xs text-muted">{detail}</p>
-            </div>
-            <span className="flex size-11 items-center justify-center rounded-xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-cream">
-              <Icon size={20} />
-            </span>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-muted">{label}</p>
+            <p className="mt-1 font-heading text-3xl font-bold tracking-tight text-primary">
+              {value}
+            </p>
+            <p className="mt-1 truncate text-xs text-muted">{detail}</p>
           </div>
-        </Card>
+          <span
+            className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${tone}`}
+          >
+            <Icon size={19} aria-hidden="true" />
+          </span>
+        </article>
       ))}
     </section>
   );

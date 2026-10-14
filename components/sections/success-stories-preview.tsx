@@ -2,6 +2,10 @@ import Link from "next/link";
 import { Quote } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import {
+  SampleStoryBadge,
+  SampleStoryNotice,
+} from "@/components/public/sample-story-notice";
 import type { PublicSuccessStory } from "@/lib/types/success-story";
 
 export function SuccessStoriesPreview({
@@ -14,11 +18,12 @@ export function SuccessStoriesPreview({
   }
 
   return (
-    <section className="bg-background px-5 py-16 sm:px-8 lg:py-20">
+    <section className="bg-background px-5 py-16 sm:px-8 lg:py-24">
       <div className="mx-auto max-w-7xl">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              <span className="h-px w-6 bg-accent/70" aria-hidden="true" />
               Learner stories
             </p>
             <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
@@ -31,7 +36,7 @@ export function SuccessStoriesPreview({
           </div>
           <Link
             href="/success-stories"
-            className="group inline-flex min-h-10 w-fit cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-primary hover:border-primary/30"
+            className="group inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-primary transition hover:border-primary/30 sm:w-fit"
           >
             Read all stories{" "}
             <span
@@ -43,15 +48,26 @@ export function SuccessStoriesPreview({
           </Link>
         </header>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        {stories.some((story) => story.isSample) ? (
+          <div className="mt-6">
+            <SampleStoryNotice />
+          </div>
+        ) : null}
+
+        <div className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-3 lg:mt-10">
           {stories.map((story) => (
             <Card
               key={story._id.toString()}
-              className="group relative flex flex-col overflow-hidden rounded-2xl border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg sm:p-6"
             >
               <span className="flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
                 <Quote aria-hidden="true" size={20} />
               </span>
+              {story.isSample ? (
+                <div className="mt-4">
+                  <SampleStoryBadge />
+                </div>
+              ) : null}
               <p className="mt-5 line-clamp-4 flex-1 font-heading text-base leading-7 text-primary">
                 {story.quote}
               </p>

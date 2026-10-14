@@ -15,7 +15,7 @@ import type {
 export const metadata: Metadata = {
   title: "Success Stories — LegalPath Bangladesh",
   description:
-    "Read how LegalPath Bangladesh students prepared for and cleared the Bangladesh Judicial Service exam.",
+    "Explore fictional learner story examples and verified student success stories from LegalPath Bangladesh.",
 };
 
 export const revalidate = 60;

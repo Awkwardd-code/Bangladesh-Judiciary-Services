@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="224" height="52" viewBox="0 0 224 52" fill="none">
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="#0B4B40"/>
+  <path d="M12 21.5 26 13l14 8.5v2H12v-2Z" fill="#E9B86D"/>
+  <path d="M15 25h22v2H15zM17 28h3v11h-3zM24.5 28h3v11h-3zM32 28h3v11h-3zM14 40h24v2H14z" fill="#FFF9ED"/>
+  <path d="M10 43.5h28" stroke="#E9B86D" stroke-width="2" stroke-linecap="round"/>
+  <text x="60" y="29" fill="#123E36" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="-.6">LegalPath</text>
+  <text x="61" y="43" fill="#A96C31" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" letter-spacing="2.2">BANGLADESH</text>
+</svg>

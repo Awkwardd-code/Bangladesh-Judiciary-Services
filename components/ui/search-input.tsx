@@ -8,6 +8,7 @@ import { useDebouncedValue } from "@/lib/query-params";
 import { cn } from "@/lib/utils";
 
 type SearchInputProps = {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -16,6 +17,7 @@ type SearchInputProps = {
 };
 
 export function SearchInput({
+  id,
   value,
   onChange,
   placeholder = "Search",
@@ -45,6 +47,7 @@ export function SearchInput({
         className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
       />
       <Input
+        id={id}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         placeholder={placeholder}

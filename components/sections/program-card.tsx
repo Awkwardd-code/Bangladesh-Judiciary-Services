@@ -64,18 +64,18 @@ export function ProgramCard({
   return (
     <Card
       className={`
-        grid overflow-hidden rounded-xl border border-border bg-card
-        shadow-sm lg:grid-cols-12
+        grid overflow-hidden rounded-2xl border border-border bg-card
+        shadow-lg shadow-primary/[0.04] lg:grid-cols-12
         ${isStrip ? "p-0" : "p-0"}
       `}
     >
       <div
         className={
-          isStrip ? "p-6 lg:col-span-7 lg:p-8" : "p-8 lg:col-span-7 lg:p-10"
+          isStrip ? "p-5 sm:p-7 lg:col-span-7 lg:p-9" : "p-8 lg:col-span-7 lg:p-10"
         }
       >
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary text-cream">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-cream shadow-sm">
             <ProgramIcon size={24} />
           </div>
           <div className="min-w-0">
@@ -111,7 +111,7 @@ export function ProgramCard({
             return (
               <div
                 key={`${program.code}-${feature.label}`}
-                className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-background/60 px-3 py-2"
+                className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2.5"
               >
                 <Icon
                   aria-hidden="true"
@@ -130,8 +130,8 @@ export function ProgramCard({
           href={ctaHref ?? `/programs?code=${program.code}`}
           className={
             isStrip
-              ? "mt-8 inline-flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-accent-soft px-5 font-medium text-primary-dark transition-colors hover:bg-accent-soft/90"
-              : "mt-8 inline-flex h-12 cursor-pointer items-center gap-2 rounded-lg bg-accent-soft px-6 font-medium text-primary-dark transition-colors hover:bg-accent-soft/90"
+                ? "mt-8 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-accent-soft px-5 font-semibold text-primary-dark transition-colors hover:bg-accent-soft/90"
+                : "mt-8 inline-flex h-12 cursor-pointer items-center gap-2 rounded-xl bg-accent-soft px-6 font-semibold text-primary-dark transition-colors hover:bg-accent-soft/90"
           }
         >
           {program.ctaLabel}
@@ -139,7 +139,7 @@ export function ProgramCard({
         </Link>
       </div>
 
-      <aside className="bg-primary p-8 text-cream lg:col-span-5 lg:p-10">
+      <aside className="bg-primary p-6 text-cream sm:p-8 lg:col-span-5 lg:p-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent-on-dark">
           YOUR JOURNEY
         </p>

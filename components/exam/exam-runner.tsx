@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  ClipboardCheck,
   Clock3,
   FileQuestion,
   Info,
@@ -970,13 +971,13 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     ];
 
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:px-6">
-        <Card className="w-full max-w-3xl overflow-hidden rounded-2xl border-border bg-card shadow-[0_16px_50px_rgba(18,33,63,0.08)]">
+      <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,rgba(184,115,51,0.10),transparent_38rem)] px-3 py-6 sm:px-6 sm:py-10">
+        <Card className="max-h-[calc(100dvh-3rem)] w-full max-w-3xl overflow-y-auto overflow-x-hidden rounded-2xl border-border bg-card shadow-[0_16px_50px_rgba(18,33,63,0.08)] sm:max-h-[calc(100dvh-5rem)]">
           <div className="h-1.5 bg-accent" />
-          <div className="p-6 sm:p-9 lg:p-10">
+          <div className="p-4 sm:p-7 lg:p-10">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary">
-                <BookOpen aria-hidden="true" size={23} />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary sm:h-12 sm:w-12">
+                <BookOpen aria-hidden="true" size={21} />
               </div>
               <div className="min-w-0 pt-0.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
@@ -992,7 +993,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
             </div>
 
             <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-4">
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-background/70 p-4">
+              <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/70 p-3 sm:gap-3 sm:p-4">
                 <Clock3
                   aria-hidden="true"
                   className="shrink-0 text-accent"
@@ -1005,7 +1006,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-background/70 p-4">
+              <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/70 p-3 sm:gap-3 sm:p-4">
                 <FileQuestion
                   aria-hidden="true"
                   className="shrink-0 text-accent"
@@ -1013,16 +1014,35 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
                 />
                 <div>
                   <p className="text-xs text-muted">Questions</p>
-                  <p className="mt-0.5 font-semibold text-primary">
+                  <p className="mt-0.5 break-words font-semibold text-primary">
                     {effectiveQuestionCount}
                   </p>
                 </div>
+              </div>
+              <div className="col-span-2 flex items-center gap-2 rounded-xl border border-border bg-background/70 p-3 sm:gap-3 sm:p-4">
+                <ClipboardCheck
+                  aria-hidden="true"
+                  className="shrink-0 text-accent"
+                  size={20}
+                />
+                <div>
+                  <p className="text-xs text-muted">Total marks</p>
+                  <p className="mt-0.5 font-semibold text-primary">
+                    {examDetails.totalMarks}
+                  </p>
+                </div>
+                {examDetails.passMarkPercent !== null &&
+                examDetails.passMarkPercent !== undefined ? (
+                  <span className="ml-auto rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                    Pass mark {examDetails.passMarkPercent}%
+                  </span>
+                ) : null}
               </div>
             </div>
 
             <section
               aria-labelledby="exam-rules-heading"
-              className="mt-7 rounded-xl border border-border bg-background/60 p-5 sm:p-6"
+              className="mt-6 rounded-xl border border-border bg-background/60 p-4 sm:mt-7 sm:p-6"
             >
               <h2
                 id="exam-rules-heading"
@@ -1050,7 +1070,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
               </ul>
             </section>
 
-            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 text-sm leading-6 text-foreground transition-colors hover:bg-background/70">
+            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 text-xs leading-5 text-foreground transition-colors hover:bg-background/70 sm:mt-6 sm:p-4 sm:text-sm sm:leading-6">
               <input
                 type="checkbox"
                 checked={readRules}
@@ -1060,7 +1080,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
               <span>I have read and understood the exam rules.</span>
             </label>
 
-            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:mt-6 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
               <p className="text-xs text-muted">
                 Your timer starts when you select Begin exam.
               </p>
@@ -1068,7 +1088,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
                 type="button"
                 onClick={() => void handleStart()}
                 disabled={!readRules || starting}
-                className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-cream shadow-sm hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-6"
               >
                 {starting ? (
                   <>
@@ -1094,9 +1114,9 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-4">
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <Card className="overflow-visible border-border bg-card shadow-sm">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,rgba(184,115,51,0.08),transparent_36rem)] pb-6">
+      <main className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
+        <Card className="min-w-0 overflow-visible rounded-2xl border-border bg-card shadow-[0_16px_50px_rgba(18,33,63,0.08)]">
           <ExamPaperHeader
             examTitle={examDetails.title}
             durationMinutes={
@@ -1119,7 +1139,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
             phase={hasPhases ? currentPhase : null}
           />
           <div
-            className={`mx-6 mt-6 flex items-start gap-3 rounded-md p-4 text-sm lg:mx-8 ${
+            className={`mx-3 mt-4 flex items-start gap-3 rounded-xl p-3 text-xs leading-5 sm:mx-6 sm:mt-6 sm:p-4 sm:text-sm sm:leading-6 lg:mx-8 ${
               hasWritten
                 ? "border border-blue-200 bg-blue-50 text-blue-900"
                 : "border border-amber-200 bg-amber-50 text-amber-900"
@@ -1137,7 +1157,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
             </p>
           </div>
 
-          <div className="space-y-8 px-6 py-8 lg:px-8">
+          <div className="space-y-4 px-3 py-5 sm:space-y-6 sm:px-6 sm:py-7 lg:space-y-8 lg:px-8">
             {displayedQuestions.map((question, index) => {
               const isMCQ =
                 Array.isArray(question.options) && question.options.length > 0;
@@ -1175,15 +1195,15 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       </main>
 
       {confirmationOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/75 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-primary-dark/75 p-3 sm:p-4">
           <Card
             aria-labelledby="submit-confirmation-title"
-            className="w-full max-w-md border-border bg-card p-6 shadow-xl"
+            className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto border-border bg-card p-4 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-6"
           >
             <div className="flex items-start justify-between gap-4">
               <h2
                 id="submit-confirmation-title"
-                className="font-heading text-xl font-semibold text-primary"
+                className="font-heading text-lg font-semibold text-primary sm:text-xl"
               >
                 Submit your exam?
               </h2>
@@ -1213,11 +1233,11 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
                     }. Submit anyway?`}
             </p>
 
-            <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end sm:gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmationOpen(false)}
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-border px-4 text-sm text-foreground hover:bg-muted/5"
+                className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg border border-border px-4 text-sm text-foreground hover:bg-muted/5"
               >
                 Upload more
               </button>
@@ -1225,7 +1245,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
                 type="button"
                 onClick={() => void submitExam("manual")}
                 disabled={submitting}
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg bg-primary px-4 text-sm text-cream hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Submit anyway
               </button>

@@ -31,9 +31,11 @@ type ReviewResponse = {
 export function LeaderboardAnswerReview({
   attemptId,
   kind,
+  source,
 }: {
   attemptId: string;
   kind: LeaderboardKind;
+  source: "legacy" | "unified";
 }) {
   const [questions, setQuestions] = useState<QuestionReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,10 +49,20 @@ export function LeaderboardAnswerReview({
     void fetch(
       `/api/admin/leaderboard/${encodeURIComponent(
         attemptId
-      )}?kind=${encodeURIComponent(kind)}`,
-      { signal: controller.signal }
+      )}?kind=${encodeURIComponent(kind)}&source=${encodeURIComponent(source)}`,
+      {
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      }
     )
       .then(async (response) => {
+        const contentType = response.headers.get("content-type") ?? "";
+        if (!contentType.includes("application/json")) {
+          throw new Error(
+            `Answer review returned an unexpected response (HTTP ${response.status}).`
+          );
+        }
+
         const result = await response.json();
 
         if (!response.ok || !result.success) {
@@ -76,7 +88,7 @@ export function LeaderboardAnswerReview({
       });
 
     return () => controller.abort();
-  }, [attemptId, kind]);
+  }, [attemptId, kind, source]);
 
   if (loading) {
     return (

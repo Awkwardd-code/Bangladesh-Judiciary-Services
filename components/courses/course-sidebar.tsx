@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type {
   CourseAccess,
@@ -23,6 +23,10 @@ export function CourseSidebar({
   const [access, setAccess] = useState(initialAccess);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setAccess(initialAccess);
+  }, [initialAccess]);
+
   const discountedPrice =
     course.price * (1 - (course.discountPercent ?? 0) / 100);
   const hasDiscount = (course.discountPercent ?? 0) > 0 && course.price > 0;
@@ -107,7 +111,7 @@ export function CourseSidebar({
 
   return (
     <aside id="enroll" className="lg:sticky lg:top-24">
-      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center gap-3">
           {hasDiscount ? (
             <>

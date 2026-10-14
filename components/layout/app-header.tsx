@@ -30,6 +30,8 @@ type AppHeaderProps = {
   breadcrumbs: Record<string, string[]>;
   profileHref: string;
   onToggleSidebar: () => void;
+  sidebarCollapsed?: boolean;
+  mobileNavigationOpen?: boolean;
 };
 
 type HeaderUser = {
@@ -43,12 +45,15 @@ export function AppHeader({
   breadcrumbs,
   profileHref,
   onToggleSidebar,
+  sidebarCollapsed = false,
+  mobileNavigationOpen = false,
 }: AppHeaderProps) {
   const pathname = usePathname();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<HeaderUser | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [desktop, setDesktop] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -97,8 +102,24 @@ export function AppHeader({
     };
   }, []);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const updateDesktopState = () => setDesktop(mediaQuery.matches);
+    updateDesktopState();
+    mediaQuery.addEventListener("change", updateDesktopState);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateDesktopState);
+    };
+  }, []);
+
   const segments = getBreadcrumbs(pathname, breadcrumbs, variant);
-  const SidebarToggleIcon = variant === "admin" ? PanelLeftClose : PanelLeft;
+  const SidebarToggleIcon =
+    variant === "admin"
+      ? PanelLeftClose
+      : desktop && !sidebarCollapsed
+        ? PanelLeftClose
+        : PanelLeft;
   const currentTheme = resolvedTheme ?? theme ?? "light";
 
   return (
@@ -110,21 +131,30 @@ export function AppHeader({
         ${scrolled ? "shadow-sm shadow-primary/5" : "shadow-none"}
       `}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <Button
           type="button"
           variant="ghost"
           aria-label={`Toggle ${variant} sidebar`}
+          aria-expanded={
+            variant === "dashboard"
+              ? desktop
+                ? !sidebarCollapsed
+                : mobileNavigationOpen
+              : undefined
+          }
           onClick={onToggleSidebar}
           className="
-            inline-flex h-9 w-9 cursor-pointer items-center justify-center
+            inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center
             rounded-xl p-0 text-primary transition-colors hover:bg-primary/5
           "
         >
           <SidebarToggleIcon size={20} strokeWidth={1.75} />
         </Button>
-        <span className="font-heading text-base font-bold text-primary lg:hidden">
-          {variant === "admin" ? "LegalPath Bangladesh · Admin" : "LegalPath Bangladesh"}
+        <span className="min-w-0 truncate font-heading text-sm font-bold text-primary sm:text-base lg:hidden">
+          {variant === "admin"
+            ? "LegalPath Bangladesh · Admin"
+            : segments[segments.length - 1]}
         </span>
         <nav
           aria-label="Breadcrumb"
@@ -280,16 +310,44 @@ function getBreadcrumbs(
   breadcrumbs: Record<string, string[]>,
   variant: AppHeaderProps["variant"]
 ) {
-  if (
-    variant === "dashboard" &&
-    (pathname.startsWith("/dashboard/mock-exams/") ||
-      pathname.startsWith("/dashboard/exams/"))
-  ) {
-    return ["Dashboard", "Exams", "Take Test"];
-  }
-
   if (variant === "admin" && pathname.startsWith("/admin/students/")) {
     return ["Admin", "Students", "Student details"];
+  }
+
+  if (variant === "dashboard" && pathname.startsWith("/dashboard/")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const sectionLabels: Record<string, string> = {
+      courses: "My Learning",
+      exams: "Exams",
+      "mock-exams": "Exams",
+      "free-tests": "Free tests",
+      results: "Results",
+      profile: "Profile",
+      materials: "Materials",
+    };
+    const lastPart = parts[parts.length - 1];
+
+    if (parts.length === 1) return ["Dashboard"];
+    if (lastPart === "result") {
+      return ["Dashboard", sectionLabels[parts[1]] ?? "Dashboard", "Result"];
+    }
+    if (parts[1] === "results" && parts.length > 2) {
+      return ["Dashboard", "Results", "Result"];
+    }
+    if (parts[1] === "courses" && parts.length > 2) {
+      return ["Dashboard", "My Learning", "Course"];
+    }
+    if (parts[1] === "free-tests" && parts.length > 2) {
+      return ["Dashboard", "Free tests", "Test"];
+    }
+    if (
+      (parts[1] === "exams" || parts[1] === "mock-exams") &&
+      parts.length > 2
+    ) {
+      return ["Dashboard", "Exams", "Exam"];
+    }
+
+    return ["Dashboard", sectionLabels[parts[1]] ?? "Dashboard"];
   }
 
   return breadcrumbs[pathname] ?? [variant === "admin" ? "Admin" : "Dashboard"];

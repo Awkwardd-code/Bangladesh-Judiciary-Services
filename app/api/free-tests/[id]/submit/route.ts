@@ -110,8 +110,6 @@ export const POST = withGuard(
           score = score - (freeTest.negativeMarking ?? 0);
         }
       }
-      score = Math.max(0, score);
-
       const submittedAt = new Date();
       const updateResult = await attempts.updateOne(
         {

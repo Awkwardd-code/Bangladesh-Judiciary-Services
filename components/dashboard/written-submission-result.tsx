@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -24,13 +26,27 @@ export function WrittenSubmissionResult({
 
   return (
     <main className="mx-auto max-w-5xl space-y-6">
-      <Card className="border-border bg-card p-6">
+      <nav aria-label="Result actions" className="flex flex-wrap gap-3">
+        <Link
+          href="/dashboard/results"
+          className="inline-flex min-h-10 items-center rounded-full border border-border px-4 text-sm font-medium text-primary hover:border-primary/40 hover:bg-primary/5"
+        >
+          Back to results
+        </Link>
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-cream hover:bg-primary-dark"
+        >
+          Dashboard
+        </Link>
+      </nav>
+      <Card className="border-border bg-card p-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.12em] text-muted">
               Written exam result
             </p>
-            <h1 className="mt-2 font-heading text-3xl font-semibold text-primary">
+            <h1 className="mt-2 break-words font-heading text-2xl font-semibold text-primary sm:text-3xl">
               {title}
             </h1>
           </div>

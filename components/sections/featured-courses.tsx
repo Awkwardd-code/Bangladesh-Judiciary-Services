@@ -28,11 +28,12 @@ export function FeaturedCourses({
   }
 
   return (
-    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-20">
+    <section className="bg-cream px-5 py-16 sm:px-8 lg:py-24">
       <div className="mx-auto max-w-7xl">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              <span className="h-px w-6 bg-accent/70" aria-hidden="true" />
               Learn at your pace
             </p>
             <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
@@ -45,7 +46,7 @@ export function FeaturedCourses({
           </div>
           <Link
             href="/courses"
-            className="group inline-flex min-h-10 w-fit items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-primary hover:border-primary/30 hover:bg-primary/5"
+            className="group inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/5 sm:w-fit"
           >
             View all courses{" "}
             <ArrowRight
@@ -55,11 +56,11 @@ export function FeaturedCourses({
           </Link>
         </header>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2 lg:mt-10 lg:grid-cols-3">
           {courses.map((course) => (
             <Card
               key={course._id.toString()}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              className="group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-xl"
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-primary/10">
                 {course.coverUrl ? (
@@ -72,7 +73,7 @@ export function FeaturedCourses({
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-primary/40">
+                  <div className="flex h-full items-center justify-center bg-[radial-gradient(ellipse_at_top_right,rgba(184,115,51,0.14),transparent_55%),linear-gradient(135deg,rgba(8,65,55,0.05),rgba(8,65,55,0.12))] text-primary/40">
                     <FileText aria-hidden="true" size={36} />
                   </div>
                 )}
@@ -109,7 +110,7 @@ export function FeaturedCourses({
                 {course.slug ? (
                   <Link
                     href={`/courses/${course.slug}`}
-                    className="mt-4 inline-flex min-h-9 cursor-pointer items-center justify-between gap-1 text-sm font-semibold text-primary"
+                    className="mt-4 inline-flex min-h-10 cursor-pointer items-center justify-between gap-1 rounded-lg text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     View course{" "}
                     <ArrowRight

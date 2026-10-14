@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ChevronDown,
@@ -131,18 +132,22 @@ export function SiteHeader({ initialUser }: { initialUser: SiteUser | null }) {
         ${scrolled ? "shadow-md" : "shadow-none"}
       `}
     >
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between border-b border-border px-4 sm:px-6 lg:border-transparent">
+      <div className="mx-auto flex h-[4.25rem] w-full max-w-7xl items-center justify-between border-b border-border px-4 sm:px-6 lg:border-transparent">
         <Link
           href="/"
           aria-label="LegalPath Bangladesh home"
-          className="inline-flex shrink-0 items-center gap-2 font-heading text-lg font-bold text-primary"
+          className="inline-flex shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
-          LegalPath
-          <span className="rounded-full bg-primary/5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
-            BD
-          </span>
+          <Image
+            src="/legalpath-logo.svg"
+            alt="LegalPath Bangladesh"
+            width={206}
+            height={48}
+            priority
+            className="h-10 w-auto sm:h-11"
+          />
         </Link>
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-8 lg:flex">
           {links.map(([label, href]) =>
             label === "Programs" ? (
               <div
@@ -357,7 +362,7 @@ export function SiteHeader({ initialUser }: { initialUser: SiteUser | null }) {
               </div>
             </div>
           ) : authChecked ? (
-            <div className="hidden items-center gap-4 md:flex">
+            <div className="hidden items-center gap-4 lg:flex">
               <Link
                 href="/login"
                 className="text-sm text-muted hover:text-primary"
@@ -372,14 +377,14 @@ export function SiteHeader({ initialUser }: { initialUser: SiteUser | null }) {
               </Button>
             </div>
           ) : (
-            <span className="hidden h-10 w-32 md:block" aria-hidden="true" />
+            <span className="hidden h-10 w-32 lg:block" aria-hidden="true" />
           )}
           <button
             type="button"
             className="
               flex min-h-10 min-w-10 cursor-pointer items-center
               justify-center rounded-md p-2 text-primary
-              hover:bg-primary/5 md:hidden
+              hover:bg-primary/5 lg:hidden
             "
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
@@ -393,7 +398,7 @@ export function SiteHeader({ initialUser }: { initialUser: SiteUser | null }) {
       {mobileMenuOpen ? (
         <nav
           id="mobile-navigation"
-          className="border-b border-border bg-cream px-4 py-5 sm:px-6 md:hidden"
+          className="border-b border-border bg-cream px-4 py-5 sm:px-6 lg:hidden"
         >
           {links.map(([label, href]) => (
             <div key={href}>

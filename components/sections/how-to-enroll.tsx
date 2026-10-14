@@ -40,11 +40,13 @@ const steps = [
 
 export function HowToEnroll() {
   return (
-    <section className="bg-background px-5 py-16 sm:px-8 lg:py-20">
+    <section className="bg-background px-5 py-16 sm:px-8 lg:py-24">
       <div className="mx-auto max-w-7xl">
         <header className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            <span className="h-px w-6 bg-accent/70" aria-hidden="true" />
             Simple to get started
+            <span className="h-px w-6 bg-accent/70" aria-hidden="true" />
           </p>
           <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-primary lg:text-4xl">
             Your next step, made clear
@@ -54,7 +56,7 @@ export function HowToEnroll() {
           </p>
         </header>
 
-        <div className="relative mt-10">
+        <div className="relative mt-10 lg:mt-12">
           <div
             aria-hidden="true"
             className="absolute left-[12.5%] right-[12.5%] top-7 hidden h-px bg-border lg:block"
@@ -63,10 +65,10 @@ export function HowToEnroll() {
             {steps.map((step) => (
               <li
                 key={step.number}
-                className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
+                className="group rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent/30 hover:shadow-lg sm:p-6"
               >
                 <div className="flex items-center justify-between">
-                  <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-cream">
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-primary text-cream shadow-sm transition-colors group-hover:bg-accent group-hover:text-primary-dark">
                     <step.icon size={21} aria-hidden="true" />
                   </span>
                   <span className="font-heading text-sm font-bold tracking-[0.16em] text-accent">

@@ -4,6 +4,10 @@ import { Quote, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  SampleStoryBadge,
+  SampleStoryNotice,
+} from "@/components/public/sample-story-notice";
 import type { PublicSuccessStory } from "@/lib/types/success-story";
 
 export function SuccessStoriesGrid({
@@ -36,6 +40,11 @@ export function SuccessStoriesGrid({
   return (
     <section className="bg-cream px-6 py-12 pb-20">
       <div className="mx-auto max-w-6xl">
+        {stories.some((story) => story.isSample) ? (
+          <div className="mb-6">
+            <SampleStoryNotice />
+          </div>
+        ) : null}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {stories.map((story) => (
             <article key={story._id.toString()} className="relative">
@@ -63,6 +72,11 @@ export function SuccessStoriesGrid({
                 </div>
 
                 <div className="flex flex-1 flex-col p-6">
+                  {story.isSample ? (
+                    <div className="mb-3">
+                      <SampleStoryBadge />
+                    </div>
+                  ) : null}
                   <Quote aria-hidden="true" size={24} className="text-accent" />
                   <p className="mt-2 line-clamp-4 text-[15px] leading-7 text-foreground">
                     {story.quote}

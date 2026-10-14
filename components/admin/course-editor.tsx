@@ -93,34 +93,12 @@ function createCourseSlug(title: string, suffix: string) {
   return title.trim() ? `${base || "course"}-${suffix}` : "";
 }
 
-export function CourseEditor({
-  course,
-  mentors,
-  initialCategory = "BJS",
-  exams = [],
-  programKind = course?.programKind ?? "course",
-}: {
-  course: SerializedCourse | null;
-  mentors: SerializedMentor[];
-  initialCategory?: "BJS" | "BAR" | "LLB";
-  programKind?: "course" | "exam";
-  exams?: Array<{
-    id: string;
-    title: string;
-    courseId?: string;
-    kind?: string;
-    segmentId?: string;
-    subSegmentId?: string;
-    status?: "draft" | "published" | "archived";
-  }>;
-}) {
-  const router = useRouter();
-  const [slugSuffix] = useState(
-    course?.slug?.match(/-([a-z0-9]{10})$/i)?.[1] ?? createSlugSuffix()
-  );
-  const [saveError, setSaveError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<SerializedCourse>({
+function createCourseForm(
+  course: SerializedCourse | null,
+  programKind: "course" | "exam",
+  initialCategory: "BJS" | "BAR" | "LLB"
+): SerializedCourse {
+  return {
     programKind,
     title: course?.title ?? "",
     slug: course?.slug ?? "",
@@ -151,14 +129,43 @@ export function CourseEditor({
     isPublished: course?.isPublished ?? false,
     status: course?.status ?? "draft",
     order: course?.order ?? 0,
-  });
+  };
+}
+
+export function CourseEditor({
+  course,
+  mentors,
+  initialCategory = "BJS",
+  exams = [],
+  programKind = course?.programKind ?? "course",
+}: {
+  course: SerializedCourse | null;
+  mentors: SerializedMentor[];
+  initialCategory?: "BJS" | "BAR" | "LLB";
+  programKind?: "course" | "exam";
+  exams?: Array<{
+    id: string;
+    title: string;
+    courseId?: string;
+    kind?: string;
+    segmentId?: string;
+    subSegmentId?: string;
+    status?: "draft" | "published" | "archived";
+  }>;
+}) {
+  const router = useRouter();
+  const [slugSuffix] = useState(
+    course?.slug?.match(/-([a-z0-9]{10})$/i)?.[1] ?? createSlugSuffix()
+  );
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<SerializedCourse>(() =>
+    createCourseForm(course, programKind, initialCategory)
+  );
 
   useEffect(() => {
-    setForm((current) => ({
-      ...current,
-      segments: course?.segments ?? [],
-    }));
-  }, [course]);
+    setForm(createCourseForm(course, programKind, initialCategory));
+  }, [course, initialCategory, programKind]);
 
   const saveCourse = async () => {
     if (saving) {
@@ -245,19 +252,23 @@ export function CourseEditor({
 
       const next = payload?.data?.course;
 
-      if (next?.id) {
-        if (
-          programKind !== "exam" &&
-          next.status === "published" &&
-          next.isPublished &&
-          next.slug
-        ) {
-          router.push(`/courses/${next.slug}`);
-        } else {
-          router.push(
-            `${programKind === "exam" ? "/admin/exam-courses" : "/admin/courses"}/${next.id}`
-          );
-        }
+      if (typeof next?.id !== "string") {
+        throw new Error("Course was saved, but the server did not return its ID.");
+      }
+
+      if (
+        programKind !== "exam" &&
+        next.status === "published" &&
+        next.isPublished &&
+        next.slug
+      ) {
+        router.push(`/courses/${next.slug}`);
+      } else if (course?.id) {
+        router.refresh();
+      } else {
+        router.push(
+          `${programKind === "exam" ? "/admin/exam-courses" : "/admin/courses"}/${next.id}`
+        );
       }
     } catch (caughtError) {
       setSaveError(
@@ -271,10 +282,10 @@ export function CourseEditor({
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="min-w-0 space-y-6 p-3 sm:p-4 lg:p-6">
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList
-          className={`grid w-full max-w-3xl ${programKind === "exam" ? "grid-cols-5" : "grid-cols-4"}`}
+          className={`grid w-full max-w-3xl grid-cols-2 ${programKind === "exam" ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}
         >
           <TabsTrigger value="overview">
             {programKind === "exam" ? "Test Details" : "Overview"}
@@ -1210,7 +1221,7 @@ export function CourseEditor({
           {saveError}
         </p>
       ) : null}
-      <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-border bg-background/90 px-4 py-3 backdrop-blur">
+      <div className="sticky bottom-0 z-20 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background/90 px-3 py-3 backdrop-blur sm:gap-3 sm:px-4">
         <Button
           type="button"
           variant="ghost"

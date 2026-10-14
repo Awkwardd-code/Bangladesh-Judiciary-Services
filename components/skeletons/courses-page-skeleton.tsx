@@ -77,24 +77,51 @@ export function CoursesPageSkeleton() {
 
 export function DashboardCoursesSkeleton() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <header className="flex items-center justify-between gap-3">
-        <SkHeading width="w-48" />
-        <SkButton width="w-36" />
+    <div className="mx-auto max-w-7xl space-y-6" aria-busy="true">
+      <header className="flex flex-col gap-5 rounded-3xl bg-primary px-5 py-7 sm:flex-row sm:items-end sm:justify-between sm:px-8">
+        <div className="space-y-3">
+          <SkBadge width="w-36" />
+          <SkHeading width="w-48" />
+          <SkLine width="w-96" />
+        </div>
+        <SkButton width="w-40" />
       </header>
-      <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }, (_, index) => (
+          <Card key={index} className="flex items-center justify-between p-5">
+            <div className="space-y-2">
+              <SkLine width="w-28" />
+              <SkTitle width="w-16" />
+              <SkLine width="w-36" />
+            </div>
+            <SkBadge width="w-10" height="h-10" />
+          </Card>
+        ))}
+      </div>
+      <Card className="space-y-4 border-border/80 p-5">
+        <SkTitle width="w-36" />
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: 6 }, (_, index) => (
+            <SkButton key={index} width="w-28" height="h-9" />
+          ))}
+        </div>
+      </Card>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }, (_, index) => (
           <Card
             key={index}
-            className="rounded-lg border-border bg-card p-4 shadow-sm"
+            className="overflow-hidden rounded-2xl border-border bg-card shadow-sm"
           >
-            <SkImage aspect="h-28" />
-            <SkTitle className="mt-4" width="w-3/4" />
-            <SkLine className="mt-2" />
-            <SkLine className="mt-2" width="w-5/6" />
-            <div className="mt-4 flex items-center justify-between">
-              <SkLine width="w-24" />
-              <SkLine width="w-20" />
+            <SkImage aspect="h-40" />
+            <div className="space-y-3 p-5">
+              <SkBadge width="w-28" />
+              <SkTitle width="w-3/4" />
+              <SkLine />
+              <SkLine width="w-5/6" />
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <SkLine width="w-24" />
+                <SkButton width="w-24" height="h-10" />
+              </div>
             </div>
           </Card>
         ))}

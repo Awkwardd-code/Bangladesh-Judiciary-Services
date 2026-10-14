@@ -8,7 +8,6 @@ import { CourseDetailTabs } from "@/components/courses/course-detail-tabs";
 import { CourseExamTopics } from "@/components/courses/course-exam-topics";
 import { CourseHero } from "@/components/courses/course-hero";
 import { CourseMentors } from "@/components/courses/course-mentors";
-import { CourseWhatIncluded } from "@/components/courses/course-what-included";
 import { CtaBand } from "@/components/sections/cta-band";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ensureIndexes } from "@/lib/indexes";
@@ -224,20 +223,15 @@ export default async function CourseDetailPage({
       >
         {course.programKind === "exam" ? (
               <Tabs defaultValue="test-details" className="min-w-0">
-                <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
-                  <TabsTrigger value="test-details">Test Details</TabsTrigger>
-                  <TabsTrigger value="topics">Exam Topic</TabsTrigger>
-                  <TabsTrigger value="examiners">Examiner</TabsTrigger>
-                  <TabsTrigger value="routine">Routine</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1 sm:grid-cols-4">
+                  <TabsTrigger value="test-details">Overview</TabsTrigger>
+                  <TabsTrigger value="topics">Syllabus & tests</TabsTrigger>
+                  <TabsTrigger value="examiners">Examiners</TabsTrigger>
+                  <TabsTrigger value="routine">Schedule</TabsTrigger>
                 </TabsList>
                 <div className="mt-5">
                   <TabsContent value="test-details">
                     <CourseDescription course={serializedCourse} />
-                    <CourseCurriculum
-                      course={serializedCourse}
-                      isExamCourse
-                      hasAccess={serializedAccess?.hasAccess ?? false}
-                    />
                   </TabsContent>
                   <TabsContent value="topics">
                     <CourseExamTopics
@@ -284,12 +278,7 @@ export default async function CourseDetailPage({
               </Tabs>
         ) : (
           <CourseDetailTabs
-            description={
-              <>
-                <CourseDescription course={serializedCourse} />
-                <CourseWhatIncluded course={serializedCourse} />
-              </>
-            }
+            description={<CourseDescription course={serializedCourse} />}
             curriculum={
               <CourseCurriculum
                 course={serializedCourse}
