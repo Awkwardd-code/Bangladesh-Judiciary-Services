@@ -1,13 +1,18 @@
 "use client";
 
-import { Save, X } from "lucide-react";
+import { Save } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toaster";
+import {
+  ExamSettingsField,
+  ExamSettingsPanel,
+} from "@/components/admin/exam-settings-panel";
 type ExamEditorProps = {
   exam?: {
     _id: string;
@@ -17,6 +22,8 @@ type ExamEditorProps = {
     segmentId: string;
     subSegmentId: string;
     kind: "preliminary" | "written";
+    type?: "free" | "paid";
+    price?: number;
     durationMinutes: number;
     questionsPerAttempt?: number;
     negativeMarking?: number;
@@ -34,6 +41,8 @@ type ExamForm = {
   title: string;
   description: string;
   kind: "preliminary" | "written";
+  type: "free" | "paid";
+  price: string;
   durationMinutes: string;
   questionsPerAttempt: string;
   negativeMarking: string;
@@ -45,6 +54,8 @@ const emptyForm: ExamForm = {
   title: "",
   description: "",
   kind: "preliminary",
+  type: "paid",
+  price: "",
   durationMinutes: "180",
   questionsPerAttempt: "",
   negativeMarking: "0",
@@ -92,6 +103,8 @@ export function ExamEditor({
           title: exam.title,
           description: exam.description ?? "",
           kind: exam.kind,
+          type: exam.type ?? "paid",
+          price: String(exam.price ?? ""),
           durationMinutes: String(exam.durationMinutes),
           questionsPerAttempt: String(exam.questionsPerAttempt ?? ""),
           negativeMarking: String(exam.negativeMarking ?? 0),
@@ -108,6 +121,7 @@ export function ExamEditor({
   const duration = Number(form.durationMinutes);
   const questionsPerAttempt = Number(form.questionsPerAttempt);
   const negativeMarking = Number(form.negativeMarking);
+  const price = Number(form.price);
   const scheduleValid =
     !form.scheduledAt ||
     !form.closesAt ||
@@ -117,7 +131,14 @@ export function ExamEditor({
       ? "Enter a title with at least 3 characters."
       : !Number.isInteger(duration) || duration < 1 || duration > 600
         ? "Duration must be between 1 and 600 minutes."
-        : (form.questionsPerAttempt.trim() !== "" &&
+        : form.type === "paid" &&
+            (!Number.isFinite(price) ||
+              (price <= 0 &&
+                (!exam ||
+                  form.type !== exam.type ||
+                  price !== (exam.price ?? 0))))
+          ? "Enter a price greater than zero for a paid exam."
+          : (form.questionsPerAttempt.trim() !== "" &&
               (!Number.isInteger(questionsPerAttempt) ||
                 questionsPerAttempt < 1)) ||
             questionsPerAttempt > 500
@@ -145,21 +166,27 @@ export function ExamEditor({
         title: form.title.trim(),
         description: form.description.trim(),
         kind: form.kind,
+        type: form.type,
+        price: form.type === "free" ? 0 : price,
         courseId: exam?.courseId ?? courseId,
         segmentId: exam?.segmentId ?? segmentId,
         subSegmentId: exam?.subSegmentId ?? subSegmentId,
         durationMinutes: duration,
         questionsPerAttempt:
           form.questionsPerAttempt.trim() === ""
-            ? undefined
+            ? 0
             : questionsPerAttempt,
         negativeMarking,
         scheduledAt: form.scheduledAt
           ? new Date(form.scheduledAt).toISOString()
-          : undefined,
+          : exam
+            ? null
+            : undefined,
         closesAt: form.closesAt
           ? new Date(form.closesAt).toISOString()
-          : undefined,
+          : exam
+            ? null
+            : undefined,
       };
       const response = await fetch(
         exam
@@ -211,32 +238,40 @@ export function ExamEditor({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="font-heading text-xl font-semibold text-primary">
-            {exam ? "Edit model test" : "Create model test"}
-          </h2>
-          <p className="mt-1 text-sm text-muted">
-            Save the exam as a draft, then add its questions before publishing.
+    <ExamSettingsPanel
+      onSubmit={save}
+      saving={saving}
+      error={error}
+      description="Save the exam as a draft, then add its questions before publishing."
+      saveLabel={exam ? "Save settings" : "Save draft"}
+      footer={
+        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted">
+            {isDirty ? "Unsaved changes" : "All changes saved"}
           </p>
+          <div className="flex justify-end gap-2">
+            {onCancel ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onCancel}
+                className="h-10 rounded-lg"
+              >
+                Cancel
+              </Button>
+            ) : null}
+            <Button type="submit" disabled={saving} className="h-10 rounded-lg">
+              <Save className="h-4 w-4" />
+              {saving ? "Saving…" : exam ? "Save settings" : "Save draft"}
+            </Button>
+          </div>
         </div>
-        {onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Cancel exam editing"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-primary/5"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
-      </header>
-
-      <form onSubmit={save} className="mt-6 space-y-5">
-        <label className="block space-y-2 text-sm font-semibold text-primary">
-          Exam kind
-          <select
+      }
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        <ExamSettingsField label="Exam kind">
+          <Select
+            className="h-11 w-full"
             value={form.kind}
             onChange={(event) =>
               setForm((current) => ({
@@ -244,15 +279,44 @@ export function ExamEditor({
                 kind: event.target.value as ExamForm["kind"],
               }))
             }
-            className="h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
           >
             <option value="preliminary">Preliminary</option>
             <option value="written">Written</option>
-          </select>
-        </label>
+          </Select>
+        </ExamSettingsField>
 
-        <label className="block space-y-2 text-sm font-semibold text-primary">
-          Title
+        <ExamSettingsField label="Exam access">
+          <Select
+            className="h-11 w-full"
+            value={form.type}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                type: event.target.value as ExamForm["type"],
+              }))
+            }
+          >
+            <option value="free">Free</option>
+            <option value="paid">Paid</option>
+          </Select>
+        </ExamSettingsField>
+        {form.type === "paid" ? (
+          <ExamSettingsField label="Price (BDT)">
+            <Input
+              type="number"
+              min={1}
+              value={form.price}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  price: event.target.value,
+                }))
+              }
+            />
+          </ExamSettingsField>
+        ) : null}
+
+        <ExamSettingsField label="Title" className="sm:col-span-2">
           <Input
             required
             minLength={3}
@@ -262,13 +326,9 @@ export function ExamEditor({
               setForm((current) => ({ ...current, title: event.target.value }))
             }
           />
-          <span className="block text-xs font-normal text-muted">
-            Use a clear title students can recognize.
-          </span>
-        </label>
+        </ExamSettingsField>
 
-        <label className="block space-y-2 text-sm font-semibold text-primary">
-          Description
+        <ExamSettingsField label="Description" className="sm:col-span-2">
           <Textarea
             rows={3}
             maxLength={2000}
@@ -280,11 +340,9 @@ export function ExamEditor({
               }))
             }
           />
-        </label>
+        </ExamSettingsField>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="block space-y-2 text-sm font-semibold text-primary">
-            Duration (minutes)
+        <ExamSettingsField label="Duration (minutes)">
             <Input
               type="number"
               min={1}
@@ -297,13 +355,12 @@ export function ExamEditor({
                 }))
               }
             />
-            <span className="block text-xs font-normal text-muted">
-              From 1 to 600 minutes.
-            </span>
-          </label>
+        </ExamSettingsField>
 
-          <label className="block space-y-2 text-sm font-semibold text-primary">
-            Questions per attempt
+        <ExamSettingsField
+          label="Questions per attempt"
+          hint="Leave blank to serve all exam questions."
+        >
             <Input
               type="number"
               min={1}
@@ -316,13 +373,13 @@ export function ExamEditor({
                 }))
               }
             />
-            <span className="block text-xs font-normal text-muted">
-              Leave blank to serve all exam questions.
-            </span>
-          </label>
+        </ExamSettingsField>
 
-          <label className="block space-y-2 text-sm font-semibold text-primary">
-            Negative marking
+        {form.kind === "preliminary" ? (
+          <ExamSettingsField
+            label="Negative marking"
+            hint="Marks deducted for each incorrect answer."
+          >
             <Input
               type="number"
               min={0}
@@ -336,10 +393,12 @@ export function ExamEditor({
                 }))
               }
             />
-          </label>
-
-          <label className="block space-y-2 text-sm font-semibold text-primary">
-            Scheduled at
+          </ExamSettingsField>
+        ) : null}
+        <ExamSettingsField
+          label="Scheduled at"
+          hint="Leave blank to make the exam available immediately."
+        >
             <Input
               type="datetime-local"
               value={form.scheduledAt}
@@ -350,13 +409,9 @@ export function ExamEditor({
                 }))
               }
             />
-            <span className="block text-xs font-normal text-muted">
-              Leave blank to make the exam available immediately.
-            </span>
-          </label>
+        </ExamSettingsField>
 
-          <label className="block space-y-2 text-sm font-semibold text-primary sm:col-span-2">
-            Closes at
+        <ExamSettingsField label="Closes at">
             <Input
               type="datetime-local"
               value={form.closesAt}
@@ -367,40 +422,8 @@ export function ExamEditor({
                 }))
               }
             />
-          </label>
-        </div>
-
-        {error ? (
-          <p
-            role="alert"
-            className="rounded-md bg-red-50 p-3 text-sm text-red-700"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        <footer className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-muted">
-            {isDirty ? "Unsaved changes" : "All changes saved"}
-          </p>
-          <div className="flex justify-end gap-2">
-            {onCancel ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onCancel}
-                className="cursor-pointer"
-              >
-                Cancel
-              </Button>
-            ) : null}
-            <Button type="submit" disabled={saving} className="cursor-pointer">
-              <Save className="h-4 w-4" />
-              {saving ? "Saving..." : "Save draft"}
-            </Button>
-          </div>
-        </footer>
-      </form>
-    </section>
+        </ExamSettingsField>
+      </div>
+    </ExamSettingsPanel>
   );
 }

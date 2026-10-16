@@ -7,10 +7,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminWrittenExamDetailSkeleton } from "@/components/skeletons/admin-written-exam-detail-skeleton";
 import { ExamLifecycleBar } from "@/components/admin/exam-lifecycle-bar";
 import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
+import {
+  ExamSettingsField,
+  ExamSettingsPanel,
+  examTabClass,
+} from "@/components/admin/exam-settings-panel";
 import { ImportExcelDialog } from "@/components/admin/import-excel-dialog";
 import { WrittenExamRecord } from "@/components/admin/written-exam-editor";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
@@ -53,11 +60,26 @@ const emptyQuestion: WrittenQuestionForm = {
 
 type DetailTab = "questions" | "settings" | "submissions";
 
-export function WrittenExamDetailClient({ examId }: { examId: string }) {
+function toDateTimeLocal(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+}
+
+export function WrittenExamDetailClient({
+  examId,
+  initialTab = "questions",
+}: {
+  examId: string;
+  initialTab?: DetailTab;
+}) {
   const [exam, setExam] = useState<WrittenExamRecord | null>(null);
   const [questions, setQuestions] = useState<WrittenQuestion[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [activeTab, setActiveTab] = useState<DetailTab>("questions");
+  const [activeTab, setActiveTab] = useState<DetailTab>(initialTab);
   const [questionOpen, setQuestionOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] =
     useState<WrittenQuestion | null>(null);
@@ -67,6 +89,9 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
     description: "",
     durationMinutes: "180",
     questionsPerAttempt: "",
+    type: "paid" as "free" | "paid",
+    scheduledAt: "",
+    closesAt: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -110,6 +135,9 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
           loadedExam.questionsPerAttempt !== undefined
             ? String(loadedExam.questionsPerAttempt)
             : "",
+        type: loadedExam.type ?? "paid",
+        scheduledAt: toDateTimeLocal(loadedExam.scheduledAt),
+        closesAt: toDateTimeLocal(loadedExam.closesAt),
       });
     } catch (caughtError) {
       setError(
@@ -202,7 +230,22 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
 
   async function saveSettings(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const scheduledAt = settings.scheduledAt
+      ? new Date(settings.scheduledAt).toISOString()
+      : null;
+    const closesAt = settings.closesAt
+      ? new Date(settings.closesAt).toISOString()
+      : null;
+    if (
+      scheduledAt &&
+      closesAt &&
+      new Date(closesAt).getTime() <= new Date(scheduledAt).getTime()
+    ) {
+      setError("Closing time must be later than the scheduled time.");
+      return;
+    }
     setSaving(true);
+    setError("");
 
     try {
       const response = await fetch(`/api/admin/written-exams/${examId}`, {
@@ -213,8 +256,11 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
           durationMinutes: Number(settings.durationMinutes),
           questionsPerAttempt:
             settings.questionsPerAttempt.trim() === ""
-              ? undefined
+              ? 0
               : Number(settings.questionsPerAttempt),
+          type: settings.type,
+          scheduledAt,
+          closesAt,
         }),
       });
       const result = (await response.json()) as { error?: string };
@@ -387,25 +433,25 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
           <Link
             href={`/exam/written/${examId}`}
             target="_blank"
-            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-4 text-sm text-foreground"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
           >
             <Eye className="h-4 w-4" />
             Preview
           </Link>
-          <button
+          <Button
             type="button"
             onClick={() => openQuestionEditor()}
-            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-cream"
+            className="h-10 rounded-lg px-4"
           >
             <Plus className="h-4 w-4" />
             Add question
-          </button>
+          </Button>
           <ImportExcelDialog
             examId={examId}
             kind="written"
             onImported={() => setReloadKey((current) => current + 1)}
           />
-          <button
+          <Button
             type="button"
             onClick={() => void publishExam()}
             disabled={
@@ -418,7 +464,8 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
                 ? `Add at least ${Math.max(1, exam.questionsPerAttempt ?? 1)} questions before publishing.`
                 : undefined
             }
-            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-accent px-4 text-sm font-medium text-accent disabled:cursor-not-allowed disabled:opacity-50"
+            variant={exam.status === "published" ? "ghost" : "default"}
+            className="h-10 rounded-lg border border-border px-4"
           >
             {exam.status === "published" ? (
               <EyeOff className="h-4 w-4" />
@@ -432,7 +479,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
               : exam.status === "archived"
                 ? "Restore"
                 : "Publish"}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -466,11 +513,7 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={
-                activeTab === tab
-                  ? "cursor-pointer border-b-2 border-accent px-4 py-3 text-sm font-medium capitalize text-primary"
-                  : "cursor-pointer px-4 py-3 text-sm capitalize text-muted hover:text-primary"
-              }
+              className={examTabClass(activeTab === tab)}
             >
               {tab}
             </button>
@@ -588,9 +631,13 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
       ) : null}
 
       {activeTab === "settings" ? (
-        <form onSubmit={saveSettings} className="mt-6 max-w-2xl space-y-4">
-          <label className="block space-y-2 text-sm font-medium text-primary">
-            Title
+        <ExamSettingsPanel
+          onSubmit={saveSettings}
+          saving={saving}
+          description="Edit the exam details, attempt rules, access, and availability."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+          <ExamSettingsField label="Title" className="sm:col-span-2">
             <Input
               required
               value={settings.title}
@@ -601,13 +648,8 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
                 }))
               }
             />
-          </label>
-          <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-            Model answer PDFs are attached to individual written questions in
-            the Questions tab.
-          </p>
-          <label className="block space-y-2 text-sm font-medium text-primary">
-            Description
+          </ExamSettingsField>
+          <ExamSettingsField label="Description" className="sm:col-span-2">
             <Textarea
               rows={5}
               value={settings.description}
@@ -618,9 +660,8 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
                 }))
               }
             />
-          </label>
-          <label className="block space-y-2 text-sm font-medium text-primary">
-            Duration in minutes
+          </ExamSettingsField>
+          <ExamSettingsField label="Duration (minutes)">
             <Input
               type="number"
               min={1}
@@ -633,9 +674,11 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
                 }))
               }
             />
-          </label>
-          <label className="block space-y-2 text-sm font-medium text-primary">
-            Questions per attempt
+          </ExamSettingsField>
+          <ExamSettingsField
+            label="Questions per attempt"
+            hint="Leave blank to use the full question bank for each attempt."
+          >
             <Input
               type="number"
               min={1}
@@ -648,18 +691,55 @@ export function WrittenExamDetailClient({ examId }: { examId: string }) {
                 }))
               }
             />
-            <span className="text-xs text-muted">
-              Leave blank to use the full question bank for each attempt.
-            </span>
-          </label>
-          <button
-            type="submit"
-            disabled={saving}
-            className="h-10 cursor-pointer rounded-md bg-primary px-5 text-sm font-medium text-cream disabled:opacity-50"
+          </ExamSettingsField>
+          <ExamSettingsField label="Exam access">
+            <Select
+              className="h-11 w-full"
+              value={settings.type}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  type: event.target.value as "free" | "paid",
+                }))
+              }
+            >
+              <option value="free">Free</option>
+              <option value="paid">Paid</option>
+            </Select>
+          </ExamSettingsField>
+          <ExamSettingsField
+            label="Scheduled at"
+            hint="Leave blank to make the exam available immediately."
           >
-            {saving ? "Saving..." : "Save settings"}
-          </button>
-        </form>
+            <Input
+              type="datetime-local"
+              value={settings.scheduledAt}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  scheduledAt: event.target.value,
+                }))
+              }
+            />
+          </ExamSettingsField>
+          <ExamSettingsField label="Closes at">
+            <Input
+              type="datetime-local"
+              value={settings.closesAt}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  closesAt: event.target.value,
+                }))
+              }
+            />
+          </ExamSettingsField>
+          </div>
+          <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 sm:col-span-2">
+            Model answer PDFs are attached to individual written questions in
+            the Questions tab.
+          </p>
+        </ExamSettingsPanel>
       ) : null}
 
       {activeTab === "submissions" ? (

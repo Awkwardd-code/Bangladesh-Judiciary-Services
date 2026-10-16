@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 
 import { CourseCurriculum } from "@/components/courses/course-curriculum";
 import { requireSession } from "@/lib/auth-guard";
-import { coursesCol, examsCol } from "@/lib/collections";
+import {
+  coursesCol,
+  examsCol,
+  preliminaryExamsCol,
+  writtenExamsCol,
+} from "@/lib/collections";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { getEnrollmentAccess } from "@/lib/enrollment";
 
 export default async function CourseDetailPage({
@@ -32,15 +38,76 @@ export default async function CourseDetailPage({
   const hasAccess =
     access.hasAccess ||
     (course.price === 0 && course.programKind !== "exam");
-  const publishedTests =
+  const [publishedTests, preliminaryExams, writtenExams] =
     course.programKind === "exam"
-      ? await (
-          await examsCol()
+      ? await Promise.all([
+          (await examsCol())
+            .find({ courseId: course._id, status: "published" })
+            .sort({ order: 1, createdAt: 1 })
+            .toArray(),
+          (await preliminaryExamsCol())
+            .find({ courseId: course._id, status: "published" })
+            .toArray(),
+          (await writtenExamsCol())
+            .find({ courseId: course._id, status: "published" })
+            .toArray(),
+        ])
+      : [[], [], []];
+  const linkedLegacyTests = [
+    ...preliminaryExams.map((exam) => ({
+      ...exam,
+      kind: "preliminary" as const,
+      source: "preliminary" as const,
+    })),
+    ...writtenExams.map((exam) => ({
+      ...exam,
+      kind: "written" as const,
+      source: "written" as const,
+    })),
+  ].flatMap((exam) => {
+    const topic = exam.topicId
+      ? course.topics?.find(
+          (item) => item._id.toString() === exam.topicId!.toString(),
         )
-          .find({ courseId: course._id, status: "published" })
-          .sort({ order: 1, createdAt: 1 })
-          .toArray()
-      : [];
+      : undefined;
+    const segment =
+      (topic
+        ? course.segments?.find((item) => item.order === topic.order)
+        : undefined) ??
+      course.segments?.find((item) =>
+        item.subSegments.some(
+          (subSegment) =>
+            exam.subSegmentId &&
+            subSegment._id.toString() === exam.subSegmentId.toString(),
+        ),
+      );
+    const subSegment =
+      segment?.subSegments.find((item) =>
+        exam.subSegmentId
+          ? item._id.toString() === exam.subSegmentId!.toString()
+          : item.title === exam.title,
+      ) ??
+      (segment?.subSegments.length === 1 ? segment.subSegments[0] : undefined);
+
+    if (!segment || !subSegment) {
+      return [];
+    }
+
+    return [
+      {
+        id: exam._id.toString(),
+        title: exam.title,
+        kind: exam.kind,
+        source: exam.source,
+        totalQuestions: exam.totalQuestions,
+        isLocked:
+          Boolean(exam.isLocked) ||
+          isExamLocked(exam.totalQuestions, exam.questionsPerAttempt),
+        segmentId: segment._id.toString(),
+        subSegmentId: subSegment._id.toString(),
+      },
+    ];
+  });
   const segments = [...(course.segments ?? [])]
     .sort((left, right) => left.order - right.order)
     .map((segment) => ({
@@ -85,14 +152,22 @@ export default async function CourseDetailPage({
   const curriculumCourse = {
     slug: course.slug,
     segments,
-    tests: publishedTests.map((test) => ({
-      id: test._id.toString(),
-      title: test.title,
-      kind: test.kind,
-      totalQuestions: test.totalQuestions,
-      segmentId: test.segmentId.toString(),
-      subSegmentId: test.subSegmentId.toString(),
-    })),
+    tests: [
+      ...publishedTests.map((test) => ({
+        id: test._id.toString(),
+        title: test.title,
+        source: "unified" as const,
+        kind: test.kind,
+        totalQuestions: test.totalQuestions,
+        isLocked: isExamLocked(
+          test.totalQuestions,
+          test.questionsPerAttempt,
+        ),
+        segmentId: test.segmentId.toString(),
+        subSegmentId: test.subSegmentId.toString(),
+      })),
+      ...linkedLegacyTests,
+    ],
   };
 
   return (

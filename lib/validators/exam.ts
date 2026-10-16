@@ -84,7 +84,10 @@ export const examCreateSchema = examBaseObject
     },
   );
 
-export const examUpdateSchema = examBaseObject.partial();
+export const examUpdateSchema = examBaseObject.partial().extend({
+  scheduledAt: z.string().datetime().nullable().optional(),
+  closesAt: z.string().datetime().nullable().optional(),
+});
 
 export const examSegmentsUpdateSchema = z.object({
   segments: z.array(examSegmentSchema).max(50).default([]),

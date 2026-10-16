@@ -25,6 +25,8 @@ import type { ActiveExam } from "@/lib/types/exam";
 
 export type StudentExam = {
   id: string;
+  source: "unified" | "preliminary" | "written";
+  href: string;
   kind: "preliminary" | "written";
   status: "published";
   title: string;
@@ -34,6 +36,7 @@ export type StudentExam = {
   totalQuestions: number;
   totalMarks: number;
   questionsPerAttempt: number;
+  isLocked: boolean;
   isFree: boolean;
   price: number;
   courseId: string;
@@ -377,7 +380,7 @@ export function StudentExamsClient({
                             ? "Access denied"
                             : "Quota exhausted";
                   const accessLabel =
-                    exam.totalQuestions === 0
+                    exam.isLocked || exam.totalQuestions === 0
                       ? "Preparing test"
                       : accessState === "approved"
                         ? "Included in enrollment"
@@ -389,7 +392,7 @@ export function StudentExamsClient({
                               ? "Enrollment declined"
                               : "Enrollment required";
                   const accessTone =
-                    exam.totalQuestions === 0
+                    exam.isLocked || exam.totalQuestions === 0
                       ? "border-border bg-background text-muted"
                       : accessState === "approved"
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -485,13 +488,13 @@ export function StudentExamsClient({
                           )}
                           {accessLabel}
                         </span>
-                        {exam.totalQuestions === 0 ? (
+                        {exam.isLocked || exam.totalQuestions === 0 ? (
                           <span className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-border bg-muted/10 px-4 text-sm text-muted">
                             Questions being added
                           </span>
                         ) : canStart ? (
                           <Link
-                            href={`/exam/${exam.id}`}
+                            href={exam.href}
                             className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-cream hover:bg-primary-dark"
                           >
                             {actionLabel}

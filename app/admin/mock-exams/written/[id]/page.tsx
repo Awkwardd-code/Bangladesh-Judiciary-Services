@@ -8,10 +8,17 @@ export const metadata: Metadata = {
 
 export default async function WrittenExamDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
 
-  return <WrittenExamDetailClient examId={id} />;
+  return (
+    <WrittenExamDetailClient
+      examId={id}
+      initialTab={query.tab === "settings" ? "settings" : "questions"}
+    />
+  );
 }

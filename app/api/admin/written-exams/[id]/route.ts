@@ -21,6 +21,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 const updateSchema = writtenExamCreateSchema.partial().extend({
   status: z.enum(["draft", "published", "archived"]).optional(),
   isLocked: z.boolean().optional(),
+  questionsPerAttempt: z.number().int().min(0).max(500).optional(),
+  scheduledAt: z.string().datetime().nullable().optional(),
+  closesAt: z.string().datetime().nullable().optional(),
 });
 
 async function getTotals(examId: ObjectId) {
@@ -145,8 +148,13 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     }
 
     const nextType = parsed.data.type ?? existing.type ?? "paid";
+    const {
+      scheduledAt,
+      closesAt,
+      ...dataWithoutSchedule
+    } = parsed.data;
     const updateSet = {
-      ...parsed.data,
+      ...dataWithoutSchedule,
       isLocked,
       type: nextType,
       courseId: parsed.data.courseId
@@ -165,17 +173,30 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           ? null
           : existing.subSegmentId,
       questionsPerAttempt: nextQuestionsPerAttempt,
-      scheduledAt: parsed.data.scheduledAt
-        ? new Date(parsed.data.scheduledAt)
-        : existing.scheduledAt,
-      closesAt: parsed.data.closesAt
-        ? new Date(parsed.data.closesAt)
-        : existing.closesAt,
+      ...(scheduledAt !== undefined && scheduledAt !== null
+        ? {
+            scheduledAt: new Date(scheduledAt),
+          }
+        : {}),
+      ...(closesAt !== undefined && closesAt !== null
+        ? {
+            closesAt: new Date(closesAt),
+          }
+        : {}),
       ...totals,
       updatedAt: new Date(),
     };
 
-    await exams.updateOne({ _id: examId }, { $set: updateSet });
+    const unset: Record<string, ""> = {};
+    if (scheduledAt === null) unset.scheduledAt = "";
+    if (closesAt === null) unset.closesAt = "";
+    await exams.updateOne(
+      { _id: examId },
+      {
+        $set: updateSet,
+        ...(Object.keys(unset).length ? { $unset: unset } : {}),
+      },
+    );
 
     await logAdminAction(
       new ObjectId(session.userId),

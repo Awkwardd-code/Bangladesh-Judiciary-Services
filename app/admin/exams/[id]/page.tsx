@@ -18,15 +18,17 @@ export const metadata: Metadata = {
 
 export default async function AdminExamDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const session = await requireAdmin();
   if (!session) {
     return null;
   }
 
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   if (!ObjectId.isValid(id)) {
     notFound();
   }
@@ -121,6 +123,14 @@ export default async function AdminExamDetailPage({
       examId={exam._id.toString()}
       initialExam={serializedExam}
       initialQuestions={serializedQuestions}
+      initialTab={
+        query.tab === "overview" ||
+        query.tab === "plan" ||
+        query.tab === "settings" ||
+        query.tab === "attempts"
+          ? query.tab
+          : "questions"
+      }
     />
   );
 }

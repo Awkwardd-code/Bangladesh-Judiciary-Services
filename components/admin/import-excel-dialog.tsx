@@ -222,7 +222,7 @@ export function ImportExcelDialog({
           reset();
           setOpen(true);
         }}
-        className="cursor-pointer"
+        className="h-9 rounded-lg px-4"
       >
         <FileSpreadsheet size={16} />
         Import from Excel

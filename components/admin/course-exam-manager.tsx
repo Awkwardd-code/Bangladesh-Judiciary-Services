@@ -180,12 +180,13 @@ function ExamRow({
   onDelete: (exam: ManagedExam) => void;
   busy: boolean;
 }) {
-  const detailUrl =
+  const questionUrl =
     exam.source === "written"
       ? `/admin/mock-exams/written/${exam._id}`
       : exam.source === "preliminary"
         ? `/admin/mock-exams/preliminary/${exam._id}`
         : `/admin/exams/${exam._id}`;
+  const settingsUrl = `${questionUrl}?tab=settings`;
   const targetQuestions = exam.questionsPerAttempt || exam.totalQuestions;
 
   return (
@@ -228,14 +229,14 @@ function ExamRow({
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <Link
-          href={detailUrl}
+          href={questionUrl}
           className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-cream hover:bg-primary/90"
         >
           <ListChecks size={15} />
           Manage questions
         </Link>
         <Link
-          href={detailUrl}
+          href={settingsUrl}
           aria-label={`Edit ${exam.title}`}
           title="Edit exam settings"
           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-primary hover:bg-primary/5"

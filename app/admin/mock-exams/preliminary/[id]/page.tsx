@@ -8,9 +8,16 @@ export const metadata: Metadata = {
 
 export default async function PreliminaryExamDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const { id } = await params;
-  return <PreliminaryExamDetailClient examId={id} />;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  return (
+    <PreliminaryExamDetailClient
+      examId={id}
+      initialTab={query.tab === "settings" ? "settings" : "questions"}
+    />
+  );
 }

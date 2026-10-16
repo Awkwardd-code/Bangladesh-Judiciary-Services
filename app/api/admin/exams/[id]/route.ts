@@ -126,6 +126,7 @@ export async function PATCH(
     }
 
     const data = parsed.data;
+    const { scheduledAt, closesAt, ...dataWithoutSchedule } = data;
     const courseId = data.courseId ? new ObjectId(data.courseId) : existing.courseId;
     const segmentId = data.segmentId
       ? new ObjectId(data.segmentId)
@@ -155,7 +156,7 @@ export async function PATCH(
 
     const now = new Date();
     const update: Record<string, unknown> = {
-      ...data,
+      ...dataWithoutSchedule,
       courseId,
       segmentId,
       subSegmentId,
@@ -176,14 +177,16 @@ export async function PATCH(
         data.discountTill !== undefined
           ? new Date(data.discountTill)
           : existing.discountTill,
-      scheduledAt:
-        data.scheduledAt !== undefined
-          ? new Date(data.scheduledAt)
-          : existing.scheduledAt,
-      closesAt:
-        data.closesAt !== undefined
-          ? new Date(data.closesAt)
-          : existing.closesAt,
+      ...(scheduledAt !== undefined && scheduledAt !== null
+        ? {
+            scheduledAt: new Date(scheduledAt),
+          }
+        : {}),
+      ...(closesAt !== undefined && closesAt !== null
+        ? {
+            closesAt: new Date(closesAt),
+          }
+        : {}),
       updatedAt: now,
     };
 
@@ -192,7 +195,16 @@ export async function PATCH(
       update.totalMarks = totals.totalMarks;
     }
 
-    await collection.updateOne({ _id: examId }, { $set: update });
+    const unset: Record<string, ""> = {};
+    if (scheduledAt === null) unset.scheduledAt = "";
+    if (closesAt === null) unset.closesAt = "";
+    await collection.updateOne(
+      { _id: examId },
+      {
+        $set: update,
+        ...(Object.keys(unset).length ? { $unset: unset } : {}),
+      },
+    );
     const refreshed = await collection.findOne({ _id: examId });
     if (!refreshed) {
       return fail("Exam could not be loaded after update.", 500);

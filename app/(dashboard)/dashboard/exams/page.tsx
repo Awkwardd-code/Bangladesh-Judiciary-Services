@@ -7,15 +7,46 @@ import {
   type StudentExam,
 } from "@/components/dashboard/student-exams-client";
 import { requireSession } from "@/lib/auth-guard";
-import type { Exam } from "@/lib/types/exam";
 import {
   coursesCol,
   enrollmentsCol,
   examAttemptsCol,
   examsCol,
+  preliminaryAttemptsCol,
+  preliminaryExamsCol,
+  writtenExamsCol,
+  writtenSubmissionsCol,
 } from "@/lib/collections";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { getActiveExam } from "@/lib/exam-lock";
 import { getFreeAttemptStatus } from "@/lib/exam-quota";
+
+type DashboardExamRecord = {
+  _id: ObjectId;
+  title: string;
+  description?: string;
+  kind: "preliminary" | "written";
+  source: "unified" | "preliminary" | "written";
+  courseId?: ObjectId | null;
+  segmentId?: ObjectId | null;
+  topicId?: ObjectId | null;
+  subSegmentId?: ObjectId | null;
+  type?: "free" | "paid";
+  durationMinutes: number;
+  totalQuestions: number;
+  totalMarks: number;
+  questionsPerAttempt?: number;
+  isLocked?: boolean;
+  thumbnailUrl?: string;
+  scheduledAt?: Date | null;
+  closesAt?: Date | null;
+};
+
+type AttemptSummaryRow = {
+  examId: ObjectId;
+  status: string;
+  score: number;
+};
 
 export const dynamic = "force-dynamic";
 
@@ -31,20 +62,62 @@ export default async function DashboardExamsPage() {
   }
 
   const userId = new ObjectId(session.userId);
-  const [publishedExams, enrollments, attempts, activeExam, quota] =
+  const [
+    unifiedExams,
+    preliminaryExams,
+    writtenExams,
+    enrollments,
+    attempts,
+    preliminaryAttempts,
+    writtenSubmissions,
+    activeExam,
+    quota,
+  ] =
     await Promise.all([
       (await examsCol())
         .find({ status: "published" })
         .sort({ scheduledAt: 1, order: 1, createdAt: -1 })
         .toArray(),
+      (await preliminaryExamsCol())
+        .find({ status: "published" })
+        .sort({ createdAt: -1 })
+        .toArray(),
+      (await writtenExamsCol())
+        .find({ status: "published" })
+        .sort({ createdAt: -1 })
+        .toArray(),
       (await enrollmentsCol()).find({ userId }).toArray(),
       (await examAttemptsCol()).find({ userId }).toArray(),
+      (await preliminaryAttemptsCol()).find({ userId }).toArray(),
+      (await writtenSubmissionsCol()).find({ userId }).toArray(),
       getActiveExam(userId),
       getFreeAttemptStatus(userId),
     ]);
 
+  const publishedExams: DashboardExamRecord[] = [
+    ...unifiedExams.map((exam) => ({
+      ...exam,
+      kind: exam.kind,
+      source: "unified" as const,
+    })),
+    ...preliminaryExams.map((exam) => ({
+      ...exam,
+      kind: "preliminary" as const,
+      source: "preliminary" as const,
+    })),
+    ...writtenExams.map((exam) => ({
+      ...exam,
+      kind: "written" as const,
+      source: "written" as const,
+    })),
+  ];
+
   const courseIds = [
-    ...new Set(publishedExams.map((exam) => exam.courseId.toString())),
+    ...new Set(
+      publishedExams.flatMap((exam) =>
+        exam.courseId ? [exam.courseId.toString()] : [],
+      ),
+    ),
   ].map((id) => new ObjectId(id));
   const courses =
     courseIds.length > 0
@@ -64,15 +137,37 @@ export default async function DashboardExamsPage() {
     { attempts: number; bestScore: number | null }
   >();
 
-  for (const attempt of attempts) {
-    if (attempt.status === "in-progress") {
+  const attemptSummaryRows: AttemptSummaryRow[] = [
+    ...attempts.map((attempt) => ({
+      examId: attempt.examId,
+      status: attempt.status,
+      score: attempt.score,
+    })),
+    ...preliminaryAttempts.map((attempt) => ({
+      examId: attempt.examId,
+      status: attempt.status,
+      score: attempt.score,
+    })),
+    ...writtenSubmissions.map((submission) => ({
+      examId: submission.examId,
+      status: submission.status,
+      score: submission.totalScore,
+    })),
+  ];
+  const publishedExamsById = new Map(
+    publishedExams.map((exam) => [exam._id.toString(), exam]),
+  );
+
+  for (const attempt of attemptSummaryRows) {
+    if (
+      attempt.status === "in-progress" ||
+      attempt.status === "under-review"
+    ) {
       continue;
     }
 
     const examId = attempt.examId.toString();
-    const exam = publishedExams.find(
-      (item: (typeof publishedExams)[number]) => item._id.toString() === examId,
-    );
+    const exam = publishedExamsById.get(examId);
     const score =
       exam && exam.totalMarks > 0
         ? Math.round((attempt.score / exam.totalMarks) * 100)
@@ -89,18 +184,43 @@ export default async function DashboardExamsPage() {
     attemptsByExam.set(examId, current);
   }
 
-  const studentExams: StudentExam[] = publishedExams.flatMap((exam: Exam) => {
+  const studentExams: StudentExam[] = publishedExams.flatMap((exam) => {
+    if (!exam.courseId) return [];
     const course = coursesById.get(exam.courseId.toString());
     const segments = (course?.segments ?? []) as Array<{
       _id: ObjectId;
       title: string;
+      order: number;
       subSegments: Array<{ _id: ObjectId; title: string }>;
     }>;
-    const segment = segments.find(
-      (item) => item._id.toString() === exam.segmentId.toString(),
+    const segmentForSubSegment = segments.find((item) =>
+      item.subSegments.some(
+        (subSegment) =>
+          exam.subSegmentId &&
+          subSegment._id.toString() === exam.subSegmentId.toString(),
+      ),
     );
+    const topicSegment = exam.topicId
+      ? segments.find((item) =>
+          course?.topics?.some(
+            (topic) =>
+              topic._id.equals(exam.topicId!) && topic.order === item.order,
+          ),
+        )
+      : undefined;
+    const segment =
+      (exam.segmentId
+        ? segments.find(
+            (item) => item._id.toString() === exam.segmentId!.toString(),
+          )
+        : undefined) ??
+      segmentForSubSegment ??
+      topicSegment;
     const subSegment = segment?.subSegments.find(
-      (item) => item._id.toString() === exam.subSegmentId.toString(),
+      (item) =>
+        (exam.subSegmentId &&
+          item._id.toString() === exam.subSegmentId.toString()) ||
+        (!exam.subSegmentId && item.title === exam.title),
     );
 
     if (!course || !segment || !subSegment) {
@@ -111,7 +231,7 @@ export default async function DashboardExamsPage() {
       course._id.toString()
     );
     const enrollmentStatus =
-      course.type === "free"
+      course.type === "free" || exam.type === "free"
         ? "approved"
         : storedEnrollmentStatus === "approved" ||
             storedEnrollmentStatus === "pending" ||
@@ -122,16 +242,27 @@ export default async function DashboardExamsPage() {
     return [
       {
         id: exam._id.toString(),
+        source: exam.source,
         kind: exam.kind,
+        href:
+          exam.source === "written"
+            ? `/exam/written/${exam._id}`
+            : exam.source === "preliminary"
+              ? `/exam/preliminary/${exam._id}`
+              : `/exam/${exam._id}`,
         status: "published",
         title: exam.title,
-        description: exam.description,
+        description: exam.description ?? "",
         thumbnailUrl: exam.thumbnailUrl ?? course.coverUrl ?? null,
         durationMinutes: exam.durationMinutes,
         totalQuestions: exam.totalQuestions,
         totalMarks: exam.totalMarks,
-        questionsPerAttempt: exam.questionsPerAttempt,
-        isFree: course.type === "free",
+        questionsPerAttempt:
+          exam.questionsPerAttempt || exam.totalQuestions,
+        isLocked:
+          Boolean(exam.isLocked) ||
+          isExamLocked(exam.totalQuestions, exam.questionsPerAttempt),
+        isFree: course.type === "free" || exam.type === "free",
         price: course.price,
         courseId: course._id.toString(),
         courseTitle: course.title,

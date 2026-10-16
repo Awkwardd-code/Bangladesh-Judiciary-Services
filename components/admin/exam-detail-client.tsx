@@ -21,6 +21,7 @@ import { ExamReadinessCard } from "@/components/admin/exam-readiness-card";
 import { ExamEditor } from "@/components/admin/exam-editor";
 import { ImportExcelDialog } from "@/components/admin/import-excel-dialog";
 import { QuestionEditor } from "@/components/admin/question-editor";
+import { examTabClass } from "@/components/admin/exam-settings-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -94,10 +95,12 @@ export function ExamDetailClient({
   examId,
   initialExam,
   initialQuestions,
+  initialTab = "questions",
 }: {
   examId: string;
   initialExam: AdminExamDetail;
   initialQuestions: AdminExamQuestion[];
+  initialTab?: "overview" | "plan" | "questions" | "settings" | "attempts";
 }) {
   const [exam, setExam] = useState<AdminExamDetail | null>(initialExam);
   const [questions, setQuestions] =
@@ -112,7 +115,7 @@ export function ExamDetailClient({
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
     "overview" | "plan" | "questions" | "settings" | "attempts"
-  >("questions");
+  >(initialTab);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [savingPlan, setSavingPlan] = useState(false);
 
@@ -398,19 +401,19 @@ export function ExamDetailClient({
           <Link
             href={`/exam/${examId}`}
             target="_blank"
-            className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-4 py-2 text-sm text-foreground"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
           >
             <Eye size={16} />
             Preview
           </Link>
-          <button
+          <Button
             type="button"
             onClick={() => openQuestionEditor()}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-cream"
+            className="h-10 rounded-lg px-4"
           >
             <Plus size={16} />
             Add question
-          </button>
+          </Button>
           {exam.kind === "preliminary" ? (
             <ImportExcelDialog
               examId={examId}
@@ -422,7 +425,7 @@ export function ExamDetailClient({
               }}
             />
           ) : null}
-          <button
+          <Button
             type="button"
             onClick={() => void changeStatus()}
             disabled={
@@ -435,11 +438,8 @@ export function ExamDetailClient({
                 ? `Add at least ${exam.questionsPerAttempt ?? 1} questions before publishing.`
                 : undefined
             }
-            className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
-              exam.status === "published"
-                ? "border border-border text-foreground"
-                : "bg-primary text-cream"
-            }`}
+            variant={exam.status === "published" ? "ghost" : "default"}
+            className="h-10 rounded-lg border border-border px-4"
           >
             {exam.status === "published" ? (
               <EyeOff size={16} />
@@ -453,7 +453,7 @@ export function ExamDetailClient({
               : exam.status === "archived"
                 ? "Restore"
                 : "Publish"}
-          </button>
+          </Button>
         </div>
       </div>
       <div className="mt-5 space-y-5">
@@ -482,11 +482,7 @@ export function ExamDetailClient({
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`cursor-pointer border-b-2 px-4 py-3 text-sm capitalize ${
-                activeTab === tab
-                  ? "border-accent font-medium text-primary"
-                  : "border-transparent text-muted hover:text-primary"
-              }`}
+              className={examTabClass(activeTab === tab)}
             >
               {{
                 overview: "Overview",

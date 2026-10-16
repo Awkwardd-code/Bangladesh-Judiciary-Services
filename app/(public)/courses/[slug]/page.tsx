@@ -126,6 +126,7 @@ export default async function CourseDetailPage({
         id: exam._id.toString(),
         title: exam.title,
         kind: exam.kind,
+        source: exam.kind,
         totalQuestions: exam.totalQuestions,
         isLocked:
           Boolean(exam.isLocked) ||
@@ -235,17 +236,19 @@ export default async function CourseDetailPage({
         description: item.description,
         scheduledAt: item.scheduledAt.toISOString(),
       })),
-    tests: tests
-      .map((test) => ({
+    tests: [
+      ...tests.map((test) => ({
         id: test._id.toString(),
         title: test.title,
         kind: test.kind,
+        source: "unified" as const,
         totalQuestions: test.totalQuestions,
         isLocked: isExamLocked(test.totalQuestions, test.questionsPerAttempt),
         segmentId: test.segmentId.toString(),
         subSegmentId: test.subSegmentId.toString(),
-      }))
-      .concat(linkedMockTests),
+      })),
+      ...linkedMockTests,
+    ],
     createdAt: course.createdAt.toISOString(),
     updatedAt: course.updatedAt.toISOString(),
   };

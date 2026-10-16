@@ -18,6 +18,8 @@ import { getClientIp } from "@/lib/rate-limit";
 const updateSchema = preliminaryExamCreateSchema.partial().extend({
   status: z.enum(["draft", "published", "archived"]).optional(),
   isLocked: z.boolean().optional(),
+  scheduledAt: z.string().datetime().nullable().optional(),
+  closesAt: z.string().datetime().nullable().optional(),
 });
 
 async function totals(examId: ObjectId) {
@@ -104,8 +106,13 @@ export async function PATCH(
       );
     }
     const nextType = parsed.data.type ?? existing.type ?? "paid";
+    const {
+      scheduledAt,
+      closesAt,
+      ...dataWithoutSchedule
+    } = parsed.data;
     const updateSet = {
-      ...parsed.data,
+      ...dataWithoutSchedule,
       isLocked,
       type: nextType,
       courseId: parsed.data.courseId
@@ -124,16 +131,29 @@ export async function PATCH(
           ? null
           : existing.subSegmentId,
       questionsPerAttempt: nextQuestionsPerAttempt,
-      scheduledAt: parsed.data.scheduledAt
-        ? new Date(parsed.data.scheduledAt)
-        : existing.scheduledAt,
-      closesAt: parsed.data.closesAt
-        ? new Date(parsed.data.closesAt)
-        : existing.closesAt,
+      ...(scheduledAt !== undefined && scheduledAt !== null
+        ? {
+            scheduledAt: new Date(scheduledAt),
+          }
+        : {}),
+      ...(closesAt !== undefined && closesAt !== null
+        ? {
+            closesAt: new Date(closesAt),
+          }
+        : {}),
       ...examTotals,
       updatedAt: new Date(),
     };
-    await collection.updateOne({ _id: examId }, { $set: updateSet });
+    const unset: Record<string, ""> = {};
+    if (scheduledAt === null) unset.scheduledAt = "";
+    if (closesAt === null) unset.closesAt = "";
+    await collection.updateOne(
+      { _id: examId },
+      {
+        $set: updateSet,
+        ...(Object.keys(unset).length ? { $unset: unset } : {}),
+      },
+    );
     await logAdminAction(
       new ObjectId(session.userId),
       "preliminary-exam.update",

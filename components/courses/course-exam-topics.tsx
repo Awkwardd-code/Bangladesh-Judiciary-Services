@@ -220,7 +220,14 @@ export function CourseExamTopics({
                                               test.totalQuestions > 0 &&
                                               weekIsAccessible ? (
                                                 <Link
-                                                  href={`/exam/${test.id}`}
+                                                  href={
+                                                    test.source === "written"
+                                                      ? `/exam/written/${test.id}`
+                                                      : test.source ===
+                                                          "preliminary"
+                                                        ? `/exam/preliminary/${test.id}`
+                                                        : `/exam/${test.id}`
+                                                  }
                                                   className={`${className} hover:bg-white`}
                                                 >
                                                   {content}

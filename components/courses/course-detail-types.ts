@@ -48,6 +48,7 @@ export type CourseDetail = {
   }>;
   tests?: Array<{
     id: string;
+    source: "unified" | "preliminary" | "written";
     title: string;
     kind: "preliminary" | "written";
     totalQuestions: number;

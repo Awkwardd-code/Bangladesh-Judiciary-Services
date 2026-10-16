@@ -19,6 +19,7 @@ export type WrittenExamRecord = {
   status: "draft" | "published" | "archived";
   scheduledAt?: string;
   closesAt?: string;
+  type?: "free" | "paid";
   courseId?: string;
   topicId?: string;
   subSegmentId?: string;
