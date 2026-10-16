@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 import { deleteFile } from "@/lib/cloudinary";
 import { writtenExamsCol, writtenQuestionsCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { writtenImportConfirmSchema } from "@/lib/validators/questions-import";
 
@@ -120,10 +121,11 @@ export async function POST(
         .toArray(),
     ]);
     const totalMarks = Number(markRows[0]?.totalMarks ?? 0);
+    const isLocked = isExamLocked(totalQuestions, exam.questionsPerAttempt);
 
     await exams.updateOne(
       { _id: examId },
-      { $set: { totalQuestions, totalMarks, updatedAt: new Date() } },
+      { $set: { totalQuestions, totalMarks, isLocked, updatedAt: new Date() } },
     );
 
     return ok({

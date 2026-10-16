@@ -2,7 +2,6 @@
 
 import { Save, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,10 +19,18 @@ export type WrittenExamRecord = {
   status: "draft" | "published" | "archived";
   scheduledAt?: string;
   closesAt?: string;
+  courseId?: string;
+  topicId?: string;
+  subSegmentId?: string;
 };
 
 type WrittenExamEditorProps = {
   exam?: WrittenExamRecord;
+  initialAssociation?: {
+    courseId: string;
+    topicId?: string;
+    subSegmentId?: string;
+  };
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
@@ -59,15 +66,18 @@ function toDateTimeLocal(value?: string) {
 
 export function WrittenExamEditor({
   exam,
+  initialAssociation,
   open,
   onOpenChange,
   onSaved,
 }: WrittenExamEditorProps) {
-  const router = useRouter();
   const [form, setForm] = useState<ExamForm>(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [touched, setTouched] = useState({ title: false, durationMinutes: false });
+  const [touched, setTouched] = useState({
+    title: false,
+    durationMinutes: false,
+  });
   const duration = Number(form.durationMinutes);
   const scheduleValid =
     !form.scheduledAt ||
@@ -91,7 +101,7 @@ export function WrittenExamEditor({
             scheduledAt: toDateTimeLocal(exam.scheduledAt),
             closesAt: toDateTimeLocal(exam.closesAt),
           }
-        : emptyForm,
+        : emptyForm
     );
     setError("");
     setTouched({ title: false, durationMinutes: false });
@@ -125,6 +135,7 @@ export function WrittenExamEditor({
       closesAt: form.closesAt
         ? new Date(form.closesAt).toISOString()
         : undefined,
+      ...(!exam && initialAssociation ? initialAssociation : {}),
     };
 
     try {
@@ -136,7 +147,7 @@ export function WrittenExamEditor({
           method: exam ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        },
+        }
       );
       const result = (await response.json()) as { error?: string };
 
@@ -147,13 +158,11 @@ export function WrittenExamEditor({
       onOpenChange(false);
       onSaved();
       toast("Exam saved.");
-      router.push("/admin/mock-exams?tab=written");
-      router.refresh();
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to save written exam.",
+          : "Unable to save written exam."
       );
     } finally {
       setSaving(false);
@@ -206,7 +215,9 @@ export function WrittenExamEditor({
               minLength={3}
               maxLength={200}
               value={form.title}
-              onBlur={() => setTouched((current) => ({ ...current, title: true }))}
+              onBlur={() =>
+                setTouched((current) => ({ ...current, title: true }))
+              }
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -215,7 +226,9 @@ export function WrittenExamEditor({
               }
             />
             {touched.title && form.title.trim().length < 3 ? (
-              <p className="text-xs text-red-600">Title must be 3+ characters.</p>
+              <p className="text-xs text-red-600">
+                Title must be 3+ characters.
+              </p>
             ) : null}
           </label>
 

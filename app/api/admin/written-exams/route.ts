@@ -78,11 +78,15 @@ export async function POST(req: NextRequest) {
       _id: new ObjectId(),
       ...parsed.data,
       type,
+      isLocked: true,
       courseId: parsed.data.courseId
         ? new ObjectId(parsed.data.courseId)
         : undefined,
       topicId: parsed.data.topicId
         ? new ObjectId(parsed.data.topicId)
+        : undefined,
+      subSegmentId: parsed.data.subSegmentId
+        ? new ObjectId(parsed.data.subSegmentId)
         : undefined,
       questionsPerAttempt: parsed.data.questionsPerAttempt ?? 0,
       scheduledAt: parsed.data.scheduledAt

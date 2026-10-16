@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 import { deleteFile } from "@/lib/cloudinary";
 import { writtenExamsCol, writtenQuestionsCol } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { writtenQuestionCreateSchema } from "@/lib/validators/admin";
 
 type RouteContext = {
@@ -20,6 +21,7 @@ const updateSchema = writtenQuestionCreateSchema.partial().extend({
 
 async function refreshExamTotals(examId: ObjectId) {
   const questions = await writtenQuestionsCol();
+  const exams = await writtenExamsCol();
   const [totalQuestions, rows] = await Promise.all([
     questions.countDocuments({ examId }),
     questions
@@ -30,14 +32,17 @@ async function refreshExamTotals(examId: ObjectId) {
       .toArray(),
   ]);
 
-  await (
-    await writtenExamsCol()
-  ).updateOne(
+  const exam = await exams.findOne({ _id: examId });
+  if (!exam) {
+    throw new Error("Written exam disappeared while refreshing question totals.");
+  }
+  await exams.updateOne(
     { _id: examId },
     {
       $set: {
         totalQuestions,
         totalMarks: Number(rows[0]?.totalMarks ?? 0),
+        isLocked: isExamLocked(totalQuestions, exam.questionsPerAttempt),
         updatedAt: new Date(),
       },
     },

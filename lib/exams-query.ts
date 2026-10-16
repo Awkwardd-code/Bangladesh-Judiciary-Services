@@ -7,12 +7,14 @@ import {
   writtenExamsCol,
 } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { buildPaginationMeta, type PaginationMeta } from "@/lib/pagination";
 
 export type UnifiedExamCard = {
   id: string;
   kind: "preliminary" | "written" | "free";
   status: "published";
+  isLocked: boolean;
   title: string;
   description: string;
   durationMinutes: number;
@@ -103,6 +105,7 @@ export async function listUnifiedExams(filters: ExamListFilters): Promise<{
       description?: string;
       durationMinutes: number;
       totalQuestions?: number;
+      isLocked?: boolean;
       totalMarks?: number;
       questionsPerAttempt?: number;
       writtenQuestionsPerAttempt?: number;
@@ -161,6 +164,10 @@ export async function listUnifiedExams(filters: ExamListFilters): Promise<{
       id: item._id.toString(),
       kind,
       status: "published",
+      isLocked:
+        kind !== "free" &&
+        (Boolean(item.isLocked) ||
+          isExamLocked(totalQuestions, item.questionsPerAttempt)),
       title: item.title,
       description: item.description ?? "",
       durationMinutes: Number(item.durationMinutes ?? 0),

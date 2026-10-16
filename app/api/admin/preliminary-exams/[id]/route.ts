@@ -11,11 +11,13 @@ import {
   preliminaryQuestionsCol,
 } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { preliminaryExamCreateSchema } from "@/lib/validators/admin";
 import { getClientIp } from "@/lib/rate-limit";
 
 const updateSchema = preliminaryExamCreateSchema.partial().extend({
   status: z.enum(["draft", "published", "archived"]).optional(),
+  isLocked: z.boolean().optional(),
 });
 
 async function totals(examId: ObjectId) {
@@ -77,10 +79,15 @@ export async function PATCH(
     const nextQuestionsPerAttempt =
       parsed.data.questionsPerAttempt ?? existing.questionsPerAttempt ?? 0;
     const minimumRequired = Math.max(1, nextQuestionsPerAttempt);
+    const isLocked = isExamLocked(
+      examTotals.totalQuestions,
+      nextQuestionsPerAttempt,
+    );
 
     if (
       parsed.data.status === "published" &&
-      examTotals.totalQuestions < minimumRequired
+      isLocked &&
+      parsed.data.isLocked !== true
     ) {
       return fail(
         `Add at least ${minimumRequired} questions before publishing.`,
@@ -99,6 +106,7 @@ export async function PATCH(
     const nextType = parsed.data.type ?? existing.type ?? "paid";
     const updateSet = {
       ...parsed.data,
+      isLocked,
       type: nextType,
       courseId: parsed.data.courseId
         ? new ObjectId(parsed.data.courseId)
@@ -110,6 +118,11 @@ export async function PATCH(
         : parsed.data.topicId === null
           ? null
           : existing.topicId,
+      subSegmentId: parsed.data.subSegmentId
+        ? new ObjectId(parsed.data.subSegmentId)
+        : parsed.data.subSegmentId === null
+          ? null
+          : existing.subSegmentId,
       questionsPerAttempt: nextQuestionsPerAttempt,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)

@@ -31,6 +31,7 @@ type ExamCardData = {
   courseTitle: string | null;
   courseSlug: string | null;
   status: "draft" | "published" | "archived";
+  isLocked?: boolean;
   unified?: boolean;
 };
 
@@ -131,6 +132,7 @@ export function ExamCard({
       accessState === "rejected" ||
       accessState === "quota-exhausted");
   const freeTestNotReady = exam.kind === "free" && exam.totalQuestions === 0;
+  const examLocked = Boolean(exam.isLocked);
   const effectiveServed =
     exam.questionsPerAttempt > 0
       ? exam.questionsPerAttempt
@@ -166,6 +168,12 @@ export function ExamCard({
                 }`}
               >
                 {exam.status}
+              </span>
+            ) : null}
+            {examLocked ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-800">
+                <Lock className="h-3 w-3" />
+                Questions coming soon
               </span>
             ) : null}
           </div>
@@ -289,14 +297,18 @@ export function ExamCard({
         <div className="mt-auto flex items-center justify-between gap-3 pt-6">
           {variant === "admin" ? (
             actions
-          ) : disabled || freeTestNotReady ? (
+          ) : disabled || freeTestNotReady || examLocked ? (
             <button
               type="button"
               disabled
               className="inline-flex min-h-10 cursor-not-allowed items-center gap-2 rounded-md border border-border bg-muted/10 px-3 text-sm text-muted"
             >
               <Lock className="h-4 w-4" />
-              {freeTestNotReady ? "Not ready yet" : ctaLabel}
+              {examLocked
+                ? "Locked — questions coming soon"
+                : freeTestNotReady
+                  ? "Not ready yet"
+                  : ctaLabel}
             </button>
           ) : (
             <Link

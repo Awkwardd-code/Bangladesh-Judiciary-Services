@@ -1,48 +1,12 @@
 import type { Metadata } from "next";
 
-import { ExamsList } from "@/components/admin/exams-list";
-import { WrittenExamsList } from "@/components/admin/written-exams-list";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CourseExamManager } from "@/components/admin/course-exam-manager";
 
 export const metadata: Metadata = {
-  title: "Model Tests — Admin — LegalPath Bangladesh",
-  description: "Create and manage preliminary model tests.",
+  title: "Course Exam Management — Admin — LegalPath Bangladesh",
+  description: "Manage course exams and questions by course and week.",
 };
 
-export default async function MockExamsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>;
-}) {
-  const params = await searchParams;
-  const activeTab = params.tab === "written" ? "written" : "preliminary";
-
-  return (
-    <div className="mx-auto max-w-6xl">
-      <header className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-primary lg:text-4xl">
-            Model Tests
-          </h1>
-          <p className="mt-2 text-base text-muted">
-            Create and manage preliminary model tests.
-          </p>
-        </div>
-      </header>
-      <Tabs defaultValue={activeTab}>
-        <TabsList>
-          <TabsTrigger value="preliminary">Preliminary</TabsTrigger>
-          <TabsTrigger value="written">Written</TabsTrigger>
-        </TabsList>
-        <div className="mt-5">
-          <TabsContent value="preliminary">
-            <ExamsList />
-          </TabsContent>
-          <TabsContent value="written">
-            <WrittenExamsList />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
-  );
+export default function MockExamsPage() {
+  return <CourseExamManager />;
 }

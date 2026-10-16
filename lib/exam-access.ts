@@ -2,11 +2,16 @@ import "server-only";
 
 import { ObjectId } from "mongodb";
 
-import { usersCol } from "@/lib/collections";
+import {
+  preliminaryQuestionsCol,
+  usersCol,
+  writtenQuestionsCol,
+} from "@/lib/collections";
 import { getFreeAttemptStatus, type QuotaStatus } from "@/lib/exam-quota";
 import { checkExamWindow } from "@/lib/exam-window";
 import { getActiveExam } from "@/lib/exam-lock";
 import { getCourseAccess } from "@/lib/course-access";
+import { isExamLocked } from "@/lib/exam-readiness";
 import type { Course } from "@/lib/types/course";
 import type { Exam } from "@/lib/types/exam";
 
@@ -14,6 +19,7 @@ export type ExamAccessReason =
   | "ok"
   | "not-authenticated"
   | "not-published"
+  | "locked"
   | "outside-window"
   | "another-exam-active"
   | "not-enrolled"
@@ -55,6 +61,24 @@ export async function checkExamAccess(
 
     if (!exam) {
       return { allowed: false, reason: "not-published", willConsumeFreeAttempt: false };
+    }
+
+    if (exam.status !== "published") {
+      return { allowed: false, reason: "not-published", willConsumeFreeAttempt: false };
+    }
+
+    const questionCollection =
+      kind === "preliminary"
+        ? await preliminaryQuestionsCol()
+        : await writtenQuestionsCol();
+    const totalQuestions = await questionCollection.countDocuments({
+      examId,
+    });
+    if (
+      exam.isLocked ||
+      isExamLocked(totalQuestions, exam.questionsPerAttempt)
+    ) {
+      return { allowed: false, reason: "locked", willConsumeFreeAttempt: false };
     }
 
     const window = checkExamWindow(exam);
@@ -245,6 +269,10 @@ export function examAccessError(access: ExamAccess): {
 
   if (access.reason === "not-published") {
     return { message: "This exam is not available.", status: 404 };
+  }
+
+  if (access.reason === "locked") {
+    return { message: "Questions for this exam are being prepared.", status: 403 };
   }
 
   if (access.reason === "quota-exhausted") {

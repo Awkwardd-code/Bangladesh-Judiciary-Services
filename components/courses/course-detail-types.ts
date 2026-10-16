@@ -51,6 +51,7 @@ export type CourseDetail = {
     title: string;
     kind: "preliminary" | "written";
     totalQuestions: number;
+    isLocked?: boolean;
     segmentId: string;
     subSegmentId: string;
   }>;

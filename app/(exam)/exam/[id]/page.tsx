@@ -95,6 +95,8 @@ export default async function UnifiedExamPage({
               ? "This exam is outside its availability window."
               : access.reason === "not-published"
                 ? "This exam is not available."
+                : access.reason === "locked"
+                  ? "Questions for this exam are being prepared."
                 : "Enroll in the linked course to access this exam.";
 
     return (

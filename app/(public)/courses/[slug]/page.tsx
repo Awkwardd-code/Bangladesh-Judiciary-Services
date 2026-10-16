@@ -17,7 +17,10 @@ import {
   enrollmentsCol,
   examsCol,
   mentorsCol,
+  preliminaryExamsCol,
+  writtenExamsCol,
 } from "@/lib/collections";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { getEnrollmentAccess } from "@/lib/enrollment";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +34,9 @@ export async function generateMetadata({
   const course = await (await coursesCol()).findOne({ slug });
 
   return {
-    title: course ? `${course.title} — LegalPath Bangladesh` : "Course — LegalPath Bangladesh",
+    title: course
+      ? `${course.title} — LegalPath Bangladesh`
+      : "Course — LegalPath Bangladesh",
     description: course?.description ?? "",
   };
 }
@@ -56,7 +61,14 @@ export default async function CourseDetailPage({
     notFound();
   }
 
-  const [mentors, tests, session, studentCount] = await Promise.all([
+  const [
+    mentors,
+    tests,
+    preliminaryExams,
+    writtenExams,
+    session,
+    studentCount,
+  ] = await Promise.all([
     (await mentorsCol())
       .find({
         _id: { $in: course.mentorIds ?? [] },
@@ -68,6 +80,12 @@ export default async function CourseDetailPage({
       .find({ courseId: course._id, status: "published" })
       .sort({ order: 1, createdAt: 1 })
       .toArray(),
+    (await preliminaryExamsCol())
+      .find({ courseId: course._id, status: "published" })
+      .toArray(),
+    (await writtenExamsCol())
+      .find({ courseId: course._id, status: "published" })
+      .toArray(),
     getSessionFromCookies(),
     (await enrollmentsCol()).countDocuments({
       courseId: course._id,
@@ -78,6 +96,45 @@ export default async function CourseDetailPage({
   const access = session
     ? await getEnrollmentAccess(new ObjectId(session.userId), course._id)
     : null;
+  const linkedMockTests = [
+    ...preliminaryExams.map((exam) => ({
+      ...exam,
+      kind: "preliminary" as const,
+    })),
+    ...writtenExams.map((exam) => ({ ...exam, kind: "written" as const })),
+  ].flatMap((exam) => {
+    const topic = exam.topicId
+      ? course.topics?.find((item) => item._id.equals(exam.topicId))
+      : undefined;
+    const segment = topic
+      ? course.segments?.find((item) => item.order === topic.order)
+      : undefined;
+    const subSegment =
+      segment?.subSegments.find((item) =>
+        exam.subSegmentId
+          ? item._id.toString() === exam.subSegmentId.toString()
+          : item.title === exam.title
+      ) ??
+      (segment?.subSegments.length === 1 ? segment.subSegments[0] : undefined);
+
+    if (!segment || !subSegment) {
+      return [];
+    }
+
+    return [
+      {
+        id: exam._id.toString(),
+        title: exam.title,
+        kind: exam.kind,
+        totalQuestions: exam.totalQuestions,
+        isLocked:
+          Boolean(exam.isLocked) ||
+          isExamLocked(exam.totalQuestions, exam.questionsPerAttempt),
+        segmentId: segment._id.toString(),
+        subSegmentId: subSegment._id.toString(),
+      },
+    ];
+  });
   const serializedCourse = {
     id: course._id.toString(),
     programKind: course.programKind ?? "course",
@@ -101,17 +158,17 @@ export default async function CourseDetailPage({
       (count, segment) =>
         count +
         (segment.subSegments ?? []).filter((item) =>
-          ["lecture", "video", "live"].includes(item.kind),
+          ["lecture", "video", "live"].includes(item.kind)
         ).length,
-      0,
+      0
     ),
     pdfNoteCount: (course.segments ?? []).reduce(
       (count, segment) =>
         count +
         (segment.subSegments ?? []).filter(
-          (item) => item.kind === "note" && Boolean(item.payload.pdfUrl),
+          (item) => item.kind === "note" && Boolean(item.payload.pdfUrl)
         ).length,
-      0,
+      0
     ),
     studentCount,
     features: (course.features ?? []).map((feature) => ({
@@ -148,7 +205,7 @@ export default async function CourseDetailPage({
           hasClassNote:
             subSegment.kind === "note" && Boolean(subSegment.payload.pdfUrl),
           examIds: (subSegment.examIds ?? []).map((examId) =>
-            examId.toString(),
+            examId.toString()
           ),
           payload: {
             ...payload,
@@ -171,21 +228,24 @@ export default async function CourseDetailPage({
     routine: (course.routine ?? [])
       .sort(
         (left, right) =>
-          left.scheduledAt.getTime() - right.scheduledAt.getTime(),
+          left.scheduledAt.getTime() - right.scheduledAt.getTime()
       )
       .map((item) => ({
         title: item.title,
         description: item.description,
         scheduledAt: item.scheduledAt.toISOString(),
       })),
-    tests: tests.map((test) => ({
-      id: test._id.toString(),
-      title: test.title,
-      kind: test.kind,
-      totalQuestions: test.totalQuestions,
-      segmentId: test.segmentId.toString(),
-      subSegmentId: test.subSegmentId.toString(),
-    })),
+    tests: tests
+      .map((test) => ({
+        id: test._id.toString(),
+        title: test.title,
+        kind: test.kind,
+        totalQuestions: test.totalQuestions,
+        isLocked: isExamLocked(test.totalQuestions, test.questionsPerAttempt),
+        segmentId: test.segmentId.toString(),
+        subSegmentId: test.subSegmentId.toString(),
+      }))
+      .concat(linkedMockTests),
     createdAt: course.createdAt.toISOString(),
     updatedAt: course.updatedAt.toISOString(),
   };
@@ -222,60 +282,64 @@ export default async function CourseDetailPage({
         access={serializedAccess}
       >
         {course.programKind === "exam" ? (
-              <Tabs defaultValue="test-details" className="min-w-0">
-                <TabsList className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1 sm:grid-cols-4">
-                  <TabsTrigger value="test-details">Overview</TabsTrigger>
-                  <TabsTrigger value="topics">Syllabus & tests</TabsTrigger>
-                  <TabsTrigger value="examiners">Examiners</TabsTrigger>
-                  <TabsTrigger value="routine">Schedule</TabsTrigger>
-                </TabsList>
-                <div className="mt-5">
-                  <TabsContent value="test-details">
-                    <CourseDescription course={serializedCourse} />
-                  </TabsContent>
-                  <TabsContent value="topics">
-                    <CourseExamTopics
-                      course={serializedCourse}
-                      hasAccess={serializedAccess?.hasAccess ?? false}
-                    />
-                  </TabsContent>
-                  <TabsContent value="examiners">
-                    <CourseMentors mentors={serializedMentors} />
-                  </TabsContent>
-                  <TabsContent value="routine">
-                    <section className="space-y-4 py-6">
-                      <h2 className="font-heading text-2xl font-bold text-primary">
-                        Exam Routine
-                      </h2>
-                      {serializedCourse.routine.length ? (
-                        <ol className="space-y-3">
-                          {serializedCourse.routine.map((item, index) => (
-                            <li
-                              key={`${item.scheduledAt}-${index}`}
-                              className="rounded-lg border border-border bg-card p-5"
-                            >
-                              <time
-                                dateTime={item.scheduledAt}
-                                className="text-sm font-semibold text-accent"
-                              >
-                                {new Date(item.scheduledAt).toLocaleString()}
-                              </time>
-                              <h3 className="mt-1 font-semibold text-primary">{item.title}</h3>
-                              {item.description ? (
-                                <p className="mt-2 text-sm leading-6 text-muted">{item.description}</p>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ol>
-                      ) : (
-                        <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted">
-                          The routine will be published soon.
-                        </p>
-                      )}
-                    </section>
-                  </TabsContent>
-                </div>
-              </Tabs>
+          <Tabs defaultValue="test-details" className="min-w-0">
+            <TabsList className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1 sm:grid-cols-4">
+              <TabsTrigger value="test-details">Overview</TabsTrigger>
+              <TabsTrigger value="topics">Syllabus & tests</TabsTrigger>
+              <TabsTrigger value="examiners">Examiners</TabsTrigger>
+              <TabsTrigger value="routine">Schedule</TabsTrigger>
+            </TabsList>
+            <div className="mt-5">
+              <TabsContent value="test-details">
+                <CourseDescription course={serializedCourse} />
+              </TabsContent>
+              <TabsContent value="topics">
+                <CourseExamTopics
+                  course={serializedCourse}
+                  hasAccess={serializedAccess?.hasAccess ?? false}
+                />
+              </TabsContent>
+              <TabsContent value="examiners">
+                <CourseMentors mentors={serializedMentors} />
+              </TabsContent>
+              <TabsContent value="routine">
+                <section className="space-y-4 py-6">
+                  <h2 className="font-heading text-2xl font-bold text-primary">
+                    Exam Routine
+                  </h2>
+                  {serializedCourse.routine.length ? (
+                    <ol className="space-y-3">
+                      {serializedCourse.routine.map((item, index) => (
+                        <li
+                          key={`${item.scheduledAt}-${index}`}
+                          className="rounded-lg border border-border bg-card p-5"
+                        >
+                          <time
+                            dateTime={item.scheduledAt}
+                            className="text-sm font-semibold text-accent"
+                          >
+                            {new Date(item.scheduledAt).toLocaleString()}
+                          </time>
+                          <h3 className="mt-1 font-semibold text-primary">
+                            {item.title}
+                          </h3>
+                          {item.description ? (
+                            <p className="mt-2 text-sm leading-6 text-muted">
+                              {item.description}
+                            </p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted">
+                      The routine will be published soon.
+                    </p>
+                  )}
+                </section>
+              </TabsContent>
+            </div>
+          </Tabs>
         ) : (
           <CourseDetailTabs
             description={<CourseDescription course={serializedCourse} />}
@@ -287,40 +351,40 @@ export default async function CourseDetailPage({
             }
             instructor={<CourseMentors mentors={serializedMentors} />}
             routine={
-                  <section className="space-y-4 py-6">
-                    <h2 className="font-heading text-2xl font-bold text-primary">
-                      Course Routine
-                    </h2>
-                    {serializedCourse.routine.length ? (
-                      <ol className="space-y-3">
-                        {serializedCourse.routine.map((item, index) => (
-                          <li
-                            key={`${item.scheduledAt}-${index}`}
-                            className="rounded-lg border border-border bg-card p-5"
-                          >
-                            <time
-                              dateTime={item.scheduledAt}
-                              className="text-sm font-semibold text-accent"
-                            >
-                              {new Date(item.scheduledAt).toLocaleString()}
-                            </time>
-                            <h3 className="mt-1 font-semibold text-primary">
-                              {item.title}
-                            </h3>
-                            {item.description ? (
-                              <p className="mt-2 text-sm leading-6 text-muted">
-                                {item.description}
-                              </p>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted">
-                        The course routine will be published soon.
-                      </p>
-                    )}
-                  </section>
+              <section className="space-y-4 py-6">
+                <h2 className="font-heading text-2xl font-bold text-primary">
+                  Course Routine
+                </h2>
+                {serializedCourse.routine.length ? (
+                  <ol className="space-y-3">
+                    {serializedCourse.routine.map((item, index) => (
+                      <li
+                        key={`${item.scheduledAt}-${index}`}
+                        className="rounded-lg border border-border bg-card p-5"
+                      >
+                        <time
+                          dateTime={item.scheduledAt}
+                          className="text-sm font-semibold text-accent"
+                        >
+                          {new Date(item.scheduledAt).toLocaleString()}
+                        </time>
+                        <h3 className="mt-1 font-semibold text-primary">
+                          {item.title}
+                        </h3>
+                        {item.description ? (
+                          <p className="mt-2 text-sm leading-6 text-muted">
+                            {item.description}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted">
+                    The course routine will be published soon.
+                  </p>
+                )}
+              </section>
             }
           />
         )}

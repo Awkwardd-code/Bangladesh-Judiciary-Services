@@ -7,11 +7,13 @@ import {
   preliminaryExamsCol,
   preliminaryQuestionsCol,
 } from "@/lib/collections";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { ensureIndexes } from "@/lib/indexes";
 import { preliminaryQuestionCreateSchema } from "@/lib/validators/admin";
 
 async function refresh(examId: ObjectId) {
   const questions = await preliminaryQuestionsCol();
+  const exams = await preliminaryExamsCol();
   const [totalQuestions, rows] = await Promise.all([
     questions.countDocuments({ examId }),
     questions
@@ -21,14 +23,17 @@ async function refresh(examId: ObjectId) {
       ])
       .toArray(),
   ]);
-  await (
-    await preliminaryExamsCol()
-  ).updateOne(
+  const exam = await exams.findOne({ _id: examId });
+  if (!exam) {
+    throw new Error("Preliminary exam disappeared while refreshing question totals.");
+  }
+  await exams.updateOne(
     { _id: examId },
     {
       $set: {
         totalQuestions,
         totalMarks: Number(rows[0]?.totalMarks ?? 0),
+        isLocked: isExamLocked(totalQuestions, exam.questionsPerAttempt),
         updatedAt: new Date(),
       },
     },

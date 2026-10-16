@@ -48,6 +48,15 @@ export default async function PreliminaryExamPage({
     notFound();
   }
 
+  if (!access.allowed && access.reason === "locked") {
+    return (
+      <BlockedExamState
+        title="This exam is locked."
+        description="Questions are being prepared. You can access the exam once they have been added."
+      />
+    );
+  }
+
   if (!access.allowed && access.reason === "another-exam-active") {
     const resumeHref =
       access.activeExamKind === "written"

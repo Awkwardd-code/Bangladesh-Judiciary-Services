@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { PreliminaryQuestion } from "@/lib/types/exam";
+
+type PreliminaryQuestion = {
+  _id: string;
+  order: number;
+  questionText: string;
+  options: string[];
+  correctOptionIndex: number;
+  marks: number;
+  subject?: string;
+  explanation?: string;
+};
 
 type Props = {
   examId: string;
@@ -57,7 +67,7 @@ export function MCQQuestionEditor({
         : {
             ...emptyState,
             order: nextOrder,
-          },
+          }
     );
     setError(null);
   }, [open, question, nextOrder]);
@@ -70,7 +80,9 @@ export function MCQQuestionEditor({
 
   async function submit() {
     if (!valid) {
-      setError("Please complete the question, all four options, and select a correct answer.");
+      setError(
+        "Please complete the question, all four options, and select a correct answer."
+      );
       return;
     }
 
@@ -110,7 +122,7 @@ export function MCQQuestionEditor({
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to save question.",
+          : "Unable to save question."
       );
     } finally {
       setSaving(false);
@@ -236,7 +248,9 @@ export function MCQQuestionEditor({
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm font-medium text-foreground">Correct answer</p>
+                <p className="text-sm font-medium text-foreground">
+                  Correct answer
+                </p>
                 <div className="flex flex-wrap gap-3">
                   {"ABCD".split("").map((letter, index) => {
                     const selected = form.correctOptionIndex === index;

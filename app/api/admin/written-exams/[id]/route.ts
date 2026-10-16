@@ -12,6 +12,7 @@ import {
   writtenSubmissionsCol,
 } from "@/lib/collections";
 import { ensureIndexes } from "@/lib/indexes";
+import { isExamLocked } from "@/lib/exam-readiness";
 import { writtenExamCreateSchema } from "@/lib/validators/admin";
 import { getClientIp } from "@/lib/rate-limit";
 
@@ -19,6 +20,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 const updateSchema = writtenExamCreateSchema.partial().extend({
   status: z.enum(["draft", "published", "archived"]).optional(),
+  isLocked: z.boolean().optional(),
 });
 
 async function getTotals(examId: ObjectId) {
@@ -116,10 +118,15 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const nextQuestionsPerAttempt =
       parsed.data.questionsPerAttempt ?? existing.questionsPerAttempt ?? 0;
     const minimumRequired = Math.max(1, nextQuestionsPerAttempt);
+    const isLocked = isExamLocked(
+      totals.totalQuestions,
+      nextQuestionsPerAttempt,
+    );
 
     if (
       parsed.data.status === "published" &&
-      totals.totalQuestions < minimumRequired
+      isLocked &&
+      parsed.data.isLocked !== true
     ) {
       return fail(
         `Add at least ${minimumRequired} questions before publishing.`,
@@ -140,6 +147,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const nextType = parsed.data.type ?? existing.type ?? "paid";
     const updateSet = {
       ...parsed.data,
+      isLocked,
       type: nextType,
       courseId: parsed.data.courseId
         ? new ObjectId(parsed.data.courseId)
@@ -151,6 +159,11 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         : parsed.data.topicId === null
           ? null
           : existing.topicId,
+      subSegmentId: parsed.data.subSegmentId
+        ? new ObjectId(parsed.data.subSegmentId)
+        : parsed.data.subSegmentId === null
+          ? null
+          : existing.subSegmentId,
       questionsPerAttempt: nextQuestionsPerAttempt,
       scheduledAt: parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)

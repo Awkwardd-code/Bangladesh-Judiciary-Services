@@ -173,8 +173,10 @@ export type PreliminaryAttempt = BaseDoc & {
 export type PreliminaryExam = BaseDoc & {
   title: string;
   description?: string;
+  isLocked?: boolean;
   courseId?: ObjectId | null;
   topicId?: ObjectId | null;
+  subSegmentId?: ObjectId | null;
   durationMinutes: number;
   questionsPerAttempt?: number;
   negativeMarking: number;
@@ -244,8 +246,10 @@ export type WrittenSubmission = BaseDoc & {
 export type WrittenExam = BaseDoc & {
   title: string;
   description?: string;
+  isLocked?: boolean;
   courseId?: ObjectId | null;
   topicId?: ObjectId | null;
+  subSegmentId?: ObjectId | null;
   durationMinutes: number;
   questionsPerAttempt?: number;
   totalQuestions: number;
