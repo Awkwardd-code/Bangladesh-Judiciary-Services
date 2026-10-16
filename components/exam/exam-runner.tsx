@@ -29,8 +29,22 @@ import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/toaster";
 
 type ExamKind = "preliminary" | "written" | "free";
+type ExamAction = "start" | "submit" | "answer";
 type SubmitReason =
   "manual" | "tab-change" | "visibility-hidden" | "time-expired";
+
+function getExamActionUrl(
+  exam: { id: string; kind: ExamKind; unified?: boolean },
+  action: ExamAction,
+) {
+  if (exam.kind === "free") {
+    return `/api/free-tests/${exam.id}/${action}`;
+  }
+  if (exam.unified) {
+    return `/api/exams/${exam.id}/${action}`;
+  }
+  return `/api/exams/${exam.kind}/${exam.id}/${action}`;
+}
 
 type SubmittedAttempt = {
   attemptId: string;
@@ -391,10 +405,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
         );
       }
 
-      const endpoint =
-        exam.kind === "free"
-          ? `/api/free-tests/${exam.id}/submit`
-          : `/api/exams/${exam.id}/submit`;
+      const endpoint = getExamActionUrl(exam, "submit");
       const body =
         exam.kind === "written"
           ? { submissionId: attemptId, reason }
@@ -635,10 +646,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
     setStarting(true);
 
     try {
-      const endpoint =
-        exam.kind === "free"
-          ? `/api/free-tests/${exam.id}/start`
-          : `/api/exams/${exam.id}/start`;
+      const endpoint = getExamActionUrl(exam, "start");
       const response = await fetch(endpoint, { method: "POST" });
       const payload = await response.json();
 
@@ -760,10 +768,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
 
     const savePromise = (async () => {
       try {
-        const endpoint =
-          exam.kind === "free"
-            ? `/api/free-tests/${exam.id}/answer`
-            : `/api/exams/${exam.id}/answer`;
+        const endpoint = getExamActionUrl(exam, "answer");
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -858,10 +863,7 @@ export function ExamRunner({ exam, attempt, questions }: ExamRunnerProps) {
       formData.append("questionId", questionId);
       formData.append("file", file);
 
-      const endpoint =
-        exam.kind === "written"
-          ? `/api/exams/${exam.id}/answer`
-          : `/api/free-tests/${exam.id}/answer`;
+      const endpoint = getExamActionUrl(exam, "answer");
       const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
